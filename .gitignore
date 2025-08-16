@@ -106,3 +106,4 @@ ENV/
 *.pyc
 __pycache__/
 .pytest_cache/
+models/gpt4all/
