@@ -1,0 +1,105 @@
+# AI Service Configuration
+# This file defines all configuration for the AI service
+
+version: "2.0.0"
+
+# Model Configuration
+model:
+  # Active model selection: auto, qwen, gpt-oss, or specific model name
+  active_model: "auto"
+  
+  # Directory containing GGUF model files
+  models_dir: "models/gpt4all"
+  
+  # Enable automatic model detection
+  auto_detect: true
+  
+  # Generation parameters
+  max_tokens: 800
+  temperature: 0.3
+  top_p: 0.9
+  repeat_penalty: 1.1
+  max_retries: 3
+  
+  # Fallback chain for model failures
+  fallback_chain:
+    - "qwen"
+    - "gpt-oss"
+    - "simple"
+  enable_fallback: true
+  
+  # Performance settings
+  force_cpu: false
+  preload_models: true
+  model_cache_size: 2
+
+# Embedding Configuration
+embedding:
+  # Model path: auto or specific path
+  model_path: "auto"
+  model_name: "all-MiniLM-L6-v2"
+  embedding_dim: 384
+  normalize: true
+  batch_size: 32
+  
+  # Cache settings
+  enable_cache: true
+  cache_max_size: 10000
+  cache_ttl: 3600
+  
+  # Performance settings
+  device: "auto"  # auto, cpu, cuda
+  preload_warmup: true
+  warmup_samples: 100
+  
+  # Concurrency settings
+  max_concurrent_requests: 10
+  request_timeout: 30.0
+
+# Monitoring Configuration
+monitoring:
+  enable_monitoring: true
+  enable_health_check: true
+  health_check_interval: 60
+  
+  # Performance tracking
+  track_inference_time: true
+  track_memory_usage: true
+  track_error_rate: true
+  
+  # Logging
+  log_level: "INFO"
+  log_file: "ai_service.log"
+  log_rotation: "daily"
+  log_max_size_mb: 100
+  
+  # Metrics export
+  export_metrics: true
+  metrics_export_interval: 300
+  metrics_export_path: "metrics/"
+
+# Service Configuration  
+service:
+  host: "127.0.0.1"
+  port: 8001
+  enable_cors: true
+  cors_origins:
+    - "*"
+  
+  # API settings
+  api_prefix: "/api/v1"
+  enable_docs: true
+  docs_url: "/docs"
+  
+  # Security settings
+  enable_auth: false
+  api_key: null
+  rate_limit: 100  # requests per minute
+
+# Metadata
+metadata:
+  description: "Enhanced AI Service for Godot integration"
+  author: "AI Service Team"
+  contact: "support@example.com"
+
+

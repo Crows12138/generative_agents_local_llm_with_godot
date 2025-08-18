@@ -161,34 +161,60 @@ def GPT4_safe_generate_response(prompt,
 
 def get_embedding(text, model="text-embedding-ada-002"):
     """
-    Simple embedding replacement using text hashing.
-    For a more sophisticated approach, you could integrate sentence-transformers.
+    Enhanced embedding using sentence-transformers model.
+    Completely replaces hash-based embedding with proper sentence-transformers.
+    """
+    try:
+        from .embedding_service import get_embedding_service
+        service = get_embedding_service()
+        return service.get_embedding(text)
+    except ImportError:
+        # Fallback for direct execution
+        from embedding_service import get_embedding_service
+        service = get_embedding_service()
+        return service.get_embedding(text)
+    except Exception as e:
+        print(f"[ERROR] Embedding service completely failed: {e}")
+        # Create a minimal fallback service if everything fails
+        return _create_emergency_embedding(text)
+
+
+def _create_emergency_embedding(text, target_size=384):
+    """
+    Emergency fallback embedding when all services fail.
+    Only used as absolute last resort.
     """
     import hashlib
-    import numpy as np
+    import math
     
-    # Create a deterministic hash-based embedding
-    text = text.replace("\n", " ")
-    if not text:
-        text = "this is blank"
+    if not text or not text.strip():
+        text = "empty_text_placeholder"
     
-    # Use hash to create a pseudo-embedding
-    hash_obj = hashlib.md5(text.encode())
-    hash_hex = hash_obj.hexdigest()
+    text = text.replace("\n", " ").strip()
     
-    # Convert hex to a list of floats (simple embedding simulation)
-    embedding = []
-    for i in range(0, len(hash_hex), 2):
-        val = int(hash_hex[i:i+2], 16) / 255.0 * 2.0 - 1.0  # Normalize to [-1, 1]
-        embedding.append(val)
+    # Use multiple hash functions for better distribution
+    hash_funcs = [hashlib.md5, hashlib.sha1, hashlib.sha256]
+    raw_values = []
     
-    # Pad or truncate to standard embedding size (1536 for ada-002)
-    target_size = 1536
-    while len(embedding) < target_size:
-        embedding.extend(embedding[:min(len(embedding), target_size - len(embedding))])
-    embedding = embedding[:target_size]
+    for hash_func in hash_funcs:
+        hash_obj = hash_func(text.encode('utf-8'))
+        hash_hex = hash_obj.hexdigest()
+        
+        # Convert hex to normalized values
+        for i in range(0, len(hash_hex), 2):
+            if len(raw_values) >= target_size:
+                break
+            val = int(hash_hex[i:i+2], 16) / 255.0 * 2.0 - 1.0
+            raw_values.append(val)
+        
+        if len(raw_values) >= target_size:
+            break
     
-    return embedding
+    # Pad if needed
+    while len(raw_values) < target_size:
+        raw_values.extend(raw_values[:min(len(raw_values), target_size - len(raw_values))])
+    
+    return raw_values[:target_size]
 
 
 # Legacy function aliases for backward compatibility

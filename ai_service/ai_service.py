@@ -21,21 +21,47 @@ from pydantic import BaseModel
 from gpt4all import GPT4All
 from importlib import import_module
 
+# 导入配置管理器、错误处理和监控
+try:
+    from .config import get_config
+    from .error_handling import (
+        handle_model_errors, handle_generation_errors, 
+        RetryHandler, GENERATION_RETRY_CONFIG, MODEL_RETRY_CONFIG,
+        get_error_monitor, ErrorType, RetryableError, NonRetryableError
+    )
+    from .monitoring import (
+        get_performance_monitor, get_ai_logger, timing_context,
+        monitor_performance, get_health_status, get_metrics_json
+    )
+except ImportError:
+    from config import get_config
+    from error_handling import (
+        handle_model_errors, handle_generation_errors,
+        RetryHandler, GENERATION_RETRY_CONFIG, MODEL_RETRY_CONFIG,
+        get_error_monitor, ErrorType, RetryableError, NonRetryableError
+    )
+    from monitoring import (
+        get_performance_monitor, get_ai_logger, timing_context,
+        monitor_performance, get_health_status, get_metrics_json
+    )
+
+# 获取配置
+_config = get_config()
+_model_config = _config.get_model_config()
+_service_config = _config.get_service_config()
+
 app = FastAPI()
-_BASE_URL = "http://127.0.0.1:8001"
+_BASE_URL = f"http://{_service_config.host}:{_service_config.port}"
 
-# Since this file is in reverie/backend_server/ai_service, go up 3 levels to get to generative_agents-main root
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-MODELS_DIR = PROJECT_ROOT / "models" / "gpt4all"
+# 使用配置中的路径和模型
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+MODELS_DIR = Path(_model_config.models_dir)
 
-# Supported local models (GGUF files)
-SUPPORTED_GGUF: Dict[str, str] = {
-    "qwen": "qwen2.5-coder-7b-instruct-q4_0.gguf",
-    "gpt-oss": "gpt-oss-20b-F16.gguf",  # transformers adapter by default
-}
+# 支持的模型从配置获取
+SUPPORTED_GGUF: Dict[str, str] = _model_config.supported_models
 
-# Active model key; can be overridden via environment variable AI_MODEL_KEY
-_ACTIVE_MODEL_KEY: str = os.environ.get("AI_MODEL_KEY", "qwen").lower()
+# 活动模型从配置获取
+_ACTIVE_MODEL_KEY: str = _model_config.active_model.lower()
 
 # Cache of GPT4All instances by model key
 _MODEL_INSTANCES: Dict[str, GPT4All] = {}
@@ -58,6 +84,7 @@ def get_active_model() -> str:
     return _ACTIVE_MODEL_KEY
 
 
+@handle_model_errors
 def _get_model_instance(model_key: str) -> GPT4All:
     """Get or lazily create a GPT4All instance for the given key."""
     model_key = model_key.lower()
@@ -66,7 +93,7 @@ def _get_model_instance(model_key: str) -> GPT4All:
         model_key = "qwen"
 
     # GPT-OSS uses transformers adapter by default; skip GPT4All path
-    use_gpt4all_for_gptoss = os.environ.get("USE_GPT4ALL_FOR_GPTOSS", "0") == "1"
+    use_gpt4all_for_gptoss = _model_config.use_gpt4all_for_gptoss
     if model_key == "gpt-oss" and not use_gpt4all_for_gptoss:
         raise RuntimeError("GPT-OSS is handled by transformers adapter, not GPT4All instance")
 
@@ -77,9 +104,15 @@ def _get_model_instance(model_key: str) -> GPT4All:
     model_path = MODELS_DIR / model_file
     print(f"[ai_service] Loading model '{model_key}' from: {model_path}")
     print(f"[ai_service] Model file exists: {model_path.exists()}")
+    
+    if not model_path.exists():
+        raise NonRetryableError(
+            f"Model file not found: {model_path}",
+            ErrorType.CONFIGURATION_ERROR
+        )
 
     # Resolve desired device. Force CPU for llama/gpt-oss to avoid Kompute/Vulkan crashes.
-    force_cpu_env = os.environ.get("AI_FORCE_CPU", "0") == "1"
+    force_cpu_env = _model_config.force_cpu
     desired_device = "cpu" if (force_cpu_env or model_key in ("llama", "gpt-oss")) else "gpu"
     print(f"[ai_service] Desired device for '{model_key}': {desired_device}{' (forced by env)' if force_cpu_env else ''}")
 
@@ -115,8 +148,27 @@ class ChatResponse(BaseModel):
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     """Expose a /chat endpoint using the requested model (or active default)."""
+    logger = get_ai_logger()
+    logger.info(f"Chat request: model={req.model_key}, prompt_length={len(req.prompt)}")
+    
     response = local_llm_generate(req.prompt, model_key=req.model_key)
     return ChatResponse(response=response)
+
+@app.get("/health")
+async def health():
+    """Health check endpoint with performance metrics."""
+    return get_health_status()
+
+@app.get("/metrics")
+async def metrics():
+    """Performance metrics endpoint."""
+    return {"metrics": get_metrics_json()}
+
+@app.get("/metrics/json")
+async def metrics_json():
+    """Raw JSON metrics endpoint."""
+    from fastapi.responses import PlainTextResponse
+    return PlainTextResponse(get_metrics_json(), media_type="application/json")
 
 def _format_prompt(prompt: str, model_key: str) -> str:
     """Format prompt based on model template."""
@@ -166,14 +218,24 @@ def _clean_response(raw: str, model_key: str) -> str:
     return text
 
 
-def local_llm_generate(prompt: str, model_key: Optional[str] = None, max_retries: int = 3) -> str:
+@handle_generation_errors
+@monitor_performance(get_performance_monitor())
+def local_llm_generate(prompt: str, model_key: Optional[str] = None, max_retries: Optional[int] = None) -> str:
     """Generate a response using the selected local model.
 
     If model_key is None, uses the globally active model key.
+    If max_retries is None, uses the configured default.
     """
     mk = (model_key or get_active_model()).lower()
+    max_retries = max_retries or _model_config.max_retries
+    
+    # 获取监控器和日志器
+    error_monitor = get_error_monitor()
+    logger = get_ai_logger()
+    
+    logger.info(f"Starting generation: model={mk}, prompt_length={len(prompt)}")
     # Special path for GPT-OSS via transformers adapter (default)
-    if mk == "gpt-oss" and os.environ.get("USE_GPT4ALL_FOR_GPTOSS", "0") != "1":
+    if mk == "gpt-oss" and not _model_config.use_gpt4all_for_gptoss:
         global _GPT_OSS_ADAPTER
         if _GPT_OSS_ADAPTER is None:
             try:
@@ -198,50 +260,59 @@ def local_llm_generate(prompt: str, model_key: Optional[str] = None, max_retries
     formatted_prompt = _format_prompt(prompt, mk)
     print(f"[ai_service] Using model '{mk}' with prompt length {len(formatted_prompt)}")
     
-    for attempt in range(max_retries):
+    # 使用重试处理器
+    retry_handler = RetryHandler(GENERATION_RETRY_CONFIG)
+    
+    def _generate_with_model():
+        tokens = ""
+        token_count = 0
+        params = {
+            "prompt": formatted_prompt,
+            "max_tokens": _model_config.max_tokens,
+            "temp": _model_config.temperature,
+            "top_p": _model_config.top_p,
+            "repeat_penalty": _model_config.repeat_penalty,
+            "streaming": False,
+        }
+        
         try:
-            tokens = ""
-            token_count = 0
-            params = {
-                "prompt": formatted_prompt,
-                "max_tokens": 800,
-                "temp": 0.3,
-                "top_p": 0.9,
-                "repeat_penalty": 1.1,
-                "streaming": False,
-            }
+            for tok in ai.generate(**params):
+                tokens += tok
+                token_count += 1
+                if token_count % 100 == 0:
+                    print(f"[ai_service] Generated {token_count} tokens...")
+        except Exception as gen_error:
+            print(f"[ai_service] Primary generation failed: {gen_error}")
+            error_monitor.record_error(gen_error, ErrorType.GENERATION_ERROR)
             
+            # 尝试fallback模式
+            print(f"[ai_service] Trying fallback generation...")
             try:
-                for tok in ai.generate(**params):
-                    tokens += tok
-                    token_count += 1
-                    if token_count % 100 == 0:
-                        print(f"[ai_service] Generated {token_count} tokens...")
-            except Exception as gen_error:
-                print(f"[ai_service] Generation error: {gen_error}; trying fallback mode")
                 for tok in ai.generate(prompt, max_tokens=400, temp=0.5):
                     tokens += tok
+            except Exception as fallback_error:
+                error_monitor.record_error(fallback_error, ErrorType.GENERATION_ERROR)
+                raise RetryableError(f"Both primary and fallback generation failed: {fallback_error}")
 
-            cleaned = _clean_response(tokens, mk)
-            if cleaned:
-                return cleaned
-
-            # If empty, do a tiny test to validate the backend
-            sanity = "".join(ai.generate("Say hello", max_tokens=10))
-            if not sanity.strip():
-                raise RuntimeError("Model produced no output in sanity check")
-
-                if attempt == max_retries - 1:
-                    return '{"action": "wander"}'
-            raise RuntimeError("Empty response; retrying")
+        cleaned = _clean_response(tokens, mk)
+        if not cleaned:
+            # 进行健全性检查
+            try:
+                sanity = "".join(ai.generate("Say hello", max_tokens=10))
+                if not sanity.strip():
+                    raise RetryableError("Model sanity check failed - no output produced")
+            except Exception as sanity_error:
+                error_monitor.record_error(sanity_error, ErrorType.MODEL_LOAD_ERROR)
+                raise RetryableError(f"Model sanity check failed: {sanity_error}")
             
-        except Exception as e:
-            wait_time = (2 ** attempt) + random.uniform(0, 1)
-            print(f"[ai_service] Attempt {attempt+1}/{max_retries} failed: {e}; retrying in {wait_time:.2f}s")
-            if attempt < max_retries - 1:
-                time.sleep(wait_time)
-            else:
-                return '{"action": "wander"}'
+            raise RetryableError("Empty response after cleaning")
+        
+        return cleaned
     
-    return '{"action": "wander"}'
+    try:
+        return retry_handler(_generate_with_model)()
+    except Exception as e:
+        error_monitor.record_error(e, ErrorType.GENERATION_ERROR)
+        print(f"[ai_service] All generation attempts failed: {e}")
+        return '{"action": "wander"}'
 

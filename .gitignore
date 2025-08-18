@@ -107,3 +107,7 @@ ENV/
 __pycache__/
 .pytest_cache/
 models/gpt4all/
+.claude/
+CLAUDE.local.md
+CLAUDE.md
+codex.tar.gz

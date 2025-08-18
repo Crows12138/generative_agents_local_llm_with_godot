@@ -1,0 +1,32 @@
+{
+  "model": {
+    "active_model": "gpt-oss",
+    "supported_models": {
+      "qwen": "qwen2.5-coder-7b-instruct-q4_0.gguf",
+      "gpt-oss": "gpt-oss-20b-F16.gguf"
+    },
+    "models_dir": "C:\\Users\\12916\\Desktop\\generative_agents_local_llm_with_godot\\models\\gpt4all",
+    "force_cpu": false,
+    "max_tokens": 800,
+    "temperature": 0.3,
+    "top_p": 0.9,
+    "repeat_penalty": 1.1,
+    "max_retries": 3,
+    "gpt_oss_device": "auto",
+    "gpt_oss_local_only": false,
+    "gpt_oss_local_dir": null,
+    "use_gpt4all_for_gptoss": false
+  },
+  "embedding": {
+    "model_path": "C:\\Users\\12916\\Desktop\\generative_agents_local_llm_with_godot\\models\\all-MiniLM-L6-v2",
+    "embedding_dim": 384,
+    "normalize": true,
+    "batch_size": 32
+  },
+  "service": {
+    "host": "127.0.0.1",
+    "port": 8001,
+    "log_level": "INFO",
+    "enable_cors": true
+  }
+}
