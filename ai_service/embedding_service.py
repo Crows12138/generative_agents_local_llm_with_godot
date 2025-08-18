@@ -24,9 +24,9 @@ EMBEDDING_MODEL_PATH = PROJECT_ROOT / "models" / "all-MiniLM-L6-v2"
 
 # 导入配置管理
 try:
-    from .config import get_config
+    from .config_enhanced import get_config
 except ImportError:
-    from config import get_config
+    from config_enhanced import get_config
 
 class EmbeddingService:
     """统一的嵌入服务，支持sentence-transformers和fallback，基于配置的高级功能"""
@@ -34,7 +34,7 @@ class EmbeddingService:
     def __init__(self, config_override: Optional[dict] = None):
         # 获取配置
         self.config_manager = get_config()
-        self.config = self.config_manager.get_embedding_config()
+        self.config = self.config_manager.config.embedding
         
         # 应用配置覆盖
         if config_override:

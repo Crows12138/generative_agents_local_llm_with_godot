@@ -1,0 +1,66 @@
+{
+  "room": {
+    "name": "Cozy Bar",
+    "description": "A warm, intimate bar with dim lighting and smooth jazz playing softly",
+    "size": [12, 10],
+    "tiles": [
+      "WWWWWWWWWWWW",
+      "W..........W",
+      "W..BBBBBB..W",
+      "W..cccccc..W",
+      "W..........W",
+      "W.TT....TT.W",
+      "W.SS....SS.W",
+      "W..........W",
+      "W....MM....W",
+      "WWWWWDDWWWWW"
+    ],
+    "legend": {
+      "W": "wall_brick",
+      "D": "door",
+      "B": "bar_counter",
+      "c": "bar_stool", 
+      "T": "table",
+      "S": "chair",
+      "M": "music_stage",
+      ".": "floor_wood"
+    },
+    "spawn_points": {
+      "player": [6, 5],
+      "Bob": [6, 2],
+      "Alice": [2, 6],
+      "Sam": [9, 6]
+    },
+    "npc_roles": {
+      "Bob": "bartender - mixing drinks and chatting with customers",
+      "Alice": "regular customer - drinking alone, seems contemplative",
+      "Sam": "musician - preparing to perform on the small stage"
+    },
+    "atmosphere": {
+      "lighting": "dim_warm",
+      "background_music": "smooth_jazz",
+      "temperature": "cozy",
+      "noise_level": "quiet_murmur"
+    },
+    "interactive_objects": {
+      "bar_counter": {
+        "actions": ["order_drink", "chat_bartender", "sit_at_bar"],
+        "description": "Polished mahogany bar with bottles lined up behind it"
+      },
+      "tables": {
+        "actions": ["sit_down", "place_order", "have_conversation"],
+        "description": "Small round tables perfect for intimate conversations"
+      },
+      "music_stage": {
+        "actions": ["perform", "listen", "request_song"],
+        "description": "Small wooden stage with a microphone and guitar stand"
+      }
+    },
+    "bar_menu": {
+      "cocktails": ["Old Fashioned", "Whiskey Sour", "Manhattan", "Negroni"],
+      "beer": ["Local IPA", "Wheat Beer", "Lager"],
+      "wine": ["Cabernet", "Chardonnay", "Pinot Noir"],
+      "non_alcoholic": ["Coffee", "Tea", "Soda", "Juice"]
+    }
+  }
+}

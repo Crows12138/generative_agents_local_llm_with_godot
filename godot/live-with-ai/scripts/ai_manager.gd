@@ -46,7 +46,7 @@ func _on_status_check_completed(result: int, response_code: int, headers: Packed
 			print("Active Model: ", data.active_model)
 			print("Available Models: ", data.available_models)
 	else:
-		print("AI service not responding. Please run: python godot_ai_bridge.py")
+		print("AI service not responding. Please run: python -m api.godot_bridge")
 		emit_signal("ai_error", "AI service not available")
 
 func chat(character_name: String, message: String, context: Dictionary = {}) -> int:

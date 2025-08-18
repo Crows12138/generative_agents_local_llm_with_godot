@@ -160,7 +160,7 @@ class DemoLauncher:
         
         cmd = [
             sys.executable,
-            str(self.project_root / "godot_ai_bridge.py"),
+            "-m", "api.godot_bridge",
             "--host", host,
             "--port", str(port)
         ]

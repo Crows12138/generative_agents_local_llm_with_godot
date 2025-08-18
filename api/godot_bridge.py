@@ -24,7 +24,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import AI service components
 from ai_service.config_enhanced import get_config, EnhancedConfigManager
-from ai_service.ai_service import unified_ai_service
+from ai_service.ai_service import local_llm_generate
 from ai_service.monitoring import get_performance_monitor, get_ai_logger
 
 # Initialize configuration and monitoring
@@ -229,10 +229,9 @@ async def chat_endpoint(request: ChatRequest):
         )
         
         # Call AI service
-        response = unified_ai_service(
+        response = local_llm_generate(
             prompt,
-            max_new_tokens=request.max_length,
-            temperature=request.temperature
+            model_key=None  # Use default active model
         )
         
         # Extract emotion and action if present
@@ -281,7 +280,7 @@ async def decide_endpoint(request: DecisionRequest):
         )
         
         # Call AI service
-        response = unified_ai_service(prompt, max_new_tokens=200, temperature=0.5)
+        response = local_llm_generate(prompt, model_key=None)
         
         # Parse response
         chosen_option, reasoning, confidence = parse_decision_response(response)
@@ -335,11 +334,7 @@ async def think_endpoint(request: ThinkRequest):
         temperature = {"quick": 0.5, "normal": 0.7, "deep": 0.9}.get(request.depth, 0.7)
         
         # Call AI service
-        response = unified_ai_service(
-            prompt,
-            max_new_tokens=max_tokens,
-            temperature=temperature
-        )
+        response = local_llm_generate(prompt, model_key=None)
         
         # Determine mood from thought
         mood = "contemplative"
@@ -430,7 +425,7 @@ async def startup_event():
     # Warm up AI service
     try:
         logger.info("Warming up AI service...")
-        test_response = unified_ai_service("Hello, this is a test.", max_new_tokens=10)
+        test_response = local_llm_generate("Hello, this is a test.", model_key=None)
         logger.info(f"AI service ready: {test_response[:50]}...")
     except Exception as e:
         logger.error(f"Failed to warm up AI service: {e}")
@@ -466,7 +461,7 @@ def main():
     
     # Run server
     uvicorn.run(
-        "godot_ai_bridge:app",
+        "api.godot_bridge:app",
         host=args.host,
         port=args.port,
         reload=args.reload,

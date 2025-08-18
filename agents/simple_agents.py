@@ -5,15 +5,14 @@ No complex dependencies, just essential features
 """
 
 import json
-import random
 from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timedelta
+from dataclasses import dataclass, field
+from datetime import datetime
 from collections import deque
 from enum import Enum
 
-# Import AI service
-from ai_service.ai_service import unified_ai_service
+# Import AI service (fixed import)
+from ai_service.ai_service import local_llm_generate
 
 class EmotionalState(Enum):
     """Character emotional states"""
@@ -45,7 +44,7 @@ class Memory:
     importance: float = 0.5  # 0-1 scale
     tags: List[str] = field(default_factory=list)
     
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
         return {
             "content": self.content,
@@ -120,9 +119,9 @@ class SimpleMemorySystem:
         if not recent:
             return "No recent memories."
         
-        summary = "Recent memories:\n"
+        summary = "Recent memories:\\n"
         for mem in recent:
-            summary += f"- {mem.content}\n"
+            summary += f"- {mem.content}\\n"
         return summary
 
 class SimpleAgent:
@@ -133,7 +132,7 @@ class SimpleAgent:
         name: str,
         personality: str,
         background: str = "",
-        location: Location = None,
+        location: Optional[Location] = None,
         emotional_state: EmotionalState = EmotionalState.NEUTRAL,
         activity: ActivityType = ActivityType.IDLE
     ):
@@ -177,7 +176,7 @@ class SimpleAgent:
         elif "friend" in observation.lower() or "happy" in observation.lower():
             self.emotional_state = EmotionalState.HAPPY
     
-    def think(self, topic: str = None) -> str:
+    def think(self, topic: Optional[str] = None) -> str:
         """Generate internal thoughts"""
         if topic is None:
             topic = f"current {self.activity.value} activity"
@@ -193,16 +192,25 @@ Recent memories: {self.memory.summarize_memories()}
 
 What is {self.name} thinking about regarding {topic}?"""
         
-        # Generate thought
-        thought = unified_ai_service(context, max_new_tokens=100, temperature=0.7)
-        
-        # Store as memory
-        self.memory.add_memory(f"Thought: {thought}", importance=0.3, tags=["thought"])
-        
-        return thought
+        try:
+            # Generate thought (fixed function call)
+            thought = local_llm_generate(context, model_key=None)
+            
+            # Store as memory
+            self.memory.add_memory(f"Thought: {thought}", importance=0.3, tags=["thought"])
+            
+            return thought
+        except Exception as e:
+            # Fallback response if AI service fails
+            fallback_thought = f"I'm {self.emotional_state.value} and thinking about {topic}."
+            self.memory.add_memory(f"Thought: {fallback_thought}", importance=0.2, tags=["thought", "fallback"])
+            return fallback_thought
     
     def decide_action(self, available_actions: List[str]) -> Tuple[str, str]:
         """Decide on an action from available options"""
+        if not available_actions:
+            return "idle", "No actions available"
+            
         # Build context
         context = f"""Character: {self.name}
 Personality: {self.personality}
@@ -216,29 +224,37 @@ Available actions:
 
 What action would {self.name} choose and why? Format: ACTION: [action] REASON: [reason]"""
         
-        # Generate decision
-        response = unified_ai_service(context, max_new_tokens=100, temperature=0.5)
-        
-        # Parse response
-        chosen_action = available_actions[0]  # default
-        reason = "No specific reason"
-        
-        lines = response.split('\n')
-        for line in lines:
-            if "ACTION:" in line:
-                action_text = line.split("ACTION:")[-1].strip()
-                # Find closest matching action
-                for action in available_actions:
-                    if action.lower() in action_text.lower():
-                        chosen_action = action
-                        break
-            elif "REASON:" in line:
-                reason = line.split("REASON:")[-1].strip()
-        
-        # Update activity based on action
-        self._update_activity_from_action(chosen_action)
-        
-        return chosen_action, reason
+        try:
+            # Generate decision (fixed function call)
+            response = local_llm_generate(context, model_key=None)
+            
+            # Parse response
+            chosen_action = available_actions[0]  # default
+            reason = "No specific reason"
+            
+            lines = response.split('\\n')
+            for line in lines:
+                if "ACTION:" in line:
+                    action_text = line.split("ACTION:")[-1].strip()
+                    # Find closest matching action
+                    for action in available_actions:
+                        if action.lower() in action_text.lower():
+                            chosen_action = action
+                            break
+                elif "REASON:" in line:
+                    reason = line.split("REASON:")[-1].strip()
+            
+            # Update activity based on action
+            self._update_activity_from_action(chosen_action)
+            
+            return chosen_action, reason
+            
+        except Exception as e:
+            # Fallback decision logic
+            chosen_action = self._fallback_decision(available_actions)
+            reason = f"Simple decision based on current needs"
+            self._update_activity_from_action(chosen_action)
+            return chosen_action, reason
     
     def respond_to(self, speaker: str, message: str) -> str:
         """Generate response to another character"""
@@ -265,25 +281,93 @@ Recent memories: {self.memory.summarize_memories()}
 
 How does {self.name} respond? (Stay in character, be natural and concise)"""
         
-        # Generate response
-        response = unified_ai_service(context, max_new_tokens=150, temperature=0.7)
+        try:
+            # Generate response (fixed function call)
+            response = local_llm_generate(context, model_key=None)
+            
+            # Store interaction in memory
+            self.memory.add_memory(
+                f"{speaker} said: {message}",
+                importance=0.6,
+                tags=["conversation", speaker]
+            )
+            self.memory.add_memory(
+                f"I responded: {response}",
+                importance=0.5,
+                tags=["conversation", "self"]
+            )
+            
+            # Update relationship slightly
+            self.update_relationship(speaker, 0.05)
+            
+            return response
+            
+        except Exception as e:
+            # Fallback response
+            fallback_response = self._generate_fallback_response(speaker, message)
+            
+            # Still store the interaction
+            self.memory.add_memory(
+                f"{speaker} said: {message}",
+                importance=0.6,
+                tags=["conversation", speaker]
+            )
+            self.memory.add_memory(
+                f"I responded: {fallback_response}",
+                importance=0.3,
+                tags=["conversation", "self", "fallback"]
+            )
+            
+            return fallback_response
+    
+    def _fallback_decision(self, available_actions: List[str]) -> str:
+        """Simple fallback decision logic when AI service fails"""
+        # Prioritize based on needs
+        if self.energy < 0.3 and any("rest" in action.lower() for action in available_actions):
+            return next(action for action in available_actions if "rest" in action.lower())
+        elif self.hunger > 0.7 and any("eat" in action.lower() for action in available_actions):
+            return next(action for action in available_actions if "eat" in action.lower())
+        elif self.social_need > 0.7 and any("talk" in action.lower() or "social" in action.lower() for action in available_actions):
+            return next(action for action in available_actions if "talk" in action.lower() or "social" in action.lower())
+        else:
+            return available_actions[0]  # Default to first available action
+    
+    def _generate_fallback_response(self, speaker: str, message: str) -> str:
+        """Generate simple fallback response when AI service fails"""
+        # Simple response based on emotional state and relationship
+        relationship = self.relationships.get(speaker, 0.0)
         
-        # Store interaction in memory
-        self.memory.add_memory(
-            f"{speaker} said: {message}",
-            importance=0.6,
-            tags=["conversation", speaker]
-        )
-        self.memory.add_memory(
-            f"I responded: {response}",
-            importance=0.5,
-            tags=["conversation", "self"]
-        )
+        if relationship > 0.5:
+            responses = [
+                f"Hello {speaker}!",
+                "How are you today?",
+                "Nice to see you!",
+                "What can I do for you?"
+            ]
+        elif relationship < -0.5:
+            responses = [
+                "What do you want?",
+                "I'm busy right now.",
+                "Fine.",
+                "Hmm."
+            ]
+        else:
+            responses = [
+                "Hello there.",
+                "Yes?",
+                "I see.",
+                "Interesting."
+            ]
         
-        # Update relationship slightly
-        self.update_relationship(speaker, 0.05)
-        
-        return response
+        # Adjust based on emotional state
+        if self.emotional_state == EmotionalState.HAPPY:
+            return responses[0] if len(responses) > 0 else "Hello!"
+        elif self.emotional_state == EmotionalState.SAD:
+            return "I'm not feeling great right now."
+        elif self.emotional_state == EmotionalState.ANGRY:
+            return "I'm not in the mood to talk."
+        else:
+            return responses[0] if len(responses) > 0 else "Hello."
     
     def update_relationship(self, character_name: str, change: float):
         """Update relationship with another character"""
@@ -460,7 +544,7 @@ def create_demo_characters() -> List[SimpleAgent]:
 # Test the system
 def test_simple_agents():
     """Test the simple agents system"""
-    print("=== Simple Agents Test ===\n")
+    print("=== Simple Agents Test ===\\n")
     
     # Create demo characters
     characters = create_demo_characters()
@@ -470,41 +554,43 @@ def test_simple_agents():
     # Test perception
     print("1. Testing perception:")
     alice.perceive("A customer enters the store looking for supplies")
-    print(f"Alice's recent memory: {alice.memory.get_recent_memories(1)[0].content}\n")
+    recent_memories = alice.memory.get_recent_memories(1)
+    if recent_memories:
+        print(f"Alice's recent memory: {recent_memories[0].content}\\n")
+    else:
+        print("No recent memories found\\n")
     
     # Test thinking
     print("2. Testing thinking:")
     thought = alice.think("the new customer")
-    print(f"Alice thinks: {thought}\n")
+    print(f"Alice thinks: {thought}\\n")
     
     # Test decision making
     print("3. Testing decision:")
     actions = ["Greet the customer", "Continue organizing shelves", "Check inventory", "Take a break"]
     action, reason = alice.decide_action(actions)
     print(f"Alice decides to: {action}")
-    print(f"Reason: {reason}\n")
+    print(f"Reason: {reason}\\n")
     
     # Test conversation
     print("4. Testing conversation:")
     bob_message = "Do you have any iron ingots for sale?"
     alice_response = alice.respond_to("Bob", bob_message)
     print(f"Bob: {bob_message}")
-    print(f"Alice: {alice_response}\n")
+    print(f"Alice: {alice_response}\\n")
     
     # Test needs update
     print("5. Testing needs update:")
     print(f"Before: Energy={alice.energy:.2f}, Hunger={alice.hunger:.2f}")
     alice.update_needs(2.0)  # 2 hours pass
-    print(f"After 2 hours: Energy={alice.energy:.2f}, Hunger={alice.hunger:.2f}\n")
+    print(f"After 2 hours: Energy={alice.energy:.2f}, Hunger={alice.hunger:.2f}\\n")
     
     # Test serialization
     print("6. Testing serialization:")
     alice_dict = alice.to_dict()
     print(f"Alice as dict: {json.dumps(alice_dict, indent=2)[:200]}...")
     
-    print("\n=== Test completed ===")
+    print("\\n=== Test completed ===")
 
 if __name__ == "__main__":
     test_simple_agents()
-
-

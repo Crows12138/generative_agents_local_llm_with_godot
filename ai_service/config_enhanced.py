@@ -56,6 +56,13 @@ class ModelConfig:
     preload_models: bool = True
     model_cache_size: int = 2  # 最多缓存的模型数量
     
+    # 兼容旧配置API的字段
+    supported_models: Dict[str, str] = field(default_factory=lambda: {
+        "qwen": "qwen2.5-coder-7b-instruct-q4_0.gguf",
+        "gpt-oss": "gpt-oss-20b-F16.gguf",
+    })
+    use_gpt4all_for_gptoss: bool = False
+    
     def detect_models(self) -> Dict[str, ModelMetadata]:
         """自动检测可用模型"""
         detected = {}
