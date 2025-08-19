@@ -1,6 +1,6 @@
 {
   "model": {
-    "active_model": "gpt-oss",
+    "active_model": "qwen3",
     "supported_models": {
       "qwen": "qwen2.5-coder-7b-instruct-q4_0.gguf",
       "qwen3": "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf",
@@ -22,7 +22,22 @@
     "model_path": "C:\\Users\\12916\\Desktop\\generative_agents_local_llm_with_godot\\models\\all-MiniLM-L6-v2",
     "embedding_dim": 384,
     "normalize": true,
-    "batch_size": 32
+    "batch_size": 32,
+    "enable_cache": true,
+    "cache_max_size": 1000,
+    "cache_ttl": 3600,
+    "device": "cpu",
+    "preload_warmup": true,
+    "preload_texts": [
+      "test",
+      "hello",
+      "example",
+      "sample text",
+      "empty text",
+      "placeholder"
+    ],
+    "max_concurrent_requests": 10,
+    "request_timeout": 30.0
   },
   "service": {
     "host": "127.0.0.1",
