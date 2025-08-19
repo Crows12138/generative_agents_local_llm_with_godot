@@ -20,16 +20,16 @@ class BarRenderer:
         self.spawn_points = self.room["spawn_points"]
         self.agent_positions = {}
         
-        # 字符映射表
+        # Character mapping table
         self.char_map = {
-            "wall_brick": "█",
-            "door": "◊",
-            "bar_counter": "▬",
-            "bar_stool": "⌒",
-            "table": "○",
-            "chair": "◑",
-            "music_stage": "♪",
-            "floor_wood": "·"
+            "wall_brick": "#",
+            "door": "+",
+            "bar_counter": "=",
+            "bar_stool": "~",
+            "table": "O",
+            "chair": "o",
+            "music_stage": "M",
+            "floor_wood": "."
         }
         
         # 颜色映射
@@ -136,7 +136,7 @@ class BarRenderer:
         
         output = [f"\n{Fore.YELLOW}Recent Events:{Style.RESET_ALL}"]
         for event in events[-5:]:  # 显示最近5个事件
-            output.append(f"  {Fore.GREEN}•{Style.RESET_ALL} {event}")
+            output.append(f"  {Fore.GREEN}-{Style.RESET_ALL} {event}")
         
         return "\n".join(output)
     
@@ -148,7 +148,7 @@ class BarRenderer:
         for category, items in menu.items():
             output.append(f"  {Fore.CYAN}{category.title()}:{Style.RESET_ALL}")
             for item in items:
-                output.append(f"    • {item}")
+                output.append(f"    - {item}")
         
         return "\n".join(output)
     

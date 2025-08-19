@@ -1,6 +1,6 @@
 """
 Enhanced Embedding Service using Sentence Transformers
-替换原有的简单hash嵌入，使用本地sentence-transformers模型
+Replace the original simple hash embedding with local sentence-transformers model
 """
 
 import os
@@ -18,31 +18,31 @@ except ImportError:
     SENTENCE_TRANSFORMERS_AVAILABLE = False
     print("[WARNING] sentence-transformers not available, falling back to hash embedding")
 
-# 项目根目录和模型路径
+# Project root directory and model path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 EMBEDDING_MODEL_PATH = PROJECT_ROOT / "models" / "all-MiniLM-L6-v2"
 
-# 导入配置管理
+# Import configuration management
 try:
     from .config_enhanced import get_config
 except ImportError:
     from config_enhanced import get_config
 
 class EmbeddingService:
-    """统一的嵌入服务，支持sentence-transformers和fallback，基于配置的高级功能"""
+    """Unified embedding service, supporting sentence-transformers and fallback, with advanced configuration-based features"""
     
     def __init__(self, config_override: Optional[dict] = None):
-        # 获取配置
+        # Get configuration
         self.config_manager = get_config()
         self.config = self.config_manager.config.embedding
         
-        # 应用配置覆盖
+        # Apply configuration overrides
         if config_override:
             for key, value in config_override.items():
                 if hasattr(self.config, key):
                     setattr(self.config, key, value)
         
-        # 初始化属性
+        # Initialize attributes
         self.model_path = self.config.model_path
         self.model = None
         self.model_loaded = False
@@ -50,13 +50,13 @@ class EmbeddingService:
         self.initialization_attempted = False
         self.last_error = None
         
-        # 缓存系统（支持TTL）
+        # Cache system (supports TTL)
         self._embedding_cache = {} if self.config.enable_cache else None
         self._cache_timestamps = {} if self.config.enable_cache else None
         self.cache_max_size = self.config.cache_max_size
         self.cache_ttl = timedelta(seconds=self.config.cache_ttl)
         
-        # 并发控制
+        # Concurrency control
         self._request_semaphore = asyncio.Semaphore(self.config.max_concurrent_requests)
         self._stats = {
             'requests_total': 0,
@@ -67,7 +67,7 @@ class EmbeddingService:
         }
         
     def initialize(self) -> bool:
-        """初始化嵌入模型，支持重试和缓存检查"""
+        """Initialize embedding model with retry and cache checking"""
         if self.initialization_attempted and self.model_loaded:
             return True
             
@@ -88,24 +88,24 @@ class EmbeddingService:
             print(f"[EmbeddingService] Loading embedding model from: {self.model_path}")
             start_time = time.time()
             
-            # 设置更优的加载参数
+            # Set optimal loading parameters
             self.model = SentenceTransformer(
                 self.model_path,
-                device=self.config.device,  # 使用配置的设备
-                cache_folder=None  # 使用默认缓存
+                device=self.config.device,  # Use configured device
+                cache_folder=None  # Use default cache
             )
             
             load_time = time.time() - start_time
             print(f"[EmbeddingService] Model loaded successfully in {load_time:.2f}s")
             self.model_loaded = True
             
-            # 获取实际嵌入维度并预热模型
+            # Get actual embedding dimension and warm up model
             if self.config.preload_warmup:
                 test_embedding = self.model.encode("test", show_progress_bar=False)
                 self.embedding_dim = len(test_embedding)
                 print(f"[EmbeddingService] Model warmed up, embedding dimension: {self.embedding_dim}")
                 
-                # 预加载常用文本
+                # Preload common texts
                 if self.config.preload_texts:
                     self.preload_common_texts(self.config.preload_texts)
             else:
@@ -124,23 +124,23 @@ class EmbeddingService:
                      normalize: bool = None,
                      use_cache: bool = None) -> Union[List[float], List[List[float]]]:
         """
-        获取文本嵌入，支持缓存和批处理优化
+        Get text embeddings with cache and batch processing optimization
         
         Args:
-            text: 单个文本或文本列表
-            normalize: 是否归一化嵌入向量 (None=使用配置默认值)
-            use_cache: 是否使用缓存 (None=使用配置设置)
+            text: Single text or list of texts
+            normalize: Whether to normalize embedding vectors (None=use config default)
+            use_cache: Whether to use cache (None=use config setting)
             
         Returns:
-            嵌入向量或嵌入向量列表
+            Embedding vector or list of embedding vectors
         """
-        # 使用配置的默认值
+        # Use configuration defaults
         if normalize is None:
             normalize = self.config.normalize
         if use_cache is None:
             use_cache = self.config.enable_cache
             
-        # 更新统计
+        # Update statistics
         self._stats['requests_total'] += 1
         start_time = time.time()
         if isinstance(text, str):
@@ -149,7 +149,7 @@ class EmbeddingService:
         else:
             return_single = False
             
-        # 预处理文本
+        # Preprocess text
         processed_texts = []
         cache_keys = []
         for t in text:
@@ -157,11 +157,11 @@ class EmbeddingService:
                 t = "empty text"
             processed_t = t.replace("\n", " ").strip()
             processed_texts.append(processed_t)
-            # 创建缓存键
+            # Create cache key
             cache_key = f"{hash(processed_t)}_{normalize}" if use_cache else None
             cache_keys.append(cache_key)
         
-        # 检查缓存（支持TTL）
+        # Check cache (supports TTL)
         cached_embeddings = []
         texts_to_compute = []
         cache_indices = []
@@ -169,7 +169,7 @@ class EmbeddingService:
         if use_cache and self._embedding_cache is not None:
             current_time = datetime.now()
             
-            # 清理过期缓存
+            # Clean up expired cache
             self._cleanup_expired_cache(current_time)
             
             for i, (cache_key, processed_t) in enumerate(zip(cache_keys, processed_texts)):
@@ -189,7 +189,7 @@ class EmbeddingService:
             cache_indices = list(range(len(processed_texts)))
             cached_embeddings = [None] * len(processed_texts)
         
-        # 计算未缓存的嵌入
+        # Compute uncached embeddings
         if texts_to_compute:
             if self.model_loaded and self.model is not None:
                 try:
@@ -205,15 +205,15 @@ class EmbeddingService:
             else:
                 new_embeddings = [self._hash_embedding(t) for t in texts_to_compute]
             
-            # 更新缓存和结果
+            # Update cache and results
             current_time = datetime.now()
             for i, (cache_idx, embedding) in enumerate(zip(cache_indices, new_embeddings)):
                 cached_embeddings[cache_idx] = embedding
                 
                 if use_cache and cache_keys[cache_idx] and self._embedding_cache is not None:
-                    # 管理缓存大小
+                    # Manage cache size
                     if len(self._embedding_cache) >= self.cache_max_size:
-                        # FIFO缓存清理：删除最旧的条目
+                        # FIFO cache cleanup: remove oldest entries
                         oldest_key = min(self._cache_timestamps.keys(), 
                                        key=lambda k: self._cache_timestamps[k])
                         del self._embedding_cache[oldest_key]
@@ -222,14 +222,14 @@ class EmbeddingService:
                     self._embedding_cache[cache_keys[cache_idx]] = embedding
                     self._cache_timestamps[cache_keys[cache_idx]] = current_time
         
-        # 更新性能统计
+        # Update performance statistics
         processing_time = time.time() - start_time
         self._update_avg_processing_time(processing_time)
         
         return cached_embeddings[0] if return_single else cached_embeddings
     
     def _hash_embedding(self, text: str) -> List[float]:
-        """Fallback hash-based embedding (原有逻辑)"""
+        """Fallback hash-based embedding (original logic)"""
         import hashlib
         
         # Create a deterministic hash-based embedding
@@ -258,13 +258,13 @@ class EmbeddingService:
     
     def compute_similarity(self, embedding1: List[float], 
                           embedding2: List[float]) -> float:
-        """计算两个嵌入向量的余弦相似度"""
+        """Calculate cosine similarity between two embedding vectors"""
         try:
-            # 转换为numpy数组
+            # Convert to numpy arrays
             vec1 = np.array(embedding1)
             vec2 = np.array(embedding2)
             
-            # 计算余弦相似度
+            # Calculate cosine similarity
             dot_product = np.dot(vec1, vec2)
             norm1 = np.linalg.norm(vec1)
             norm2 = np.linalg.norm(vec2)
@@ -281,7 +281,7 @@ class EmbeddingService:
     
     def batch_similarity(self, query_embedding: List[float], 
                         target_embeddings: List[List[float]]) -> List[float]:
-        """批量计算相似度"""
+        """Batch similarity calculation"""
         similarities = []
         for target_emb in target_embeddings:
             sim = self.compute_similarity(query_embedding, target_emb)
@@ -289,7 +289,7 @@ class EmbeddingService:
         return similarities
     
     def _cleanup_expired_cache(self, current_time: datetime):
-        """清理过期的缓存条目"""
+        """Clean up expired cache entries"""
         if not self._embedding_cache or not self._cache_timestamps:
             return
             

@@ -20,8 +20,8 @@ var typing_speed: float = 0.05
 var auto_continue: bool = false
 var auto_continue_delay: float = 3.0
 
-# Choice button scene (you'll need to create this)
-var choice_button_scene = preload("res://scenes/ui/choice_button.tscn") if ResourceLoader.exists("res://scenes/ui/choice_button.tscn") else null
+# Choice button scene
+var choice_button_scene = preload("res://scenes/ui/choice_button.tscn")
 
 func _ready():
 	hide()
@@ -117,7 +117,12 @@ func _display_choices(choices: Array):
 	
 	for i in range(choices.size()):
 		var choice = choices[i]
-		var button = Button.new()
+		var button
+		if choice_button_scene:
+			button = choice_button_scene.instantiate()
+		else:
+			button = Button.new()
+		
 		button.text = choice.get("text", "Option " + str(i + 1))
 		button.pressed.connect(_on_choice_selected.bind(i))
 		choices_container.add_child(button)
@@ -234,3 +239,13 @@ func create_dialogue_from_ai(speaker: String, ai_response: String) -> Array:
 			})
 	
 	return dialogue
+
+func _on_typewriter_timeout():
+	"""Handle typewriter timer timeout"""
+	# This would be used for custom typewriter effect
+	pass
+
+func _on_auto_continue_timeout():
+	"""Handle auto-continue timer timeout"""
+	if is_active and auto_continue:
+		advance_dialogue()

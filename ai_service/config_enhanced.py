@@ -245,7 +245,7 @@ class EnhancedConfigManager:
         
         # 热重载支持
         self.observer = None
-        self.enable_hot_reload = False
+        self._hot_reload_enabled = False
         
     def _load_config(self):
         """从配置文件加载配置"""
@@ -371,7 +371,7 @@ class EnhancedConfigManager:
     
     def enable_hot_reload(self, enable: bool = True):
         """启用/禁用热重载"""
-        self.enable_hot_reload = enable
+        self._hot_reload_enabled = enable
         
         if enable and self.observer is None:
             self.observer = Observer()

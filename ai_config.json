@@ -3,6 +3,7 @@
     "active_model": "gpt-oss",
     "supported_models": {
       "qwen": "qwen2.5-coder-7b-instruct-q4_0.gguf",
+      "qwen3": "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf",
       "gpt-oss": "gpt-oss-20b-F16.gguf"
     },
     "models_dir": "C:\\Users\\12916\\Desktop\\generative_agents_local_llm_with_godot\\models\\gpt4all",

@@ -1,57 +1,57 @@
 # 🍻 Cozy Bar Demo
 
-一个最小可运行的AI代理酒吧场景，展示智能NPC在虚拟环境中的行为和互动。
+A minimal runnable AI agent bar scene that demonstrates intelligent NPC behavior and interaction in a virtual environment.
 
-## 特性
+## Features
 
-- **智能NPC**: 具有记忆、情感和个性的酒吧角色
-- **动态对话**: 基于角色状态和情境的对话生成
-- **实时模拟**: 时间流逝影响角色行为和心情
-- **互动系统**: 与NPC对话和观察他们的行为
-- **彩色文本界面**: 直观的视觉显示
+- **Intelligent NPCs**: Bar characters with memory, emotions, and personality
+- **Dynamic Dialogue**: Dialogue generation based on character state and context
+- **Real-time Simulation**: Time passage affects character behavior and mood
+- **Interaction System**: Dialogue with NPCs and observe their behavior
+- **Colored Text Interface**: Intuitive visual display
 
-## 角色介绍
+## Character Introduction
 
-### 🍸 Bob (调酒师)
-- **角色**: 经验丰富的调酒师
-- **性格**: 友善、健谈、专业
-- **行为**: 调制鸡尾酒、与顾客聊天、管理酒吧
+### 🍸 Bob (Bartender)
+- **Role**: Experienced bartender
+- **Personality**: Friendly, talkative, professional
+- **Behavior**: Mixing cocktails, chatting with customers, managing the bar
 
-### 🥃 Alice (常客)
-- **角色**: 酒吧常客
-- **性格**: 内省、哲思、有时忧郁
-- **行为**: 独自喝酒、分享人生故事、深度思考
+### 🥃 Alice (Regular Customer)
+- **Role**: Bar regular
+- **Personality**: Introspective, philosophical, sometimes melancholic
+- **Behavior**: Drinking alone, sharing life stories, deep thinking
 
-### 🎵 Sam (音乐家)
-- **角色**: 驻场音乐家
-- **性格**: 艺术气质、热情、创意
-- **行为**: 表演音乐、与观众互动、创作歌曲
+### 🎵 Sam (Musician)
+- **Role**: Resident musician
+- **Personality**: Artistic temperament, passionate, creative
+- **Behavior**: Performing music, interacting with audience, composing songs
 
-## 安装和运行
+## Installation and Running
 
-### 1. 安装依赖
+### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 运行演示
+### 2. Run Demo
 ```bash
 python main.py
 ```
 
-## 游戏命令
+## Game Commands
 
-- `help` 或 `h` - 显示帮助信息
-- `look` 或 `l` - 查看酒吧场景
-- `status` 或 `s` - 查看角色状态
-- `events` 或 `e` - 显示最近事件
-- `menu` 或 `m` - 显示酒吧菜单
-- `talk <name>` - 与角色对话 (例如: `talk Bob`)
-- `wait` 或 `w` - 等待时间流逝
-- `auto` 或 `a` - 自动模拟模式
-- `quit` 或 `q` - 退出游戏
+- `help` or `h` - Show help information
+- `look` or `l` - View bar scene
+- `status` or `s` - View character status
+- `events` or `e` - Show recent events
+- `menu` or `m` - Show bar menu
+- `talk <name>` - Talk to character (e.g.: `talk Bob`)
+- `wait` or `w` - Wait for time to pass
+- `auto` or `a` - Auto simulation mode
+- `quit` or `q` - Exit game
 
-## 场景地图
+## Scene Map
 
 ```
 █████████████████████████
@@ -66,49 +66,49 @@ python main.py
 ██████████◊██████████████
 ```
 
-**图例**:
-- █ 砖墙
-- ◊ 门
-- ▬ 吧台
-- ⌒ 吧台椅
-- ○ 桌子
-- ◑ 椅子
-- ♪ 舞台
-- · 木地板
+**Legend**:
+- █ Brick wall
+- ◊ Door
+- ▬ Bar counter
+- ⌒ Bar stool
+- ○ Table
+- ◑ Chair
+- ♪ Stage
+- · Wooden floor
 
-## 项目结构
+## Project Structure
 
 ```
 cozy_bar_demo/
-├── main.py                 # 主启动脚本
-├── requirements.txt        # Python依赖
-├── README.md              # 项目说明
+├── main.py                 # Main startup script
+├── requirements.txt        # Python dependencies
+├── README.md              # Project description
 ├── config/
-│   └── room_config.json   # 房间配置
+│   └── room_config.json   # Room configuration
 ├── core/
-│   ├── bar_agents.py      # AI代理系统
-│   └── bar_renderer.py    # 场景渲染器
-└── prompts/               # 提示词模板(预留)
+│   ├── bar_agents.py      # AI agent system
+│   └── bar_renderer.py    # Scene renderer
+└── prompts/               # Prompt templates (reserved)
 ```
 
-## 扩展功能
+## Extension Features
 
-这个演示为更复杂的功能提供了基础框架:
+This demo provides a foundation framework for more complex features:
 
-1. **AI对话**: 可以集成LLM进行更自然的对话
-2. **复杂行为**: 添加更多角色行为和互动模式
-3. **物理引擎**: 实现角色移动和物理交互
-4. **图形界面**: 替换文本界面为图形界面
-5. **多房间**: 扩展到多个连接的房间
-6. **任务系统**: 添加角色目标和任务
-7. **情感模型**: 更复杂的情感和关系系统
+1. **AI Dialogue**: Can integrate LLM for more natural conversations
+2. **Complex Behavior**: Add more character behaviors and interaction patterns
+3. **Physics Engine**: Implement character movement and physical interactions
+4. **Graphical Interface**: Replace text interface with graphical interface
+5. **Multi-room**: Extend to multiple connected rooms
+6. **Task System**: Add character goals and tasks
+7. **Emotion Model**: More complex emotion and relationship systems
 
-## 技术特点
+## Technical Features
 
-- **模块化设计**: 清晰的代码结构，易于扩展
-- **配置驱动**: 通过JSON配置文件定义场景
-- **事件系统**: 基于时间的事件模拟
-- **状态管理**: 角色状态的持久化和更新
-- **交互式界面**: 用户友好的命令行界面
+- **Modular Design**: Clear code structure, easy to extend
+- **Configuration Driven**: Define scenes through JSON configuration files
+- **Event System**: Time-based event simulation
+- **State Management**: Character state persistence and updates
+- **Interactive Interface**: User-friendly command line interface
 
-这个演示展示了如何构建一个基础的AI代理系统，为更大规模的虚拟世界奠定了基础。
+This demo demonstrates how to build a basic AI agent system, laying the foundation for larger-scale virtual worlds.

@@ -1,106 +1,177 @@
 # Generative Agents with Local LLM and Godot
 
-AI-powered game characters using local language models and Godot engine.
+Create intelligent game characters with local AI models and Godot engine. Features optimized performance, smart memory management, and seamless Godot integration for immersive AI-driven gameplay.
 
-## Quick Start
+## ✨ Key Features
 
-### 1. Install Dependencies
+- 🤖 **Smart AI Agents** - Memory, emotions, decision-making
+- 🎮 **Godot Integration** - Real-time game character AI
+- 🏠 **Local Models** - Fully offline with GPT4All/Qwen
+- ⚡ **Performance Optimized** - Caching, memory management
+- 🛠️ **Easy Setup** - One-click demo launcher
+- 📊 **Real-time Monitoring** - Performance metrics and optimization
+
+## 🚀 Quick Start
+
+### One-Click Demo Launch
 ```bash
-pip install fastapi uvicorn gpt4all pyyaml watchdog requests
+# Windows
+run_optimized_demo.bat
+
+# Python
+python run_optimized_demo.py --performance medium --start-ai
 ```
 
-### 2. Download Models
-Place GGUF models in `models/gpt4all/`:
-- [Qwen2.5-Coder-7B GGUF](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF)
-
-### 3. Run API Server
+### Manual Setup
 ```bash
-python -m api.godot_bridge
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Download AI model (automatic on first run)
+python ai_service/ai_service.py
+
+# 3. Test the system
+python integration_test.py
 ```
 
-### 4. Run Demo
-```bash
-cd cozy_bar_demo
-python main.py
-```
-
-## Architecture
+## 🏗️ Architecture
 
 ```
 Project/
-├── ai_service/         # AI service core
-├── config/            # Configuration files  
-├── godot/            # Godot game project
-├── models/           # AI models
-├── api/                  # API server layer
-│   └── godot_bridge.py   # Godot-AI bridge server
-└── cozy_bar_demo/        # Demo applications
+├── 🤖 ai_service/          # AI service core with local LLM
+├── 👥 agents/              # Simple agent system
+├── 🎮 godot/              # Godot game project
+├── 🧠 models/             # AI models (auto-downloaded)
+├── 🌐 api/                # API bridge layer
+├── ⚡ performance_optimizer.py    # Performance suite
+├── 🎬 demo_performance_suite.py  # Demo orchestration
+└── 🚀 run_optimized_demo.py     # One-click launcher
 ```
 
-## Key Features
+### Core Components
 
-- **Local AI**: Fully offline with GPT4All
-- **Godot Integration**: Real-time game AI
-- **Simple Agents**: Memory, emotions, decisions
-- **FastAPI Bridge**: High-performance API
-- **Auto-config**: Automatic model detection
+1. **AI Service** - Local LLM processing with model management
+2. **Simple Agents** - Lightweight characters with memory & emotions  
+3. **Godot Integration** - Real-time game character AI
+4. **Performance Suite** - Caching, memory optimization, monitoring
+5. **Demo Launcher** - Automated setup and performance tuning
 
-## API Usage
+## 🎯 Performance Modes
 
-```python
-# Chat endpoint
-POST /ai/chat
-{
-  "character_name": "Alice",
-  "message": "Hello!",
-  "context": {}
-}
+Choose the optimal mode for your system:
 
-# Decision endpoint  
-POST /ai/decide
-{
-  "character_name": "Bob",
-  "situation": "Where to go?",
-  "options": ["shop", "home"]
-}
-```
-
-## Godot Integration
-
-```gdscript
-# In Godot script
-@onready var ai_manager = preload("res://scripts/ai_manager.gd").new()
-
-func request_ai_response():
-    ai_manager.chat("NPC", "Hello player!", {})
-    
-func _on_ai_response(data):
-    print(data.response)
-```
-
-## Testing
+| Mode | Memory | Features | Best For |
+|------|--------|----------|----------|
+| **Low** | 2GB | Basic AI | Older hardware |
+| **Medium** | 4GB | Standard features | Most systems |
+| **High** | 6GB | Advanced AI | Gaming PCs |
+| **Ultra** | 8GB+ | All features | High-end systems |
 
 ```bash
-# Run all tests
+# Set performance mode
+python run_optimized_demo.py --performance high
+```
+
+## 📱 Usage Examples
+
+### Python Agent API
+```python
+from agents.simple_agents import create_demo_characters
+from performance_optimizer import get_performance_optimizer
+
+# Create optimized agents
+agents = create_demo_characters()
+alice = agents[0]
+
+# Cached AI interaction
+optimizer = get_performance_optimizer()
+response = optimizer.cached_ai_generate("Hello there!")
+print(response)
+```
+
+### Godot Integration
+```gdscript
+# godot_performance_config.gd
+extends Node
+
+func _ready():
+    setup_performance_settings()
+    start_performance_monitoring()
+
+func optimize_for_demo():
+    set_quality_level(2)  # High quality
+    max_visible_characters = 10
+```
+
+## 🧪 Testing & Monitoring
+
+```bash
+# Quick system test
+python simple_test.py
+
+# Full integration test
 python integration_test.py
 
-# Test specific component
-python integration_test.py --test ai
+# Performance monitoring
+python demo_performance_suite.py
 ```
 
-## Configuration
+## ⚙️ Configuration
 
-Edit `config/ai_service.yaml`:
-
-```yaml
-model:
-  active_model: "auto"
-  max_tokens: 800
-  
-service:
-  port: 8080
+Key settings in `ai_config.json`:
+```json
+{
+  "model": {
+    "active_model": "qwen",
+    "max_tokens": 800
+  },
+  "performance": {
+    "enable_cache": true,
+    "memory_limit_gb": 4
+  }
+}
 ```
 
-## License
+## 📋 System Requirements
 
-Apache License 2.0
+**Minimum:**
+- Python 3.8+
+- 4GB RAM
+- 2GB free disk space
+- Windows/Linux/macOS
+
+**Recommended:**
+- Python 3.10+
+- 8GB+ RAM  
+- 5GB free disk space
+- Dedicated GPU (optional)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Run tests: `python integration_test.py`
+4. Commit changes: `git commit -m 'Add amazing feature'`
+5. Push to branch: `git push origin feature/amazing-feature`
+6. Open a Pull Request
+
+## 📚 Documentation
+
+- [Installation Guide](docs/INSTALLATION.md)
+- [Quick Start Guide](docs/QUICKSTART.md)
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+
+## 📄 License
+
+Apache License 2.0 - see [LICENSE](LICENSE) file for details
+
+## 🙏 Acknowledgments
+
+- [GPT4All](https://github.com/nomic-ai/gpt4all) for local LLM support
+- [Godot Engine](https://godotengine.org/) for game development framework
+- [Qwen Models](https://huggingface.co/Qwen) for AI capabilities
+
+---
+
+*Made with ❤️ for AI-powered game development*

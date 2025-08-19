@@ -14,6 +14,7 @@ import time
 import random
 from pathlib import Path
 from typing import Dict, Optional
+from datetime import datetime
 
 import requests
 from fastapi import FastAPI
@@ -21,7 +22,7 @@ from pydantic import BaseModel
 from gpt4all import GPT4All
 from importlib import import_module
 
-# 导入配置管理器、错误处理和监控
+# Import configuration manager, error handling and monitoring
 try:
     from .config_enhanced import get_config
     from .error_handling import (
@@ -45,7 +46,7 @@ except ImportError:
         monitor_performance, get_health_status, get_metrics_json
     )
 
-# 获取配置
+# Get configuration
 _config_manager = get_config()
 _config = _config_manager.config
 _model_config = _config.model
@@ -58,12 +59,12 @@ app = FastAPI(
 )
 _BASE_URL = f"http://{_service_config.host}:{_service_config.port}"
 
-# API版本前缀
+# API version prefix
 API_V1_PREFIX = "/v1"
 
-# 通用错误处理装饰器
+# General error handling decorator
 def handle_api_errors(func):
-    """通用API错误处理装饰器"""
+    """General API error handling decorator"""
     import functools
     
     @functools.wraps(func)
@@ -78,7 +79,7 @@ def handle_api_errors(func):
         try:
             return await func(*args, **kwargs)
         except HTTPException:
-            # 重新抛出HTTP异常
+            # Re-raise HTTP exceptions
             raise
         except Exception as e:
             logger.error(f"API error [{request_id}]: {str(e)}")
@@ -97,14 +98,14 @@ def handle_api_errors(func):
     
     return wrapper
 
-# 使用配置中的路径和模型
+# Use paths and models from configuration
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODELS_DIR = Path(_model_config.models_dir)
 
-# 支持的模型从配置获取
+# Supported models from configuration
 SUPPORTED_GGUF: Dict[str, str] = _model_config.supported_models
 
-# 活动模型从配置获取
+# Active model from configuration
 _ACTIVE_MODEL_KEY: str = _model_config.active_model.lower()
 
 # Cache of GPT4All instances by model key
@@ -144,7 +145,7 @@ def _get_model_instance(model_key: str) -> GPT4All:
     if model_key in _MODEL_INSTANCES:
         return _MODEL_INSTANCES[model_key]
 
-    # 检查内存压力，如果必要则清理
+    # Check memory pressure and clean up if necessary
     pressure = check_memory_pressure()
     if pressure["pressure_level"] in ["warning", "critical"]:
         logger = get_ai_logger()
@@ -189,15 +190,15 @@ def _get_model_instance(model_key: str) -> GPT4All:
     _MODEL_INSTANCES[model_key] = ai
     return ai
 
-# 统一API请求/响应模型
+# Unified API request/response models
 class BaseRequest(BaseModel):
-    """基础请求模型"""
+    """Base request model"""
     request_id: Optional[str] = None
     timestamp: Optional[str] = None
     version: str = "v1"
 
 class BaseResponse(BaseModel):
-    """基础响应模型"""
+    """Base response model"""
     request_id: Optional[str] = None
     timestamp: str
     version: str = "v1"
@@ -218,27 +219,27 @@ class ChatResponse(BaseResponse):
     metadata: Optional[Dict[str, Any]] = None
 
 class ErrorResponse(BaseResponse):
-    """错误响应模型"""
+    """Error response model"""
     status: str = "error"
     error_code: str
     error_message: str
     error_details: Optional[Dict[str, Any]] = None
 
-# 向后兼容的端点
+# Backward compatible endpoints
 @app.post("/chat", response_model=ChatResponse)
 @handle_api_errors
 async def chat_legacy(req: ChatRequest):
     """Legacy chat endpoint for backward compatibility."""
     return await chat_v1(req)
 
-# V1 API端点
+# V1 API endpoints
 @app.post(f"{API_V1_PREFIX}/chat", response_model=ChatResponse)
 @handle_api_errors
 async def chat_v1(req: ChatRequest):
     """Expose a /chat endpoint using the requested model (or active default)."""
     import uuid
     
-    # 生成请求ID和时间戳
+    # Generate request ID and timestamp
     request_id = req.request_id or str(uuid.uuid4())
     start_time = datetime.now()
     
@@ -246,30 +247,30 @@ async def chat_v1(req: ChatRequest):
     logger.info(f"Chat request [{request_id}]: model={req.model_key}, prompt_length={len(req.prompt)}")
     
     try:
-        # 保存原始降级设置状态
+        # Save original fallback setting status
         original_fallback_enabled = _model_config.enable_fallback
         fallback_used = False
         
-        # 如果指定了模型参数，临时使用
+        # If model parameter is specified, use it temporarily
         original_active_model = get_active_model()
         if req.model_key and req.model_key != original_active_model:
             set_active_model(req.model_key)
         
-        # 调用生成服务
+        # Call generation service
         response_text = local_llm_generate(
             req.prompt, 
             model_key=req.model_key,
             max_retries=_model_config.max_retries
         )
         
-        # 检查是否使用了降级
+        # Check if fallback was used
         if not original_fallback_enabled and _model_config.enable_fallback:
             fallback_used = True
         
-        # 计算处理时间
+        # Calculate processing time
         processing_time = (datetime.now() - start_time).total_seconds() * 1000
         
-        # 确定实际使用的模型
+        # Determine the actual model used
         model_used = req.model_key or get_active_model()
         
         return ChatResponse(
@@ -291,7 +292,7 @@ async def chat_v1(req: ChatRequest):
         logger.error(f"Chat request [{request_id}] failed: {str(e)}")
         processing_time = (datetime.now() - start_time).total_seconds() * 1000
         
-        # 返回错误响应
+        # Return error response
         error_response = ErrorResponse(
             request_id=request_id,
             timestamp=datetime.now().isoformat(),
@@ -307,7 +308,7 @@ async def chat_v1(req: ChatRequest):
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=error_response.dict())
 
-# Health和Metrics端点 (兼容版本)
+# Health and Metrics endpoints (compatible version)
 @app.get("/health")
 @handle_api_errors
 async def health():
@@ -327,7 +328,7 @@ async def metrics_json():
     from fastapi.responses import PlainTextResponse
     return PlainTextResponse(get_metrics_json(), media_type="application/json")
 
-# V1 Health和Metrics端点
+# V1 Health and Metrics endpoints
 @app.get(f"{API_V1_PREFIX}/health")
 @handle_api_errors
 async def health_v1():
@@ -361,7 +362,7 @@ async def models_health_v1():
         "timestamp": datetime.now().isoformat()
     }
 
-# 向后兼容
+# Backward compatibility
 @app.get("/models/health")
 @handle_api_errors
 async def models_health():
@@ -385,7 +386,7 @@ async def _warmup_logic(model_key: Optional[str] = None):
     logger = get_ai_logger()
     
     if model_key:
-        # 预热指定模型
+        # Warm up specified model
         logger.info(f"Triggering warmup for model: {model_key}")
         success = warmup_model(model_key)
         return {
@@ -395,7 +396,7 @@ async def _warmup_logic(model_key: Optional[str] = None):
             "timestamp": datetime.now().isoformat()
         }
     else:
-        # 预热所有模型
+        # Warm up all models
         logger.info("Triggering warmup for all models")
         results = warmup_all_models()
         successful_count = sum(1 for success in results.values() if success)
@@ -407,7 +408,7 @@ async def _warmup_logic(model_key: Optional[str] = None):
             "timestamp": datetime.now().isoformat()
         }
 
-# Memory管理端点 (V1)
+# Memory management endpoints (V1)
 @app.get(f"{API_V1_PREFIX}/memory")
 @handle_api_errors
 async def memory_status_v1():
@@ -447,7 +448,7 @@ async def trigger_memory_cleanup_v1():
         "timestamp": datetime.now().isoformat()
     }
 
-@app.delete(f"{API_V1_PREFIX}/models/{model_key}")
+@app.delete(f"{API_V1_PREFIX}/models/{{model_key}}")
 @handle_api_errors
 async def unload_model_v1(model_key: str):
     """V1 Unload a specific model from memory."""
@@ -475,7 +476,7 @@ async def unload_model_v1(model_key: str):
             }
         )
 
-# 向后兼容的端点
+# Backward compatible endpoints
 @app.get("/memory")
 @handle_api_errors
 async def memory_status():
@@ -570,7 +571,7 @@ def local_llm_generate(prompt: str, model_key: Optional[str] = None, max_retries
     mk = (model_key or get_active_model()).lower()
     max_retries = max_retries or _model_config.max_retries
     
-    # 获取监控器和日志器
+    # Get monitor and logger
     error_monitor = get_error_monitor()
     logger = get_ai_logger()
     
@@ -601,7 +602,7 @@ def local_llm_generate(prompt: str, model_key: Optional[str] = None, max_retries
     formatted_prompt = _format_prompt(prompt, mk)
     print(f"[ai_service] Using model '{mk}' with prompt length {len(formatted_prompt)}")
     
-    # 使用重试处理器
+    # Use retry handler
     retry_handler = RetryHandler(GENERATION_RETRY_CONFIG)
     
     def _generate_with_model():
@@ -626,7 +627,7 @@ def local_llm_generate(prompt: str, model_key: Optional[str] = None, max_retries
             print(f"[ai_service] Primary generation failed: {gen_error}")
             error_monitor.record_error(gen_error, ErrorType.GENERATION_ERROR)
             
-            # 尝试fallback模式
+            # Try fallback mode
             print(f"[ai_service] Trying fallback generation...")
             try:
                 for tok in ai.generate(prompt, max_tokens=400, temp=0.5):
@@ -637,7 +638,7 @@ def local_llm_generate(prompt: str, model_key: Optional[str] = None, max_retries
 
         cleaned = _clean_response(tokens, mk)
         if not cleaned:
-            # 进行健全性检查
+            # Perform sanity check
             try:
                 sanity = "".join(ai.generate("Say hello", max_tokens=10))
                 if not sanity.strip():
@@ -652,17 +653,17 @@ def local_llm_generate(prompt: str, model_key: Optional[str] = None, max_retries
     
     try:
         result = retry_handler(_generate_with_model)()
-        # 记录成功
+        # Record success
         update_model_health(mk, success=True)
         logger.info(f"Model '{mk}' generation succeeded")
         return result
     except Exception as e:
-        # 记录失败
+        # Record failure
         update_model_health(mk, success=False)
         error_monitor.record_error(e, ErrorType.GENERATION_ERROR)
         print(f"[ai_service] Model '{mk}' failed: {e}")
         
-        # 启用降级策略
+        # Enable fallback strategy
         if _model_config.enable_fallback and mk in _model_config.fallback_chain:
             return _try_fallback_models(prompt, mk, error_monitor, logger)
         else:
@@ -671,16 +672,16 @@ def local_llm_generate(prompt: str, model_key: Optional[str] = None, max_retries
 
 
 def _try_fallback_models(prompt: str, failed_model: str, error_monitor, logger) -> str:
-    """尝试降级模型链中的下一个模型"""
+    """Try the next model in the fallback chain"""
     fallback_chain = _model_config.fallback_chain.copy()
     
-    # 找到失败模型在链中的位置
+    # Find the position of the failed model in the chain
     try:
         failed_index = fallback_chain.index(failed_model)
-        # 尝试链中后续的模型
+        # Try subsequent models in the chain
         remaining_models = fallback_chain[failed_index + 1:]
     except ValueError:
-        # 如果失败的模型不在链中，尝试整个链
+        # If the failed model is not in the chain, try the entire chain
         remaining_models = fallback_chain
     
     logger.info(f"Trying fallback models: {remaining_models}")
@@ -693,7 +694,7 @@ def _try_fallback_models(prompt: str, failed_model: str, error_monitor, logger) 
         try:
             logger.info(f"Attempting fallback to model: {fallback_model}")
             
-            # 递归调用，但禁用进一步的降级以避免无限循环
+            # Recursive call, but disable further fallback to avoid infinite loops
             original_enable_fallback = _model_config.enable_fallback
             _model_config.enable_fallback = False
             
@@ -710,16 +711,16 @@ def _try_fallback_models(prompt: str, failed_model: str, error_monitor, logger) 
             logger.warning(f"Fallback model {fallback_model} also failed: {fallback_error}")
             continue
     
-    # 所有降级模型都失败了
+    # All fallback models failed
     logger.error("All fallback models failed, using simple response")
     return _get_simple_response(prompt)
 
 
 def _get_simple_response(prompt: str) -> str:
-    """生成简单的默认响应，不依赖任何模型"""
+    """Generate simple default response without relying on any model"""
     prompt_lower = prompt.lower()
     
-    # 基于提示内容的简单响应
+    # Simple response based on prompt content
     if "hello" in prompt_lower or "hi" in prompt_lower:
         return "Hello! How can I help you?"
     elif "how are you" in prompt_lower:
@@ -743,12 +744,12 @@ def _get_simple_response(prompt: str) -> str:
         return "I apologize, but I'm experiencing technical difficulties. Please try again later."
 
 
-# 模型健康状态跟踪
+# Model health status tracking
 _MODEL_HEALTH = {}
 
 
 def get_model_health(model_key: str) -> Dict[str, Any]:
-    """获取模型健康状态"""
+    """Get model health status"""
     if model_key not in _MODEL_HEALTH:
         _MODEL_HEALTH[model_key] = {
             "status": "unknown",
@@ -762,7 +763,7 @@ def get_model_health(model_key: str) -> Dict[str, Any]:
 
 
 def update_model_health(model_key: str, success: bool):
-    """更新模型健康状态"""
+    """Update model health status"""
     health = get_model_health(model_key)
     health["total_requests"] += 1
     
@@ -774,30 +775,30 @@ def update_model_health(model_key: str, success: bool):
         health["last_failure"] = datetime.now()
         health["consecutive_failures"] += 1
         
-        # 连续失败超过阈值则标记为不健康
+        # Mark as unhealthy if consecutive failures exceed threshold
         if health["consecutive_failures"] >= 3:
             health["status"] = "unhealthy"
     
-    # 计算成功率
+    # Calculate success rate
     if health["total_requests"] > 0:
         success_count = health["total_requests"] - health["consecutive_failures"]
         health["success_rate"] = success_count / health["total_requests"]
 
 
 def is_model_healthy(model_key: str) -> bool:
-    """检查模型是否健康"""
+    """Check if model is healthy"""
     health = get_model_health(model_key)
     return health["status"] != "unhealthy"
 
 
-# 模型预热功能
+# Model warmup functionality
 def warmup_model(model_key: str) -> bool:
-    """预热指定模型"""
+    """Warm up specified model"""
     logger = get_ai_logger()
     logger.info(f"Starting warmup for model: {model_key}")
     
     try:
-        # 使用简单的测试提示进行预热
+        # Use simple test prompts for warmup
         test_prompts = [
             "Hello",
             "Test response",
@@ -826,20 +827,20 @@ def warmup_model(model_key: str) -> bool:
 
 
 def warmup_all_models() -> Dict[str, bool]:
-    """预热所有配置的模型"""
+    """Warm up all configured models"""
     logger = get_ai_logger()
     logger.info("Starting model warmup process")
     
     warmup_results = {}
     
-    # 预热主要模型
+    # Warm up main models
     if _model_config.preload_models:
-        # 首先预热活动模型
+        # First warm up active model
         active_model = get_active_model()
         if active_model and active_model != "auto":
             warmup_results[active_model] = warmup_model(active_model)
         
-        # 然后预热降级链中的模型
+        # Then warm up models in fallback chain
         for model_key in _model_config.fallback_chain:
             if model_key != "simple" and model_key not in warmup_results:
                 warmup_results[model_key] = warmup_model(model_key)
@@ -851,7 +852,7 @@ def warmup_all_models() -> Dict[str, bool]:
 
 
 def warmup_model_async(model_key: str):
-    """异步预热模型（在后台线程中运行）"""
+    """Asynchronously warm up model (runs in background thread)"""
     import threading
     
     def _warmup_thread():
@@ -866,21 +867,21 @@ def warmup_model_async(model_key: str):
     return thread
 
 
-# 内存监控和管理
+# Memory monitoring and management
 def get_memory_usage() -> Dict[str, Any]:
-    """获取内存使用情况"""
+    """Get memory usage information"""
     import psutil
     import gc
     
-    # 系统内存
+    # System memory
     memory = psutil.virtual_memory()
     
-    # 进程内存
+    # Process memory
     process = psutil.Process()
     process_memory = process.memory_info()
     
-    # Python对象计数
-    gc.collect()  # 强制垃圾回收
+    # Python object count
+    gc.collect()  # Force garbage collection
     
     return {
         "system": {
@@ -903,20 +904,20 @@ def get_memory_usage() -> Dict[str, Any]:
 
 
 def check_memory_pressure() -> Dict[str, Any]:
-    """检查内存压力情况"""
+    """Check memory pressure situation"""
     memory_info = get_memory_usage()
     
-    # 定义阈值
-    SYSTEM_MEMORY_WARNING = 85.0  # 系统内存使用超过85%
-    SYSTEM_MEMORY_CRITICAL = 95.0  # 系统内存使用超过95%
-    PROCESS_MEMORY_WARNING = 2048  # 进程内存使用超过2GB
-    PROCESS_MEMORY_CRITICAL = 4096  # 进程内存使用超过4GB
+    # Define thresholds
+    SYSTEM_MEMORY_WARNING = 85.0  # System memory usage exceeds 85%
+    SYSTEM_MEMORY_CRITICAL = 95.0  # System memory usage exceeds 95%
+    PROCESS_MEMORY_WARNING = 2048  # Process memory usage exceeds 2GB
+    PROCESS_MEMORY_CRITICAL = 4096  # Process memory usage exceeds 4GB
     
     pressure_level = "normal"
     warnings = []
     recommendations = []
     
-    # 检查系统内存
+    # Check system memory
     system_percent = memory_info["system"]["percent"]
     if system_percent >= SYSTEM_MEMORY_CRITICAL:
         pressure_level = "critical"
@@ -927,7 +928,7 @@ def check_memory_pressure() -> Dict[str, Any]:
         warnings.append(f"System memory usage high: {system_percent:.1f}%")
         recommendations.append("Consider unloading some models")
     
-    # 检查进程内存
+    # Check process memory
     process_mb = memory_info["process"]["rss_mb"]
     if process_mb >= PROCESS_MEMORY_CRITICAL:
         pressure_level = "critical"
@@ -938,7 +939,7 @@ def check_memory_pressure() -> Dict[str, Any]:
         warnings.append(f"Process memory usage high: {process_mb:.1f}MB")
         recommendations.append("Run garbage collection")
     
-    # 检查模型缓存
+    # Check model cache
     loaded_models = memory_info["models"]["loaded_count"]
     cache_limit = memory_info["models"]["cache_limit"]
     if loaded_models > cache_limit:
@@ -955,36 +956,36 @@ def check_memory_pressure() -> Dict[str, Any]:
 
 
 def cleanup_memory():
-    """清理内存，卸载不必要的模型"""
+    """Clean up memory, unload unnecessary models"""
     import gc
     
     logger = get_ai_logger()
     logger.info("Starting memory cleanup")
     
-    # 强制垃圾回收
+    # Force garbage collection
     gc.collect()
     
-    # 如果模型缓存超过限制，卸载一些模型
+    # If model cache exceeds limit, unload some models
     if len(_MODEL_INSTANCES) > _model_config.model_cache_size:
-        # 保留活动模型和健康的模型，卸载其他的
+        # Keep active model and healthy models, unload others
         active_model = get_active_model()
         models_to_keep = {active_model} if active_model != "auto" else set()
         
-        # 保留健康的模型
+        # Keep healthy models
         for model_key in list(_MODEL_INSTANCES.keys()):
             if is_model_healthy(model_key):
                 models_to_keep.add(model_key)
             
-            # 如果已经足够了，停止添加
+            # If enough already, stop adding
             if len(models_to_keep) >= _model_config.model_cache_size:
                 break
         
-        # 卸载不需要的模型
+        # Unload unnecessary models
         models_to_unload = set(_MODEL_INSTANCES.keys()) - models_to_keep
         for model_key in models_to_unload:
             unload_model(model_key)
     
-    # 再次垃圾回收
+    # Garbage collection again
     gc.collect()
     
     memory_after = get_memory_usage()
@@ -994,14 +995,14 @@ def cleanup_memory():
 
 
 def unload_model(model_key: str):
-    """卸载指定模型"""
+    """Unload specified model"""
     logger = get_ai_logger()
     
     if model_key in _MODEL_INSTANCES:
         logger.info(f"Unloading model: {model_key}")
         del _MODEL_INSTANCES[model_key]
         
-        # 强制垃圾回收
+        # Force garbage collection
         import gc
         gc.collect()
         
@@ -1011,7 +1012,7 @@ def unload_model(model_key: str):
 
 
 def auto_memory_management():
-    """自动内存管理"""
+    """Automatic memory management"""
     pressure = check_memory_pressure()
     
     if pressure["pressure_level"] == "critical":

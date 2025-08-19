@@ -255,14 +255,32 @@ func _update_animation():
 func _show_thought(text: String):
 	"""Show thought bubble"""
 	if thought_bubble:
-		thought_bubble.show_text(text)
+		var thought_text = thought_bubble.get_node("ThoughtText")
+		if thought_text:
+			thought_text.text = text
+		thought_bubble.visible = true
+		
+		# Start bubble timer
+		var bubble_timer = thought_bubble.get_node("BubbleTimer")
+		if bubble_timer:
+			bubble_timer.start()
+	
 	emit_signal("thought_bubble_show", text)
 	is_thinking = false
 
 func _show_speech(text: String):
 	"""Show speech bubble"""
 	if thought_bubble:  # Reuse thought bubble for speech
-		thought_bubble.show_text(text)
+		var thought_text = thought_bubble.get_node("ThoughtText")
+		if thought_text:
+			thought_text.text = text
+		thought_bubble.visible = true
+		
+		# Start bubble timer
+		var bubble_timer = thought_bubble.get_node("BubbleTimer")
+		if bubble_timer:
+			bubble_timer.start()
+	
 	print(character_name, ": ", text)
 
 func _set_emotion(emotion: String):
@@ -351,3 +369,36 @@ func set_state(state: Dictionary):
 		hunger = state.hunger
 	if state.has("social_need"):
 		social_need = state.social_need
+
+func _on_bubble_timer_timeout():
+	"""Hide thought bubble when timer expires"""
+	if thought_bubble:
+		thought_bubble.visible = false
+
+func update_status_bars():
+	"""Update visual status bars"""
+	var status_ui = get_node("StatusUI")
+	if status_ui and status_ui.visible:
+		var energy_bar = status_ui.get_node("EnergyBar")
+		var hunger_bar = status_ui.get_node("HungerBar")
+		var social_bar = status_ui.get_node("SocialBar")
+		
+		if energy_bar:
+			energy_bar.value = energy * 100
+		if hunger_bar:
+			hunger_bar.value = hunger * 100
+		if social_bar:
+			social_bar.value = social_need * 100
+
+func show_status_ui():
+	"""Show character status UI"""
+	var status_ui = get_node("StatusUI")
+	if status_ui:
+		status_ui.visible = true
+		update_status_bars()
+
+func hide_status_ui():
+	"""Hide character status UI"""
+	var status_ui = get_node("StatusUI")
+	if status_ui:
+		status_ui.visible = false

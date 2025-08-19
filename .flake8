@@ -1,0 +1,29 @@
+[flake8]
+max-line-length = 88
+extend-ignore = 
+    E203,  # whitespace before ':'
+    E501,  # line too long (handled by black)
+    W503,  # line break before binary operator
+    E402,  # module level import not at top (for conditional imports)
+
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    .eggs,
+    *.egg,
+    reverie,
+    backup_environment_configs,
+    models,
+    build,
+    dist
+
+# Complexity
+max-complexity = 12
+
+# Docstring conventions
+docstring-convention = google
+
+# Import order
+import-order-style = google
+application-import-names = ai_service,agents,performance_optimizer,memory_optimizer,network_optimizer

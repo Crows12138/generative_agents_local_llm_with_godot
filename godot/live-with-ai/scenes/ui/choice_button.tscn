@@ -1,0 +1,18 @@
+[gd_scene load_steps=2 format=3 uid="uid://dmx8r5n4oqkd7"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
+bg_color = Color(0.2, 0.3, 0.5, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.4, 0.5, 0.7, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="ChoiceButton" type="Button"]
+custom_minimum_size = Vector2(200, 40)
+theme_override_styles/normal = SubResource("StyleBoxFlat_1")
+text = "Choice Option"

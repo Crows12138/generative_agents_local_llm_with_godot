@@ -1,6 +1,6 @@
 """
 AI Service Configuration Management
-统一配置管理，支持环境变量、配置文件和默认值
+Unified configuration management, supporting environment variables, config files and default values
 """
 
 import os
@@ -9,27 +9,27 @@ from pathlib import Path
 from typing import Dict, Any, Optional, Union
 from dataclasses import dataclass, asdict
 
-# 项目根目录
+# Project root directory
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODELS_DIR = PROJECT_ROOT / "models"
 
 @dataclass
 class ModelConfig:
-    """模型配置"""
-    # LLM模型配置
+    """Model configuration"""
+    # LLM model configuration
     active_model: str = "gpt-oss"
     supported_models: Dict[str, str] = None
     models_dir: str = str(MODELS_DIR / "gpt4all")
     force_cpu: bool = False
     
-    # 生成参数
+    # Generation parameters
     max_tokens: int = 800
     temperature: float = 0.3
     top_p: float = 0.9
     repeat_penalty: float = 1.1
     max_retries: int = 3
     
-    # GPT-OSS特定配置
+    # GPT-OSS specific configuration
     gpt_oss_device: str = "auto"
     gpt_oss_local_only: bool = False
     gpt_oss_local_dir: Optional[str] = None
@@ -39,30 +39,31 @@ class ModelConfig:
         if self.supported_models is None:
             self.supported_models = {
                 "qwen": "qwen2.5-coder-7b-instruct-q4_0.gguf",
+                "qwen3": "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf",
                 "gpt-oss": "gpt-oss-20b-F16.gguf",
             }
 
 @dataclass
 class EmbeddingConfig:
-    """嵌入配置"""
+    """Embedding configuration"""
     model_path: str = str(MODELS_DIR / "all-MiniLM-L6-v2")
     embedding_dim: int = 384
     normalize: bool = True
     batch_size: int = 32
     
-    # 缓存配置
+    # Cache configuration
     enable_cache: bool = True
     cache_max_size: int = 1000
-    cache_ttl: int = 3600  # 缓存生存时间（秒）
+    cache_ttl: int = 3600  # Cache TTL (seconds)
     
-    # 性能配置
+    # Performance configuration
     device: str = "cpu"  # cpu, cuda, auto
     preload_warmup: bool = True
-    preload_texts: list = None  # 预加载的常用文本
+    preload_texts: list = None  # Preload common texts
     
-    # 并发配置
+    # Concurrency configuration
     max_concurrent_requests: int = 10
-    request_timeout: float = 30.0  # 请求超时（秒）
+    request_timeout: float = 30.0  # Request timeout (seconds)
     
     def __post_init__(self):
         if self.preload_texts is None:
@@ -73,7 +74,7 @@ class EmbeddingConfig:
     
 @dataclass
 class ServiceConfig:
-    """服务配置"""
+    """Service configuration"""
     host: str = "127.0.0.1"
     port: int = 8001
     log_level: str = "INFO"
@@ -81,7 +82,7 @@ class ServiceConfig:
     
 @dataclass
 class AIServiceConfig:
-    """完整AI服务配置"""
+    """Complete AI service configuration"""
     model: ModelConfig = None
     embedding: EmbeddingConfig = None
     service: ServiceConfig = None
@@ -95,7 +96,7 @@ class AIServiceConfig:
             self.service = ServiceConfig()
 
 class ConfigManager:
-    """配置管理器"""
+    """Configuration manager"""
     
     def __init__(self, config_file: Optional[str] = None):
         self.config_file = config_file or str(PROJECT_ROOT / "ai_config.json")
@@ -104,13 +105,13 @@ class ConfigManager:
         self._apply_env_overrides()
     
     def _load_config(self):
-        """从配置文件加载配置"""
+        """Load configuration from config file"""
         if os.path.exists(self.config_file):
             try:
                 with open(self.config_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 
-                # 更新配置
+                # Update configuration
                 if 'model' in data:
                     for key, value in data['model'].items():
                         if hasattr(self.config.model, key):
@@ -134,9 +135,9 @@ class ConfigManager:
             print(f"[ConfigManager] Config file not found: {self.config_file}, using defaults")
     
     def _apply_env_overrides(self):
-        """应用环境变量覆盖"""
+        """Apply environment variable overrides"""
         env_mappings = {
-            # 模型配置
+            # Model configuration
             'AI_MODEL_KEY': ('model', 'active_model'),
             'AI_MODELS_DIR': ('model', 'models_dir'),
             'AI_FORCE_CPU': ('model', 'force_cpu', bool),
@@ -144,13 +145,13 @@ class ConfigManager:
             'AI_TEMPERATURE': ('model', 'temperature', float),
             'AI_MAX_RETRIES': ('model', 'max_retries', int),
             
-            # GPT-OSS配置
+            # GPT-OSS configuration
             'GPT_OSS_DEVICE': ('model', 'gpt_oss_device'),
             'GPT_OSS_LOCAL_ONLY': ('model', 'gpt_oss_local_only', bool),
             'GPT_OSS_LOCAL_DIR': ('model', 'gpt_oss_local_dir'),
             'USE_GPT4ALL_FOR_GPTOSS': ('model', 'use_gpt4all_for_gptoss', bool),
             
-            # 嵌入配置
+            # Embedding configuration
             'EMBEDDING_MODEL_PATH': ('embedding', 'model_path'),
             'EMBEDDING_DIM': ('embedding', 'embedding_dim', int),
             'EMBEDDING_BATCH_SIZE': ('embedding', 'batch_size', int),
@@ -162,7 +163,7 @@ class ConfigManager:
             'EMBEDDING_MAX_CONCURRENT': ('embedding', 'max_concurrent_requests', int),
             'EMBEDDING_REQUEST_TIMEOUT': ('embedding', 'request_timeout', float),
             
-            # 服务配置
+            # Service configuration
             'AI_SERVICE_HOST': ('service', 'host'),
             'AI_SERVICE_PORT': ('service', 'port', int),
             'AI_LOG_LEVEL': ('service', 'log_level'),
@@ -175,7 +176,7 @@ class ConfigManager:
                 key = config_path[1]
                 value_type = config_path[2] if len(config_path) > 2 else str
                 
-                # 类型转换
+                # Type conversion
                 try:
                     if value_type == bool:
                         converted_value = env_value.lower() in ('1', 'true', 'yes', 'on')
@@ -186,7 +187,7 @@ class ConfigManager:
                     else:
                         converted_value = env_value
                     
-                    # 设置配置值
+                    # Set configuration value
                     section_obj = getattr(self.config, section)
                     setattr(section_obj, key, converted_value)
                     print(f"[ConfigManager] Applied env override: {env_var}={converted_value}")
@@ -195,7 +196,7 @@ class ConfigManager:
                     print(f"[ConfigManager] Failed to apply env override {env_var}: {e}")
     
     def save_config(self, file_path: Optional[str] = None):
-        """保存配置到文件"""
+        """Save configuration to file"""
         file_path = file_path or self.config_file
         try:
             config_dict = {
@@ -215,37 +216,37 @@ class ConfigManager:
             return False
     
     def get_model_config(self) -> ModelConfig:
-        """获取模型配置"""
+        """Get model configuration"""
         return self.config.model
     
     def get_embedding_config(self) -> EmbeddingConfig:
-        """获取嵌入配置"""
+        """Get embedding configuration"""
         return self.config.embedding
     
     def get_service_config(self) -> ServiceConfig:
-        """获取服务配置"""
+        """Get service configuration"""
         return self.config.service
     
     def validate_config(self) -> bool:
-        """验证配置有效性"""
+        """Validate configuration validity"""
         errors = []
         
-        # 验证模型路径
+        # Validate model path
         models_dir = Path(self.config.model.models_dir)
         if not models_dir.exists():
             errors.append(f"Models directory not found: {models_dir}")
         
-        # 验证嵌入模型路径
+        # Validate embedding model path
         embedding_path = Path(self.config.embedding.model_path)
         if not embedding_path.exists():
             errors.append(f"Embedding model not found: {embedding_path}")
         
-        # 验证活动模型
+        # Validate active model
         active_model = self.config.model.active_model
         if active_model not in self.config.model.supported_models:
             errors.append(f"Active model '{active_model}' not in supported models")
         
-        # 验证端口范围
+        # Validate port range
         port = self.config.service.port
         if not (1024 <= port <= 65535):
             errors.append(f"Invalid port number: {port}")
@@ -260,7 +261,7 @@ class ConfigManager:
         return True
     
     def print_config(self):
-        """打印当前配置"""
+        """Print current configuration"""
         print("=== AI Service Configuration ===")
         print("Model Config:")
         for key, value in asdict(self.config.model).items():
@@ -274,18 +275,18 @@ class ConfigManager:
         for key, value in asdict(self.config.service).items():
             print(f"  {key}: {value}")
 
-# 全局配置管理器实例
+# Global configuration manager instance
 _config_manager = None
 
 def get_config() -> ConfigManager:
-    """获取全局配置管理器"""
+    """Get global configuration manager"""
     global _config_manager
     if _config_manager is None:
         _config_manager = ConfigManager()
     return _config_manager
 
 def create_default_config(file_path: str = None):
-    """创建默认配置文件"""
+    """Create default configuration file"""
     file_path = file_path or str(PROJECT_ROOT / "ai_config.json")
     config = AIServiceConfig()
     
@@ -304,27 +305,27 @@ def create_default_config(file_path: str = None):
         print(f"[ConfigManager] Failed to create default config: {e}")
         return False
 
-# 测试函数
+# Test function
 def test_config_manager():
-    """测试配置管理器"""
+    """Test configuration manager"""
     print("=== Config Manager Test ===")
     
-    # 创建配置管理器
+    # Create configuration manager
     config_mgr = ConfigManager()
     
-    # 打印配置
+    # Print configuration
     config_mgr.print_config()
     
-    # 验证配置
+    # Validate configuration
     is_valid = config_mgr.validate_config()
     print(f"Config validation: {'PASSED' if is_valid else 'FAILED'}")
     
-    # 测试保存配置
+    # Test save configuration
     test_config_file = str(PROJECT_ROOT / "test_config.json")
     if config_mgr.save_config(test_config_file):
         print(f"Test config saved to: {test_config_file}")
         
-        # 清理测试文件
+        # Clean up test file
         try:
             os.remove(test_config_file)
             print("Test config file cleaned up")

@@ -1,6 +1,6 @@
 """
 Enhanced Error Handling and Retry Mechanisms
-改进的错误处理和重试机制，提供更好的错误恢复和日志记录
+Improved error handling and retry mechanisms, providing better error recovery and logging
 """
 
 import time
@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from functools import wraps
 
 class ErrorType(Enum):
-    """错误类型枚举"""
+    """Error type enumeration"""
     MODEL_LOAD_ERROR = "model_load_error"
     GENERATION_ERROR = "generation_error" 
     VALIDATION_ERROR = "validation_error"
@@ -23,7 +23,7 @@ class ErrorType(Enum):
 
 @dataclass
 class RetryConfig:
-    """重试配置"""
+    """Retry configuration"""
     max_attempts: int = 3
     base_delay: float = 1.0
     max_delay: float = 60.0
@@ -32,19 +32,19 @@ class RetryConfig:
     retry_on_errors: tuple = (Exception,)
     
 class RetryableError(Exception):
-    """可重试的错误"""
+    """Retryable error"""
     def __init__(self, message: str, error_type: ErrorType = ErrorType.UNKNOWN_ERROR):
         super().__init__(message)
         self.error_type = error_type
 
 class NonRetryableError(Exception):
-    """不可重试的错误"""
+    """Non-retryable error"""
     def __init__(self, message: str, error_type: ErrorType = ErrorType.UNKNOWN_ERROR):
         super().__init__(message)
         self.error_type = error_type
 
 class RetryHandler:
-    """重试处理器"""
+    """Retry handler"""
     
     def __init__(self, config: RetryConfig = None):
         self.config = config or RetryConfig()
@@ -52,7 +52,7 @@ class RetryHandler:
         self.last_error = None
     
     def calculate_delay(self, attempt: int) -> float:
-        """计算延迟时间"""
+        """Calculate delay time"""
         delay = min(
             self.config.base_delay * (self.config.backoff_factor ** attempt),
             self.config.max_delay
@@ -64,19 +64,19 @@ class RetryHandler:
         return delay
     
     def should_retry(self, error: Exception, attempt: int) -> bool:
-        """判断是否应该重试"""
+        """Determine if should retry"""
         if attempt >= self.config.max_attempts:
             return False
         
-        # 不可重试的错误
+        # Non-retryable errors
         if isinstance(error, NonRetryableError):
             return False
         
-        # 检查错误类型是否在重试范围内
+        # Check if error type is in retry scope
         return isinstance(error, self.config.retry_on_errors)
     
     def __call__(self, func: Callable) -> Callable:
-        """装饰器实现"""
+        """Decorator implementation"""
         @wraps(func)
         def wrapper(*args, **kwargs):
             last_error = None
@@ -86,7 +86,7 @@ class RetryHandler:
                     self.attempt_count = attempt + 1
                     result = func(*args, **kwargs)
                     
-                    # 成功时重置错误
+                    # Reset error on success
                     self.last_error = None
                     return result
                     
@@ -103,14 +103,14 @@ class RetryHandler:
                         print(f"[RetryHandler] Retrying in {delay:.2f} seconds...")
                         time.sleep(delay)
             
-            # 所有重试都失败了
+            # All retries failed
             error_msg = f"All {self.config.max_attempts} attempts failed. Last error: {last_error}"
             raise RetryableError(error_msg) from last_error
         
         return wrapper
 
 def handle_model_errors(func: Callable) -> Callable:
-    """模型错误处理装饰器"""
+    """Model error handling decorator"""
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
@@ -131,7 +131,7 @@ def handle_model_errors(func: Callable) -> Callable:
                 ErrorType.CONFIGURATION_ERROR
             ) from e
         except Exception as e:
-            # 将其他未知错误标记为可重试
+            # Mark other unknown errors as retryable
             raise RetryableError(
                 f"Unexpected model error: {e}",
                 ErrorType.MODEL_LOAD_ERROR
@@ -140,7 +140,7 @@ def handle_model_errors(func: Callable) -> Callable:
     return wrapper
 
 def handle_generation_errors(func: Callable) -> Callable:
-    """生成错误处理装饰器"""
+    """Generation error handling decorator"""
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
@@ -185,18 +185,18 @@ def safe_execute(
     **kwargs
 ) -> Any:
     """
-    安全执行函数，带有错误处理和重试
+    Safely execute function with error handling and retry
     
     Args:
-        func: 要执行的函数
-        *args: 函数参数
-        retry_config: 重试配置
-        fallback_result: 失败时的默认返回值
-        log_errors: 是否记录错误日志
-        **kwargs: 函数关键字参数
+        func: Function to execute
+        *args: Function arguments
+        retry_config: Retry configuration
+        fallback_result: Default return value on failure
+        log_errors: Whether to log error messages
+        **kwargs: Function keyword arguments
     
     Returns:
-        函数结果或fallback_result
+        Function result or fallback_result
     """
     retry_config = retry_config or RetryConfig()
     retry_handler = RetryHandler(retry_config)
@@ -217,12 +217,12 @@ def create_circuit_breaker(
     expected_exception: type = Exception
 ):
     """
-    创建断路器装饰器
+    Create circuit breaker decorator
     
     Args:
-        failure_threshold: 失败阈值
-        timeout: 超时时间（秒）
-        expected_exception: 预期的异常类型
+        failure_threshold: Failure threshold
+        timeout: Timeout in seconds
+        expected_exception: Expected exception type
     """
     class CircuitBreakerState(Enum):
         CLOSED = "closed"
@@ -250,7 +250,7 @@ def create_circuit_breaker(
                 try:
                     result = func(*args, **kwargs)
                     
-                    # 成功时重置
+                    # Reset on success
                     if self.state == CircuitBreakerState.HALF_OPEN:
                         self.state = CircuitBreakerState.CLOSED
                         self.failure_count = 0
@@ -271,7 +271,7 @@ def create_circuit_breaker(
     
     return CircuitBreaker()
 
-# 预定义的重试配置
+# Predefined retry configurations
 MODEL_RETRY_CONFIG = RetryConfig(
     max_attempts=2,
     base_delay=1.0,
@@ -293,9 +293,9 @@ NETWORK_RETRY_CONFIG = RetryConfig(
     retry_on_errors=(RetryableError, ConnectionError, TimeoutError)
 )
 
-# 错误监控和统计
+# Error monitoring and statistics
 class ErrorMonitor:
-    """错误监控器"""
+    """Error monitor"""
     
     def __init__(self):
         self.error_counts: Dict[ErrorType, int] = {}
@@ -303,7 +303,7 @@ class ErrorMonitor:
         self.start_time = time.time()
     
     def record_error(self, error: Exception, error_type: ErrorType = None):
-        """记录错误"""
+        """Record error"""
         if error_type is None:
             if hasattr(error, 'error_type'):
                 error_type = error.error_type
@@ -314,7 +314,7 @@ class ErrorMonitor:
         self.last_errors[error_type] = str(error)
     
     def get_error_stats(self) -> Dict:
-        """获取错误统计"""
+        """Get error statistics"""
         runtime = time.time() - self.start_time
         return {
             'runtime_seconds': runtime,
@@ -324,24 +324,24 @@ class ErrorMonitor:
         }
     
     def reset_stats(self):
-        """重置统计"""
+        """Reset statistics"""
         self.error_counts.clear()
         self.last_errors.clear()
         self.start_time = time.time()
 
-# 全局错误监控器
+# Global error monitor
 _error_monitor = ErrorMonitor()
 
 def get_error_monitor() -> ErrorMonitor:
-    """获取全局错误监控器"""
+    """Get global error monitor"""
     return _error_monitor
 
-# 测试函数
+# Test function
 def test_error_handling():
-    """测试错误处理机制"""
+    """Test error handling mechanism"""
     print("=== Error Handling Test ===")
     
-    # 测试重试机制
+    # Test retry mechanism
     @RetryHandler(RetryConfig(max_attempts=3, base_delay=0.1))
     def flaky_function(success_on_attempt=3):
         if flaky_function.attempt < success_on_attempt:
@@ -357,7 +357,7 @@ def test_error_handling():
     except Exception as e:
         print(f"Retry test failed: {e}")
     
-    # 测试错误监控
+    # Test error monitoring
     monitor = get_error_monitor()
     monitor.record_error(RetryableError("Test error"), ErrorType.GENERATION_ERROR)
     

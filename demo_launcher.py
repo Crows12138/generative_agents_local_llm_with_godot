@@ -66,16 +66,16 @@ class DemoLauncher:
             "pydantic",
             "gpt4all",
             "requests",
-            "pyyaml",
+            "yaml",  # PyYAML imports as 'yaml'
             "watchdog"
         ]
         
         for package in required_packages:
             try:
                 __import__(package)
-                print(f"  ✓ {package}")
+                print(f"  [OK] {package}")
             except ImportError:
-                print(f"  ✗ {package} - Missing")
+                print(f"  [MISSING] {package}")
                 missing.append(package)
         
         # Check for model files
@@ -92,7 +92,7 @@ class DemoLauncher:
             print(f"    - https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF")
             print(f"    - https://gpt4all.io/models/models.json")
         else:
-            print(f"  ✓ Found {len(gguf_files)} model file(s)")
+            print(f"  [OK] Found {len(gguf_files)} model file(s)")
             for gguf in gguf_files[:3]:  # Show first 3
                 size_mb = gguf.stat().st_size / (1024 * 1024)
                 print(f"    - {gguf.name} ({size_mb:.1f} MB)")
@@ -102,7 +102,7 @@ class DemoLauncher:
         if not godot_project.exists():
             print(f"{Colors.WARNING}  ⚠ Godot project not found: {godot_project}{Colors.ENDC}")
         else:
-            print(f"  ✓ Godot project found")
+            print(f"  [OK] Godot project found")
         
         if missing:
             print(f"\n{Colors.FAIL}Missing dependencies detected!{Colors.ENDC}")
@@ -179,7 +179,7 @@ class DemoLauncher:
             try:
                 response = requests.get(f"http://{host}:{port}/health")
                 if response.status_code == 200:
-                    print(f"{Colors.GREEN}  ✓ AI Bridge Server started successfully!{Colors.ENDC}")
+                    print(f"{Colors.GREEN}  [SUCCESS] AI Bridge Server started successfully!{Colors.ENDC}")
                     self.services_status["ai_bridge"] = True
                     return process
             except:
@@ -188,7 +188,7 @@ class DemoLauncher:
             if i % 5 == 0:
                 print(f"  Still waiting... ({i}s)")
         
-        print(f"{Colors.FAIL}  ✗ Failed to start AI Bridge Server{Colors.ENDC}")
+        print(f"{Colors.FAIL}  [ERROR] Failed to start AI Bridge Server{Colors.ENDC}")
         process.terminate()
         return None
     
@@ -200,7 +200,7 @@ class DemoLauncher:
             project_path = str(self.project_root / "godot" / "live-with-ai" / "project.godot")
         
         if not Path(project_path).exists():
-            print(f"{Colors.FAIL}  ✗ Godot project not found: {project_path}{Colors.ENDC}")
+            print(f"{Colors.FAIL}  [ERROR] Godot project not found: {project_path}{Colors.ENDC}")
             return None
         
         # Find Godot executable
@@ -222,11 +222,11 @@ class DemoLauncher:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
-            print(f"{Colors.GREEN}  ✓ Godot started successfully!{Colors.ENDC}")
+            print(f"{Colors.GREEN}  [SUCCESS] Godot started successfully!{Colors.ENDC}")
             self.services_status["godot"] = True
             return process
         except Exception as e:
-            print(f"{Colors.FAIL}  ✗ Failed to start Godot: {e}{Colors.ENDC}")
+            print(f"{Colors.FAIL}  [ERROR] Failed to start Godot: {e}{Colors.ENDC}")
             return None
     
     def monitor_services(self):
@@ -247,7 +247,7 @@ class DemoLauncher:
         print(f"\n{Colors.CYAN}Service Status:{Colors.ENDC}")
         print("=" * 40)
         
-        status_symbol = lambda x: f"{Colors.GREEN}✓ Running{Colors.ENDC}" if x else f"{Colors.FAIL}✗ Stopped{Colors.ENDC}"
+        status_symbol = lambda x: f"{Colors.GREEN}[RUNNING]{Colors.ENDC}" if x else f"{Colors.FAIL}[STOPPED]{Colors.ENDC}"
         
         print(f"AI Bridge Server: {status_symbol(self.services_status['ai_bridge'])}")
         if self.services_status['ai_bridge']:

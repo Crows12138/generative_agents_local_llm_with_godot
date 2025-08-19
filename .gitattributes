@@ -1,2 +1,33 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Python files
+*.py text eol=lf
+*.pyi text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+
+# Godot files
+*.gd text eol=lf
+*.tscn text eol=lf
+*.tres text eol=lf
+*.cs text eol=lf
+
+# Windows specific files
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mp3 binary
+*.mp4 binary
+*.ogg binary
+*.wav binary
+*.gguf binary

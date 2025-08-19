@@ -1,0 +1,163 @@
+[gd_scene load_steps=4 format=3 uid="uid://buhrkf3qrgfxx"]
+
+[ext_resource type="TileSet" uid="uid://bfyx5h3t4t0x4" path="res://tilesets/cozy_bar_tileset.tres" id="1_0mnap"]
+[ext_resource type="Script" path="res://scripts/cozy_bar_room.gd" id="2_h8k9l"]
+
+[sub_resource type="Environment" id="Environment_1qr6n"]
+background_mode = 1
+background_color = Color(0.2, 0.15, 0.1, 1)
+ambient_light_source = 1
+ambient_light_color = Color(1, 0.9, 0.7, 1)
+ambient_light_energy = 0.3
+
+[node name="CozyBar" type="Node2D"]
+script = ExtResource("2_h8k9l")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(192, 160)
+zoom = Vector2(2, 2)
+
+[node name="Environment" type="Node" parent="."]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Environment"]
+environment = SubResource("Environment_1qr6n")
+
+[node name="Lighting" type="Node2D" parent="."]
+
+[node name="AmbientLight" type="PointLight2D" parent="Lighting"]
+position = Vector2(192, 160)
+energy = 0.5
+texture_scale = 8.0
+color = Color(1, 0.9, 0.7, 1)
+
+[node name="BarLight1" type="PointLight2D" parent="Lighting"]
+position = Vector2(160, 96)
+energy = 0.8
+texture_scale = 4.0
+color = Color(1, 0.85, 0.6, 1)
+
+[node name="BarLight2" type="PointLight2D" parent="Lighting"]
+position = Vector2(224, 96)
+energy = 0.8
+texture_scale = 4.0
+color = Color(1, 0.85, 0.6, 1)
+
+[node name="StageLight" type="PointLight2D" parent="Lighting"]
+position = Vector2(192, 288)
+energy = 0.6
+texture_scale = 3.0
+color = Color(0.9, 0.8, 1, 1)
+
+[node name="TileMaps" type="Node2D" parent="."]
+
+[node name="FloorLayer" type="TileMap" parent="TileMaps"]
+tile_set = ExtResource("1_0mnap")
+format = 2
+layer_0/name = "Floor"
+layer_0/enabled = true
+layer_0/modulate = Color(1, 1, 1, 1)
+layer_0/y_sort_enabled = false
+layer_0/y_sort_origin = 0
+layer_0/z_index = 0
+layer_0/z_as_relative = true
+layer_0/tile_data = PackedInt32Array()
+
+[node name="WallLayer" type="TileMap" parent="TileMaps"]
+tile_set = ExtResource("1_0mnap")
+format = 2
+layer_0/name = "Walls"
+layer_0/enabled = true
+layer_0/modulate = Color(1, 1, 1, 1)
+layer_0/y_sort_enabled = false
+layer_0/y_sort_origin = 0
+layer_0/z_index = 1
+layer_0/z_as_relative = true
+layer_0/tile_data = PackedInt32Array()
+
+[node name="FurnitureLayer" type="TileMap" parent="TileMaps"]
+tile_set = ExtResource("1_0mnap")
+format = 2
+layer_0/name = "Furniture"
+layer_0/enabled = true
+layer_0/modulate = Color(1, 1, 1, 1)
+layer_0/y_sort_enabled = true
+layer_0/y_sort_origin = 16
+layer_0/z_index = 2
+layer_0/z_as_relative = true
+layer_0/tile_data = PackedInt32Array()
+
+[node name="DecorationLayer" type="TileMap" parent="TileMaps"]
+tile_set = ExtResource("1_0mnap")
+format = 2
+layer_0/name = "Decorations"
+layer_0/enabled = true
+layer_0/modulate = Color(1, 1, 1, 1)
+layer_0/y_sort_enabled = true
+layer_0/y_sort_origin = 16
+layer_0/z_index = 3
+layer_0/z_as_relative = true
+layer_0/tile_data = PackedInt32Array()
+
+[node name="CollisionLayer" type="TileMap" parent="TileMaps"]
+tile_set = ExtResource("1_0mnap")
+format = 2
+collision_animatable = false
+collision_visibility_mode = 1
+layer_0/name = "Collision"
+layer_0/enabled = false
+layer_0/modulate = Color(1, 1, 1, 0.3)
+layer_0/y_sort_enabled = false
+layer_0/y_sort_origin = 0
+layer_0/z_index = -1
+layer_0/z_as_relative = true
+layer_0/tile_data = PackedInt32Array()
+
+[node name="SpawnPoints" type="Node2D" parent="."]
+
+[node name="PlayerSpawn" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(192, 160)
+gizmo_extents = 16.0
+
+[node name="BobSpawn" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(192, 64)
+gizmo_extents = 16.0
+
+[node name="AliceSpawn" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(64, 192)
+gizmo_extents = 16.0
+
+[node name="SamSpawn" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(288, 192)
+gizmo_extents = 16.0
+
+[node name="InteractiveObjects" type="Node2D" parent="."]
+
+[node name="BarCounter" type="Area2D" parent="InteractiveObjects"]
+position = Vector2(192, 96)
+
+[node name="BarCollision" type="CollisionShape2D" parent="InteractiveObjects/BarCounter"]
+
+[node name="Tables" type="Node2D" parent="InteractiveObjects"]
+
+[node name="Table1" type="Area2D" parent="InteractiveObjects/Tables"]
+position = Vector2(96, 192)
+
+[node name="Table1Collision" type="CollisionShape2D" parent="InteractiveObjects/Tables/Table1"]
+
+[node name="Table2" type="Area2D" parent="InteractiveObjects/Tables"]
+position = Vector2(288, 192)
+
+[node name="Table2Collision" type="CollisionShape2D" parent="InteractiveObjects/Tables/Table2"]
+
+[node name="MusicStage" type="Area2D" parent="InteractiveObjects"]
+position = Vector2(192, 288)
+
+[node name="StageCollision" type="CollisionShape2D" parent="InteractiveObjects/MusicStage"]
+
+[node name="AudioManager" type="Node" parent="."]
+
+[node name="BackgroundMusic" type="AudioStreamPlayer" parent="AudioManager"]
+volume_db = -10.0
+
+[node name="AmbiencePlayer" type="AudioStreamPlayer" parent="AudioManager"]
+volume_db = -15.0
