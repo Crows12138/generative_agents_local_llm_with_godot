@@ -2,9 +2,7 @@
   "model": {
     "active_model": "qwen3",
     "supported_models": {
-      "qwen": "qwen2.5-coder-7b-instruct-q4_0.gguf",
-      "qwen3": "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf",
-      "gpt-oss": "gpt-oss-20b-F16.gguf"
+      "qwen3": "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf"
     },
     "models_dir": "C:\\Users\\12916\\Desktop\\generative_agents_local_llm_with_godot\\models\\gpt4all",
     "force_cpu": false,
@@ -12,11 +10,7 @@
     "temperature": 0.3,
     "top_p": 0.9,
     "repeat_penalty": 1.1,
-    "max_retries": 3,
-    "gpt_oss_device": "auto",
-    "gpt_oss_local_only": false,
-    "gpt_oss_local_dir": null,
-    "use_gpt4all_for_gptoss": false
+    "max_retries": 3
   },
   "embedding": {
     "model_path": "C:\\Users\\12916\\Desktop\\generative_agents_local_llm_with_godot\\models\\all-MiniLM-L6-v2",

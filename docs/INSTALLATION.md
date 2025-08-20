@@ -97,10 +97,10 @@ python ai_service/ai_service.py
 mkdir -p models/gpt4all
 ```
 
-2. Download Qwen2.5-Coder-7B model:
+2. Download Qwen3-30B model:
 ```bash
 # Download from Hugging Face
-# Place in models/gpt4all/qwen2.5-coder-7b-instruct-q4_0.gguf
+# Place in models/gpt4all/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf
 ```
 
 #### Step 4: Configuration

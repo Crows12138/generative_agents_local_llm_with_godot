@@ -44,8 +44,7 @@ pip install -r requirements.txt
 
 ### 2. 验证模型文件
 确保以下目录存在模型文件：
-- `models/gpt4all/qwen2.5-coder-7b-instruct-q4_0.gguf` (4.2GB)
-- `models/gpt4all/gpt-oss-20b-F16.gguf` (13.1GB)
+- `models/gpt4all/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf`
 
 ### 3. 安装Godot（如果还没安装）
 - 下载：https://godotengine.org/download

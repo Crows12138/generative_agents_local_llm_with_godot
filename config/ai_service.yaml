@@ -5,7 +5,7 @@ version: "2.0.0"
 
 # Model Configuration
 model:
-  # Active model selection: auto, qwen, gpt-oss, or specific model name
+  # Active model selection: auto, qwen, or specific model name
   active_model: "auto"
   
   # Directory containing GGUF model files
@@ -23,8 +23,8 @@ model:
   
   # Fallback chain for model failures
   fallback_chain:
+    - "qwen3"
     - "qwen"
-    - "gpt-oss"
     - "simple"
   enable_fallback: true
   

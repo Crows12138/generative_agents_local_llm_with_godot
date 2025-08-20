@@ -35,7 +35,7 @@ class ModelMetadata:
 class ModelConfig:
     """增强的模型配置"""
     # LLM模型配置
-    active_model: str = "auto"  # auto, qwen, gpt-oss, or model name
+    active_model: str = "auto"  # auto, qwen, or model name
     models_dir: str = str(MODELS_DIR / "gpt4all")
     auto_detect: bool = True
     detected_models: Dict[str, ModelMetadata] = field(default_factory=dict)
@@ -48,7 +48,7 @@ class ModelConfig:
     max_retries: int = 3
     
     # 降级策略
-    fallback_chain: List[str] = field(default_factory=lambda: ["qwen", "gpt-oss", "simple"])
+    fallback_chain: List[str] = field(default_factory=lambda: ["qwen", "simple"])
     enable_fallback: bool = True
     
     # 性能配置
@@ -58,10 +58,8 @@ class ModelConfig:
     
     # 兼容旧配置API的字段
     supported_models: Dict[str, str] = field(default_factory=lambda: {
-        "qwen": "qwen2.5-coder-7b-instruct-q4_0.gguf",
-        "gpt-oss": "gpt-oss-20b-F16.gguf",
+        "qwen3": "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf"
     })
-    use_gpt4all_for_gptoss: bool = False
     
     def detect_models(self) -> Dict[str, ModelMetadata]:
         """自动检测可用模型"""
@@ -82,8 +80,6 @@ class ModelConfig:
                 
                 if "qwen" in name.lower():
                     recommended_use = "coding, technical tasks"
-                elif "gpt-oss" in name.lower():
-                    recommended_use = "conversation, roleplay"
                 elif "llama" in name.lower():
                     recommended_use = "general purpose"
                     
@@ -352,8 +348,8 @@ class EnhancedConfigManager:
             
             # 如果active_model是auto，选择第一个检测到的模型
             if self.config.model.active_model == "auto" and detected:
-                # 优先选择qwen或gpt-oss
-                for preferred in ["qwen", "gpt-oss"]:
+                # 优先选择qwen
+                for preferred in ["qwen"]:
                     for model_name in detected.keys():
                         if preferred in model_name.lower():
                             self.config.model.active_model = model_name

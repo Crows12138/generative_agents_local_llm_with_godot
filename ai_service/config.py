@@ -17,7 +17,7 @@ MODELS_DIR = PROJECT_ROOT / "models"
 class ModelConfig:
     """Model configuration"""
     # LLM model configuration
-    active_model: str = "gpt-oss"
+    active_model: str = "qwen"
     supported_models: Dict[str, str] = None
     models_dir: str = str(MODELS_DIR / "gpt4all")
     force_cpu: bool = False
@@ -29,18 +29,11 @@ class ModelConfig:
     repeat_penalty: float = 1.1
     max_retries: int = 3
     
-    # GPT-OSS specific configuration
-    gpt_oss_device: str = "auto"
-    gpt_oss_local_only: bool = False
-    gpt_oss_local_dir: Optional[str] = None
-    use_gpt4all_for_gptoss: bool = False
     
     def __post_init__(self):
         if self.supported_models is None:
             self.supported_models = {
-                "qwen": "qwen2.5-coder-7b-instruct-q4_0.gguf",
-                "qwen3": "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf",
-                "gpt-oss": "gpt-oss-20b-F16.gguf",
+                "qwen3": "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf"
             }
 
 @dataclass
@@ -144,12 +137,6 @@ class ConfigManager:
             'AI_MAX_TOKENS': ('model', 'max_tokens', int),
             'AI_TEMPERATURE': ('model', 'temperature', float),
             'AI_MAX_RETRIES': ('model', 'max_retries', int),
-            
-            # GPT-OSS configuration
-            'GPT_OSS_DEVICE': ('model', 'gpt_oss_device'),
-            'GPT_OSS_LOCAL_ONLY': ('model', 'gpt_oss_local_only', bool),
-            'GPT_OSS_LOCAL_DIR': ('model', 'gpt_oss_local_dir'),
-            'USE_GPT4ALL_FOR_GPTOSS': ('model', 'use_gpt4all_for_gptoss', bool),
             
             # Embedding configuration
             'EMBEDDING_MODEL_PATH': ('embedding', 'model_path'),

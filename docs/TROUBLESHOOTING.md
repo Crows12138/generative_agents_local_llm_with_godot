@@ -106,7 +106,7 @@ mkdir -p models/gpt4all
 cd models/gpt4all
 
 # Download Qwen model manually from Hugging Face
-# Place file as: qwen2.5-coder-7b-instruct-q4_0.gguf
+# Place file as: Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf
 
 # Verify model file
 ls -lh *.gguf
@@ -128,7 +128,7 @@ python ai_service/ai_service.py
 # Check file integrity
 python -c "
 from gpt4all import GPT4All
-model = GPT4All('models/gpt4all/qwen2.5-coder-7b-instruct-q4_0.gguf')
+model = GPT4All('models/gpt4all/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf')
 print('Model loaded successfully')
 "
 ```

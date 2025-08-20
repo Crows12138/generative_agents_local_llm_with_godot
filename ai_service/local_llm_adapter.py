@@ -39,7 +39,7 @@ def safe_generate_response(prompt,
         func_validate: Validation function for the response
         func_clean_up: Cleanup function for the response
         verbose: Whether to print debug info
-        model_key: Optional model key override (qwen|gpt-oss)
+        model_key: Optional model key override (qwen)
     
     Returns:
         Generated response string
@@ -145,8 +145,7 @@ def GPT4_safe_generate_response(prompt,
     Drop-in replacement for GPT4_safe_generate_response.
     Uses the same logic as ChatGPT version but with GPT-4 prompt format.
     """
-    # Use GPT-OSS for GPT-4 requests if available, otherwise fallback to qwen
-    preferred_model = model_key or ("gpt-oss" if "gpt-oss" in ["qwen", "gpt-oss"] else "qwen")
+    preferred_model = model_key or "qwen"
     
     formatted_prompt = 'GPT-3 Prompt:\n"""\n' + prompt + '\n"""\n'
     formatted_prompt += f"Output the response to the prompt above in json. {special_instruction}\n"
@@ -225,7 +224,7 @@ def ChatGPT_request(prompt, model_key=None):
 
 def GPT4_request(prompt, model_key=None):
     """Simple GPT-4 request replacement."""
-    preferred_model = model_key or ("gpt-oss" if "gpt-oss" in ["qwen", "gpt-oss"] else "qwen")
+    preferred_model = model_key or "qwen"
     return local_llm_generate(prompt, model_key=preferred_model)
 
 

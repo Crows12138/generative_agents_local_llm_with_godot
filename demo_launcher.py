@@ -89,7 +89,7 @@ class DemoLauncher:
         if not gguf_files:
             print(f"{Colors.WARNING}  ⚠ No GGUF model files found in {models_dir}{Colors.ENDC}")
             print(f"    Please download model files from:")
-            print(f"    - https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF")
+            print(f"    - https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507-GGUF")
             print(f"    - https://gpt4all.io/models/models.json")
         else:
             print(f"  [OK] Found {len(gguf_files)} model file(s)")

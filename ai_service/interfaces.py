@@ -12,7 +12,7 @@ from dataclasses import dataclass
 class ModelType(Enum):
     """支持的模型类型"""
     QWEN = "qwen"
-    GPT_OSS = "gpt-oss" 
+ 
     LLAMA = "llama"
 
 

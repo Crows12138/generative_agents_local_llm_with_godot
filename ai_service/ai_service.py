@@ -1,8 +1,7 @@
 """Local LLM service wrapper used by planners and other modules.
 
-Adds switchable backends for two local models and proper prompt formatting:
- - qwen: qwen2.5 chat template
- - gpt-oss: Harmony chat format (special)
+Adds switchable backends for local models and proper prompt formatting:
+ - qwen3: Qwen3-30B chat template
 
 Use local GGUF files via GPT4All and Transformers for generative agents.
 """
@@ -110,11 +109,10 @@ _ACTIVE_MODEL_KEY: str = _model_config.active_model.lower()
 
 # Cache of GPT4All instances by model key
 _MODEL_INSTANCES: Dict[str, GPT4All] = {}
-_GPT_OSS_ADAPTER = None  # Lazy-initialized transformers adapter
 
 
 def set_active_model(model_key: str) -> bool:
-    """Set the globally active model key (qwen|gpt-oss)."""
+    """Set the globally active model key (qwen)."""
     global _ACTIVE_MODEL_KEY
     if model_key not in SUPPORTED_GGUF:
         print(f"[ai_service] Unknown model key '{model_key}'. Supported: {list(SUPPORTED_GGUF.keys())}")
@@ -137,10 +135,7 @@ def _get_model_instance(model_key: str) -> GPT4All:
         print(f"[ai_service] Unsupported model key '{model_key}', falling back to 'qwen'")
         model_key = "qwen"
 
-    # GPT-OSS uses transformers adapter by default; skip GPT4All path
-    use_gpt4all_for_gptoss = _model_config.use_gpt4all_for_gptoss
-    if model_key == "gpt-oss" and not use_gpt4all_for_gptoss:
-        raise RuntimeError("GPT-OSS is handled by transformers adapter, not GPT4All instance")
+    # Model loading setup
 
     if model_key in _MODEL_INSTANCES:
         return _MODEL_INSTANCES[model_key]
@@ -163,9 +158,9 @@ def _get_model_instance(model_key: str) -> GPT4All:
             ErrorType.CONFIGURATION_ERROR
         )
 
-    # Resolve desired device. Force CPU for llama/gpt-oss to avoid Kompute/Vulkan crashes.
+    # Resolve desired device. Force CPU for llama to avoid Kompute/Vulkan crashes.
     force_cpu_env = _model_config.force_cpu
-    desired_device = "cpu" if (force_cpu_env or model_key in ("llama", "gpt-oss")) else "gpu"
+    desired_device = "cpu" if (force_cpu_env or model_key in ("llama",)) else "gpu"
     print(f"[ai_service] Desired device for '{model_key}': {desired_device}{' (forced by env)' if force_cpu_env else ''}")
 
     # Create instance; prefer desired device but fallback to CPU on failure
@@ -525,9 +520,6 @@ def _format_prompt(prompt: str, model_key: str) -> str:
             f"<|system|>You are a helpful AI assistant. Respond concisely and accurately.<|end|>\n"
             f"<|user|>{prompt}<|end|>\n<|assistant|>"
         )
-    if mk == "gpt-oss":
-        # When using transformers adapter, no special formatting needed.
-        return prompt
     # Default generic
     return (
         f"### System: You are a helpful AI assistant. Respond concisely and accurately.\n\n"
@@ -543,9 +535,6 @@ def _clean_response(raw: str, model_key: str) -> str:
         text = text.split("<|im_end|>")[0].strip()
     elif mk == "llama" and "<|end|>" in text:
         text = text.split("<|end|>")[0].strip()
-    elif mk == "gpt-oss":
-        # Adapter already returns plain text
-        pass
     # Strip fenced json if present
     if text.startswith("```json"):
         import re
@@ -576,28 +565,7 @@ def local_llm_generate(prompt: str, model_key: Optional[str] = None, max_retries
     logger = get_ai_logger()
     
     logger.info(f"Starting generation: model={mk}, prompt_length={len(prompt)}")
-    # Special path for GPT-OSS via transformers adapter (default)
-    if mk == "gpt-oss" and not _model_config.use_gpt4all_for_gptoss:
-        global _GPT_OSS_ADAPTER
-        if _GPT_OSS_ADAPTER is None:
-            try:
-                module = import_module("gpt_oss_adapter")
-                init_fn = getattr(module, "initialize_gpt_oss")
-                _GPT_OSS_ADAPTER = init_fn()
-            except Exception as e:
-                return f"[ERROR] Failed to initialize GPT-OSS adapter: {e}"
-            if _GPT_OSS_ADAPTER is None:
-                return "[ERROR] GPT-OSS adapter initialization returned None"
-
-        try:
-            # Let adapter handle system prompt and formatting internally
-            gen_fn = getattr(import_module("gpt_oss_adapter"), "generate_with_gpt_oss")
-            response = gen_fn(_GPT_OSS_ADAPTER, prompt, system_prompt="")
-            return response.strip()
-        except Exception as e:
-            return f"[ERROR] GPT-OSS adapter generation failed: {e}"
-
-    # Default GPT4All path
+    # Standard GPT4All generation path
     ai = _get_model_instance(mk)
     formatted_prompt = _format_prompt(prompt, mk)
     print(f"[ai_service] Using model '{mk}' with prompt length {len(formatted_prompt)}")

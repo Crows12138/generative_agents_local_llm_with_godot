@@ -325,7 +325,7 @@ class PerformanceOptimizer:
     def _optimize_ai_performance(self):
         """优化AI性能"""
         # 预加载常用模型
-        self.model_manager.preload_models(["qwen", "gpt-oss"])
+        self.model_manager.preload_models(["qwen"])
         
         # 增加缓存大小
         if self.cache.max_size < 2000:
