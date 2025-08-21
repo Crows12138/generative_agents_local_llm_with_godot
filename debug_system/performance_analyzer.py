@@ -45,6 +45,29 @@ class PerformanceAnalyzer:
         }
         self.is_monitoring = False
         self.monitor_thread: Optional[threading.Thread] = None
+        self.active_measurements: Dict[str, float] = {}
+        
+    def start_measurement(self, measurement_id: str) -> None:
+        """Start timing a specific measurement"""
+        import time
+        self.active_measurements[measurement_id] = time.time()
+    
+    def end_measurement(self, measurement_id: str) -> float:
+        """End timing a specific measurement and return duration"""
+        import time
+        if measurement_id not in self.active_measurements:
+            return 0.0
+        
+        start_time = self.active_measurements.pop(measurement_id)
+        duration = time.time() - start_time
+        
+        # Store the measurement in appropriate phase
+        if measurement_id in self.phase_times:
+            self.phase_times[measurement_id].append(duration)
+        elif "llm" in measurement_id.lower():
+            self.phase_times["llm_call"].append(duration)
+        
+        return duration
         
     def start_monitoring(self, interval: float = 1.0) -> None:
         """Start continuous system monitoring"""

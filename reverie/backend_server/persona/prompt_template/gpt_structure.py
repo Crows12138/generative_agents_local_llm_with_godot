@@ -2,28 +2,48 @@
 Author: Joon Sung Park (joonspk@stanford.edu)
 
 File: gpt_structure.py
-Description: Wrapper functions for calling OpenAI APIs.
+Description: Wrapper functions for calling Local LLM APIs (替换OpenAI).
 """
 import json
 import random
-import openai
-import time 
+import time
+import sys
+import os
+
+# Add path to import our local AI service
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'ai_service'))
 
 from utils import *
 
-openai.api_key = openai_api_key
+try:
+    from ai_service import get_ai_service
+    LOCAL_LLM_AVAILABLE = True
+    print("[gpt_structure] Successfully imported local AI service")
+except ImportError as e:
+    LOCAL_LLM_AVAILABLE = False
+    print(f"[gpt_structure] Failed to import local AI service: {e}")
+
+# Initialize global AI service
+if LOCAL_LLM_AVAILABLE:
+    _ai_service = get_ai_service(enable_optimizations=True)
+else:
+    _ai_service = None
 
 def temp_sleep(seconds=0.1):
   time.sleep(seconds)
 
 def ChatGPT_single_request(prompt): 
   temp_sleep()
-
-  completion = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo", 
-    messages=[{"role": "user", "content": prompt}]
-  )
-  return completion["choices"][0]["message"]["content"]
+  
+  if not LOCAL_LLM_AVAILABLE or _ai_service is None:
+    return "Local LLM service not available"
+  
+  try:
+    response = _ai_service.generate(prompt, use_optimizations=True)
+    return response
+  except Exception as e:
+    print(f"[ChatGPT_single_request] Error: {e}")
+    return "Local LLM generation error"
 
 
 # ============================================================================
@@ -32,53 +52,46 @@ def ChatGPT_single_request(prompt):
 
 def GPT4_request(prompt): 
   """
-  Given a prompt and a dictionary of GPT parameters, make a request to OpenAI
-  server and returns the response. 
+  Given a prompt, make a request to Local LLM server and returns the response. 
   ARGS:
     prompt: a str prompt
-    gpt_parameter: a python dictionary with the keys indicating the names of  
-                   the parameter and the values indicating the parameter 
-                   values.   
   RETURNS: 
-    a str of GPT-3's response. 
+    a str of Local LLM's response. 
   """
   temp_sleep()
 
+  if not LOCAL_LLM_AVAILABLE or _ai_service is None:
+    print("Local LLM ERROR - Service not available")
+    return "Local LLM ERROR"
+
   try: 
-    completion = openai.ChatCompletion.create(
-    model="gpt-4", 
-    messages=[{"role": "user", "content": prompt}]
-    )
-    return completion["choices"][0]["message"]["content"]
-  
-  except: 
-    print ("ChatGPT ERROR")
-    return "ChatGPT ERROR"
+    response = _ai_service.generate(prompt, use_optimizations=True)
+    return response
+  except Exception as e: 
+    print(f"Local LLM ERROR: {e}")
+    return "Local LLM ERROR"
 
 
 def ChatGPT_request(prompt): 
   """
-  Given a prompt and a dictionary of GPT parameters, make a request to OpenAI
-  server and returns the response. 
+  Given a prompt, make a request to Local LLM server and returns the response. 
   ARGS:
     prompt: a str prompt
-    gpt_parameter: a python dictionary with the keys indicating the names of  
-                   the parameter and the values indicating the parameter 
-                   values.   
   RETURNS: 
-    a str of GPT-3's response. 
+    a str of Local LLM's response. 
   """
   # temp_sleep()
-  try: 
-    completion = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo", 
-    messages=[{"role": "user", "content": prompt}]
-    )
-    return completion["choices"][0]["message"]["content"]
   
-  except: 
-    print ("ChatGPT ERROR")
-    return "ChatGPT ERROR"
+  if not LOCAL_LLM_AVAILABLE or _ai_service is None:
+    print("Local LLM ERROR - Service not available")
+    return "Local LLM ERROR"
+  
+  try: 
+    response = _ai_service.generate(prompt, use_optimizations=True)
+    return response
+  except Exception as e: 
+    print(f"Local LLM ERROR: {e}")
+    return "Local LLM ERROR"
 
 
 def GPT4_safe_generate_response(prompt, 
@@ -196,31 +209,25 @@ def ChatGPT_safe_generate_response_OLD(prompt,
 
 def GPT_request(prompt, gpt_parameter): 
   """
-  Given a prompt and a dictionary of GPT parameters, make a request to OpenAI
-  server and returns the response. 
+  Given a prompt and parameters, make a request to Local LLM server and returns the response. 
   ARGS:
     prompt: a str prompt
-    gpt_parameter: a python dictionary with the keys indicating the names of  
-                   the parameter and the values indicating the parameter 
-                   values.   
+    gpt_parameter: a python dictionary with parameters (for compatibility)   
   RETURNS: 
-    a str of GPT-3's response. 
+    a str of Local LLM's response. 
   """
   temp_sleep()
+  
+  if not LOCAL_LLM_AVAILABLE or _ai_service is None:
+    print("TOKEN LIMIT EXCEEDED - Local LLM not available")
+    return "TOKEN LIMIT EXCEEDED"
+  
   try: 
-    response = openai.Completion.create(
-                model=gpt_parameter["engine"],
-                prompt=prompt,
-                temperature=gpt_parameter["temperature"],
-                max_tokens=gpt_parameter["max_tokens"],
-                top_p=gpt_parameter["top_p"],
-                frequency_penalty=gpt_parameter["frequency_penalty"],
-                presence_penalty=gpt_parameter["presence_penalty"],
-                stream=gpt_parameter["stream"],
-                stop=gpt_parameter["stop"],)
-    return response.choices[0].text
-  except: 
-    print ("TOKEN LIMIT EXCEEDED")
+    # Use local LLM with optimizations
+    response = _ai_service.generate(prompt, use_optimizations=True)
+    return response
+  except Exception as e: 
+    print(f"TOKEN LIMIT EXCEEDED - Local LLM error: {e}")
     return "TOKEN LIMIT EXCEEDED"
 
 
@@ -273,12 +280,35 @@ def safe_generate_response(prompt,
   return fail_safe_response
 
 
-def get_embedding(text, model="text-embedding-ada-002"):
+def get_embedding(text, model="local-embedding"):
+  """
+  Generate embedding using local embedding service
+  """
   text = text.replace("\n", " ")
   if not text: 
     text = "this is blank"
-  return openai.Embedding.create(
-          input=[text], model=model)['data'][0]['embedding']
+  
+  if not LOCAL_LLM_AVAILABLE or _ai_service is None:
+    # Return a dummy embedding vector for compatibility
+    print("[get_embedding] Local embedding service not available, returning dummy vector")
+    return [0.0] * 1536  # Standard embedding dimension
+  
+  try:
+    # Check if our AI service has embedding capability
+    if hasattr(_ai_service, 'get_embedding'):
+      return _ai_service.get_embedding(text)
+    else:
+      # Import embedding service directly
+      try:
+        from embedding_service import get_embedding_service
+        embedding_service = get_embedding_service()
+        return embedding_service.encode(text).tolist()
+      except ImportError:
+        print("[get_embedding] Embedding service not available, returning dummy vector")
+        return [0.0] * 1536
+  except Exception as e:
+    print(f"[get_embedding] Error generating embedding: {e}")
+    return [0.0] * 1536
 
 
 if __name__ == '__main__':

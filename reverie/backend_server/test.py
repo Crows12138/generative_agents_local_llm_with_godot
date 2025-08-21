@@ -1,40 +1,49 @@
 """
 Author: Joon Sung Park (joonspk@stanford.edu)
 
-File: gpt_structure.py
-Description: Wrapper functions for calling OpenAI APIs.
+File: test.py
+Description: Test file for Local LLM APIs (替换OpenAI).
 """
 import json
 import random
-import openai
 import time 
+import sys
+import os
+
+# Add path to import our local AI service
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'ai_service'))
 
 from utils import *
-openai.api_key = openai_api_key
+
+try:
+    from ai_service import get_ai_service
+    LOCAL_LLM_AVAILABLE = True
+    print("[test.py] Successfully imported local AI service")
+    _ai_service = get_ai_service(enable_optimizations=True)
+except ImportError as e:
+    LOCAL_LLM_AVAILABLE = False
+    print(f"[test.py] Failed to import local AI service: {e}")
+    _ai_service = None
 
 def ChatGPT_request(prompt): 
   """
-  Given a prompt and a dictionary of GPT parameters, make a request to OpenAI
-  server and returns the response. 
+  Given a prompt, make a request to Local LLM server and returns the response. 
   ARGS:
     prompt: a str prompt
-    gpt_parameter: a python dictionary with the keys indicating the names of  
-                   the parameter and the values indicating the parameter 
-                   values.   
   RETURNS: 
-    a str of GPT-3's response. 
+    a str of Local LLM's response. 
   """
-  # temp_sleep()
-  try: 
-    completion = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo", 
-    messages=[{"role": "user", "content": prompt}]
-    )
-    return completion["choices"][0]["message"]["content"]
   
-  except: 
-    print ("ChatGPT ERROR")
-    return "ChatGPT ERROR"
+  if not LOCAL_LLM_AVAILABLE or _ai_service is None:
+    print("Local LLM ERROR - Service not available")
+    return "Local LLM ERROR"
+  
+  try: 
+    response = _ai_service.generate(prompt, use_optimizations=True)
+    return response
+  except Exception as e: 
+    print(f"Local LLM ERROR: {e}")
+    return "Local LLM ERROR"
 
 prompt = """
 ---

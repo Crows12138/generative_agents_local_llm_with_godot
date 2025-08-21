@@ -10,14 +10,14 @@ from typing import Dict, List, Any, Optional, Union, Callable
 from datetime import datetime
 from pathlib import Path
 
-# Import original ai_service components
+# Import unified ai_service components
 try:
-    from .ai_service import AIService, get_ai_service
+    from .unified_ai_service import AIService, get_ai_service
     from .config_enhanced import get_config
     from .monitoring import get_performance_monitor, timing_context
     from .error_handling import handle_generation_errors
 except ImportError:
-    from ai_service import AIService, get_ai_service
+    from unified_ai_service import AIService, get_ai_service
     from config_enhanced import get_config
     from monitoring import get_performance_monitor, timing_context
     from error_handling import handle_generation_errors
