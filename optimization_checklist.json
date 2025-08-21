@@ -1,0 +1,248 @@
+{
+  "timestamp": "2025-08-21T15:42:42.914952",
+  "baseline_metrics": {},
+  "items": [
+    {
+      "category": "llm_optimization",
+      "name": "prompt_caching",
+      "description": "Implement caching for common prompts to reduce LLM calls",
+      "priority": "high",
+      "estimated_impact": "major",
+      "implementation_effort": "medium",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "llm_optimization",
+      "name": "batch_processing",
+      "description": "Batch multiple LLM requests to reduce API overhead",
+      "priority": "high",
+      "estimated_impact": "major",
+      "implementation_effort": "hard",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "llm_optimization",
+      "name": "token_reduction",
+      "description": "Optimize prompts to use fewer tokens",
+      "priority": "medium",
+      "estimated_impact": "moderate",
+      "implementation_effort": "easy",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "llm_optimization",
+      "name": "model_selection",
+      "description": "Use smaller/faster models for simple decisions",
+      "priority": "high",
+      "estimated_impact": "major",
+      "implementation_effort": "medium",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "llm_optimization",
+      "name": "parallel_processing",
+      "description": "Process multiple agents in parallel",
+      "priority": "high",
+      "estimated_impact": "major",
+      "implementation_effort": "hard",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "action_parsing",
+      "name": "regex_precompilation",
+      "description": "Pre-compile all regex patterns at startup",
+      "priority": "medium",
+      "estimated_impact": "moderate",
+      "implementation_effort": "easy",
+      "status": "completed",
+      "implementation_notes": "All regex patterns pre-compiled at startup",
+      "measured_improvement": null
+    },
+    {
+      "category": "action_parsing",
+      "name": "lookup_tables",
+      "description": "Use lookup tables for common action patterns",
+      "priority": "medium",
+      "estimated_impact": "moderate",
+      "implementation_effort": "easy",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "action_parsing",
+      "name": "pattern_caching",
+      "description": "Cache parsing results for repeated inputs",
+      "priority": "medium",
+      "estimated_impact": "moderate",
+      "implementation_effort": "easy",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "action_parsing",
+      "name": "fast_path",
+      "description": "Implement fast path for most common actions",
+      "priority": "high",
+      "estimated_impact": "major",
+      "implementation_effort": "medium",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "state_management",
+      "name": "differential_updates",
+      "description": "Only update changed state properties",
+      "priority": "high",
+      "estimated_impact": "major",
+      "implementation_effort": "medium",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "state_management",
+      "name": "dirty_tracking",
+      "description": "Implement dirty flag system for state changes",
+      "priority": "medium",
+      "estimated_impact": "moderate",
+      "implementation_effort": "medium",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "state_management",
+      "name": "batch_updates",
+      "description": "Batch multiple state updates together",
+      "priority": "medium",
+      "estimated_impact": "moderate",
+      "implementation_effort": "easy",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "state_management",
+      "name": "state_compression",
+      "description": "Compress state data for storage and transmission",
+      "priority": "low",
+      "estimated_impact": "minor",
+      "implementation_effort": "hard",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "memory_optimization",
+      "name": "history_limits",
+      "description": "Limit length of historical data kept in memory",
+      "priority": "high",
+      "estimated_impact": "major",
+      "implementation_effort": "easy",
+      "status": "completed",
+      "implementation_notes": "Limited history to 1000 items",
+      "measured_improvement": null
+    },
+    {
+      "category": "memory_optimization",
+      "name": "data_cleanup",
+      "description": "Implement periodic cleanup of expired data",
+      "priority": "medium",
+      "estimated_impact": "moderate",
+      "implementation_effort": "easy",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "memory_optimization",
+      "name": "object_pooling",
+      "description": "Use object pools for frequently created objects",
+      "priority": "medium",
+      "estimated_impact": "moderate",
+      "implementation_effort": "hard",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "memory_optimization",
+      "name": "lazy_loading",
+      "description": "Load data only when needed",
+      "priority": "medium",
+      "estimated_impact": "moderate",
+      "implementation_effort": "medium",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "network_optimization",
+      "name": "batch_transmission",
+      "description": "Batch multiple updates before transmission",
+      "priority": "medium",
+      "estimated_impact": "moderate",
+      "implementation_effort": "medium",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "network_optimization",
+      "name": "compression",
+      "description": "Compress network transmission data",
+      "priority": "low",
+      "estimated_impact": "minor",
+      "implementation_effort": "medium",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "network_optimization",
+      "name": "websockets",
+      "description": "Use WebSockets for real-time communication",
+      "priority": "low",
+      "estimated_impact": "minor",
+      "implementation_effort": "hard",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "monitoring",
+      "name": "selective_monitoring",
+      "description": "Monitor only critical performance metrics",
+      "priority": "medium",
+      "estimated_impact": "moderate",
+      "implementation_effort": "easy",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    },
+    {
+      "category": "monitoring",
+      "name": "sampling",
+      "description": "Use statistical sampling for performance data",
+      "priority": "low",
+      "estimated_impact": "minor",
+      "implementation_effort": "medium",
+      "status": "pending",
+      "implementation_notes": "",
+      "measured_improvement": null
+    }
+  ]
+}

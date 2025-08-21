@@ -308,23 +308,23 @@ class EmbeddingService:
             print(f"[EmbeddingService] Cleaned up {len(expired_keys)} expired cache entries")
     
     def _update_avg_processing_time(self, new_time: float):
-        """更新平均处理时间"""
-        # 使用指数移动平均
-        alpha = 0.1  # 平滑因子
+        """Update average processing time"""
+        # Use exponential moving average
+        alpha = 0.1  # Smoothing factor
         self._stats['avg_processing_time'] = (
             alpha * new_time + (1 - alpha) * self._stats['avg_processing_time']
         )
     
     def get_cache_stats(self) -> dict:
-        """获取缓存和性能统计信息"""
+        """Get cache and performance statistics"""
         cache_size = len(self._embedding_cache) if self._embedding_cache else 0
         
-        # 计算缓存命中率
+        # Calculate cache hit rate
         total_requests = self._stats['cache_hits'] + self._stats['cache_misses']
         hit_rate = (self._stats['cache_hits'] / total_requests * 100) if total_requests > 0 else 0
         
         return {
-            # 缓存统计
+            # Cache statistics
             "cache_enabled": self.config.enable_cache,
             "cache_size": cache_size,
             "cache_max_size": self.cache_max_size,
@@ -333,26 +333,26 @@ class EmbeddingService:
             "cache_misses": self._stats['cache_misses'],
             "cache_ttl_seconds": self.config.cache_ttl,
             
-            # 模型统计
+            # Model statistics
             "model_loaded": self.model_loaded,
             "model_path": self.model_path,
             "embedding_dim": self.embedding_dim,
             "device": self.config.device,
             "last_error": self.last_error,
             
-            # 性能统计
+            # Performance statistics
             "requests_total": self._stats['requests_total'],
             "avg_processing_time_ms": f"{self._stats['avg_processing_time'] * 1000:.2f}",
             "max_concurrent_requests": self.config.max_concurrent_requests,
             
-            # 配置信息
+            # Configuration information
             "normalize_embeddings": self.config.normalize,
             "batch_size": self.config.batch_size,
             "preload_warmup": self.config.preload_warmup
         }
     
     def clear_cache(self):
-        """清空缓存"""
+        """Clear cache"""
         if self._embedding_cache:
             self._embedding_cache.clear()
         if self._cache_timestamps:
@@ -360,14 +360,14 @@ class EmbeddingService:
         print("[EmbeddingService] Cache cleared")
     
     def preload_common_texts(self, texts: List[str]):
-        """预加载常用文本的嵌入"""
+        """Preload embeddings for common texts"""
         if not texts:
             return
         
         print(f"[EmbeddingService] Preloading {len(texts)} common texts...")
         start_time = time.time()
         
-        self.get_embedding(texts)  # 这会自动缓存
+        self.get_embedding(texts)  # This will automatically cache
         
         load_time = time.time() - start_time
         print(f"[EmbeddingService] Preloaded {len(texts)} texts in {load_time:.2f}s")
@@ -376,10 +376,10 @@ class EmbeddingService:
                                  normalize: bool = None,
                                  use_cache: bool = None) -> Union[List[float], List[List[float]]]:
         """
-        异步获取文本嵌入，支持并发控制
+        Asynchronously get text embeddings with concurrency control
         """
         async with self._request_semaphore:
-            # 在线程池中运行同步方法以避免阻塞事件循环
+            # Run synchronous method in thread pool to avoid blocking event loop
             loop = asyncio.get_event_loop()
             return await loop.run_in_executor(
                 None, 
@@ -392,29 +392,29 @@ class EmbeddingService:
                                    use_cache: bool = None,
                                    max_concurrent: int = None) -> List[List[float]]:
         """
-        异步批量处理嵌入，支持并发限制
+        Asynchronously batch process embeddings with concurrency limits
         """
         if max_concurrent is None:
             max_concurrent = self.config.max_concurrent_requests
         
-        # 创建并发任务
+        # Create concurrent tasks
         semaphore = asyncio.Semaphore(max_concurrent)
         
         async def process_single_text(text):
             async with semaphore:
                 return await self.get_embedding_async(text, normalize, use_cache)
         
-        # 并发执行所有任务
+        # Execute all tasks concurrently
         tasks = [process_single_text(text) for text in texts]
         results = await asyncio.gather(*tasks)
         
         return results
 
-# 全局嵌入服务实例
+# Global embedding service instance
 _embedding_service = None
 
 def get_embedding_service() -> EmbeddingService:
-    """获取全局嵌入服务实例"""
+    """Get global embedding service instance"""
     global _embedding_service
     if _embedding_service is None:
         _embedding_service = EmbeddingService()
@@ -424,15 +424,15 @@ def get_embedding_service() -> EmbeddingService:
 def get_embedding(text: Union[str, List[str]], 
                  model: str = "text-embedding-ada-002") -> Union[List[float], List[List[float]]]:
     """
-    兼容原有接口的嵌入函数
-    model参数保留但会被忽略，始终使用本地模型
+    Compatible embedding function for existing interface
+    model parameter is kept but ignored, always uses local model
     """
     service = get_embedding_service()
     return service.get_embedding(text)
 
-# 测试函数
+# Test functions
 def test_embedding_service():
-    """测试嵌入服务"""
+    """Test embedding service"""
     print("=== Embedding Service Test ===")
     
     service = EmbeddingService()
@@ -440,17 +440,17 @@ def test_embedding_service():
         print("Failed to initialize embedding service")
         return False
     
-    # 测试单个文本
+    # Test single text
     text1 = "Hello world"
     emb1 = service.get_embedding(text1)
     print(f"Text: '{text1}' -> Embedding dim: {len(emb1)}")
     
-    # 测试批量文本
+    # Test batch texts
     texts = ["Hello world", "Hi there", "Good morning"]
     embs = service.get_embedding(texts)
     print(f"Batch texts: {len(texts)} -> Embeddings: {len(embs)}")
     
-    # 测试相似度
+    # Test similarity
     text2 = "Hi there"
     emb2 = service.get_embedding(text2)
     similarity = service.compute_similarity(emb1, emb2)

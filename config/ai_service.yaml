@@ -6,10 +6,14 @@ version: "2.0.0"
 # Model Configuration
 model:
   # Active model selection: auto, qwen, or specific model name
-  active_model: "auto"
+  active_model: "qwen3"
   
   # Directory containing GGUF model files
-  models_dir: "models/gpt4all"
+  models_dir: "models"
+  
+  # Supported models mapping
+  supported_models:
+    qwen3: "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf"
   
   # Enable automatic model detection
   auto_detect: true
@@ -81,7 +85,7 @@ monitoring:
 # Service Configuration  
 service:
   host: "127.0.0.1"
-  port: 8001
+  port: 8055
   enable_cors: true
   cors_origins:
     - "*"

@@ -1,5 +1,5 @@
 """
-酒吧NPC代理系统 - 具有情感、记忆和互动的智能角色
+Bar NPC Agent System - Intelligent characters with emotions, memory and interactions
 """
 import random
 import time
@@ -9,14 +9,14 @@ from dataclasses import dataclass
 
 @dataclass
 class Memory:
-    """记忆片段"""
+    """Memory fragment"""
     content: str
     timestamp: datetime
     emotion: str
     importance: float
 
 class SimpleAgent:
-    """基础代理类"""
+    """Base agent class"""
     def __init__(self, name: str, role: str, position: Tuple[int, int]):
         self.name = name
         self.role = role
@@ -25,29 +25,29 @@ class SimpleAgent:
         self.last_action_time = time.time()
         
     def add_memory(self, content: str, emotion: str = "neutral", importance: float = 0.5):
-        """添加记忆"""
+        """Add memory"""
         memory = Memory(content, datetime.now(), emotion, importance)
         self.memories.append(memory)
-        # 保持最近的20条记忆
+        # Keep the most recent 20 memories
         if len(self.memories) > 20:
             self.memories.pop(0)
 
 class BarAgent(SimpleAgent):
-    """酒吧NPC - 更有趣的行为"""
+    """Bar NPC - More interesting behaviors"""
     
     def __init__(self, name: str, role: str, position: Tuple[int, int]):
         super().__init__(name, role, position)
-        self.drunk_level = 0  # 醉酒程度 (0-10)
-        self.mood = "neutral"  # 心情: happy, sad, neutral, excited, tired
-        self.energy = 100  # 精力值 (0-100)
-        self.social_battery = 100  # 社交电量 (0-100)
+        self.drunk_level = 0  # Drunk level (0-10)
+        self.mood = "neutral"  # Mood: happy, sad, neutral, excited, tired
+        self.energy = 100  # Energy level (0-100)
+        self.social_battery = 100  # Social battery (0-100)
         self.favorite_drink = self._assign_favorite_drink()
         self.conversation_topics = []
-        self.relationships = {}  # 与其他角色的关系
+        self.relationships = {}  # Relationships with other characters
         self.last_interaction = None
         
     def _assign_favorite_drink(self) -> str:
-        """根据角色分配偏好饮品"""
+        """Assign favorite drink based on role"""
         drinks_by_role = {
             "bartender": ["Coffee", "Water", "Local IPA"],
             "regular customer": ["Whiskey Sour", "Old Fashioned", "Whiskey"],
@@ -56,24 +56,24 @@ class BarAgent(SimpleAgent):
         return random.choice(drinks_by_role.get(self.role, ["Water"]))
     
     def update_mood_and_energy(self):
-        """更新心情和精力"""
+        """Update mood and energy"""
         current_time = datetime.now()
         hour = current_time.hour
         
-        # 根据时间调整精力
-        if 18 <= hour <= 23:  # 酒吧营业高峰期
+        # Adjust energy based on time
+        if 18 <= hour <= 23:  # Bar peak hours
             self.energy = max(60, self.energy)
-        elif hour < 6:  # 深夜
+        elif hour < 6:  # Late night
             self.energy = max(20, self.energy - 10)
         
-        # 根据角色调整心情
+        # Adjust mood based on role
         if self.role == "musician" and 19 <= hour <= 22:
             self.mood = "excited"
         elif self.role == "regular customer" and self.drunk_level > 5:
             self.mood = random.choice(["melancholy", "philosophical", "nostalgic"])
     
     def bar_specific_actions(self) -> str:
-        """酒吧特定行为"""
+        """Bar-specific actions"""
         self.update_mood_and_energy()
         
         if self.role == "bartender":
@@ -129,7 +129,7 @@ class BarAgent(SimpleAgent):
         return action
     
     def generate_bar_dialogue(self, context: str = "", target: str = None) -> str:
-        """生成酒吧对话"""
+        """Generate bar dialogue"""
         current_hour = datetime.now().hour
         
         if self.role == "bartender":
@@ -213,15 +213,15 @@ class BarAgent(SimpleAgent):
         return response
     
     def interact_with(self, other_agent: 'BarAgent') -> str:
-        """与其他角色互动"""
+        """Interact with other characters"""
         if other_agent.name not in self.relationships:
-            self.relationships[other_agent.name] = 0.0  # 中性关系
+            self.relationships[other_agent.name] = 0.0  # Neutral relationship
         
-        # 更新关系值
+        # Update relationship value
         interaction_quality = random.uniform(-0.1, 0.2)
         self.relationships[other_agent.name] += interaction_quality
         
-        # 生成互动内容
+        # Generate interaction content
         if self.role == "bartender" and other_agent.role == "regular customer":
             interactions = [
                 f"serves {other_agent.name} a drink with a knowing nod",
@@ -247,7 +247,7 @@ class BarAgent(SimpleAgent):
         return interaction
     
     def get_status(self) -> Dict:
-        """获取角色状态"""
+        """Get character status"""
         return {
             "name": self.name,
             "role": self.role,
@@ -261,34 +261,34 @@ class BarAgent(SimpleAgent):
         }
 
 class BarSimulation:
-    """酒吧模拟系统"""
+    """Bar simulation system"""
     
     def __init__(self):
         self.agents = {}
-        self.time_factor = 60  # 1分钟 = 1小时游戏时间
+        self.time_factor = 60  # 1 minute = 1 hour game time
         self.events = []
         
     def add_agent(self, agent: BarAgent):
-        """添加代理"""
+        """Add agent"""
         self.agents[agent.name] = agent
         
     def simulate_time_passage(self, minutes: int = 1):
-        """模拟时间流逝"""
+        """Simulate time passage"""
         for agent in self.agents.values():
-            # 随机事件
-            if random.random() < 0.3:  # 30%概率发生事件
+            # Random events
+            if random.random() < 0.3:  # 30% chance of event occurring
                 action = agent.bar_specific_actions()
                 self.events.append(f"{agent.name} is {action}")
             
-            # 角色互动
-            if random.random() < 0.2 and len(self.agents) > 1:  # 20%概率互动
+            # Character interactions
+            if random.random() < 0.2 and len(self.agents) > 1:  # 20% chance of interaction
                 other_agents = [a for a in self.agents.values() if a != agent]
                 other = random.choice(other_agents)
                 interaction = agent.interact_with(other)
                 self.events.append(f"{agent.name} {interaction}")
     
     def get_scene_description(self) -> str:
-        """获取场景描述"""
+        """Get scene description"""
         descriptions = []
         for agent in self.agents.values():
             status = agent.get_status()
@@ -299,5 +299,5 @@ class BarSimulation:
         return "\n".join(descriptions)
     
     def get_recent_events(self, count: int = 5) -> List[str]:
-        """获取最近事件"""
+        """Get recent events"""
         return self.events[-count:] if self.events else ["The bar is quiet..."]

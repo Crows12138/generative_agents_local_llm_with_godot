@@ -26,12 +26,16 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from ai_service.config_enhanced import get_config, EnhancedConfigManager
 from ai_service.ai_service import local_llm_generate
 from ai_service.monitoring import get_performance_monitor, get_ai_logger
+from ai_service.unified_parser import get_unified_parser
+from monitoring.parser_monitor import get_parser_monitor, ParserMonitorContext
 
 # Initialize configuration and monitoring
 config_manager = get_config()
 config = config_manager.config
 perf_monitor = get_performance_monitor()
 logger = get_ai_logger()
+unified_parser = get_unified_parser()
+parser_monitor = get_parser_monitor()
 
 # Create FastAPI app
 app = FastAPI(
@@ -228,22 +232,16 @@ async def chat_endpoint(request: ChatRequest):
             request.context or {}
         )
         
-        # Call AI service
-        response = local_llm_generate(
-            prompt,
-            model_key=None  # Use default active model
-        )
-        
-        # Extract emotion and action if present
-        emotion = None
-        action = None
-        
-        # Simple emotion detection
-        emotions = ["happy", "sad", "angry", "surprised", "neutral", "confused", "excited"]
-        for emo in emotions:
-            if emo in response.lower():
-                emotion = emo
-                break
+        # Call AI service with monitoring
+        with ParserMonitorContext(parser_monitor, "chat") as monitor_ctx:
+            response = local_llm_generate(
+                prompt,
+                model_key=None  # Use default active model
+            )
+            
+            # Use unified parser for emotion and action extraction
+            emotion = unified_parser.parse_emotion(response)
+            action = unified_parser.parse_action(response)
         
         # Calculate processing time
         processing_time = (datetime.now() - start_time).total_seconds()
@@ -279,11 +277,12 @@ async def decide_endpoint(request: DecisionRequest):
             request.context or {}
         )
         
-        # Call AI service
-        response = local_llm_generate(prompt, model_key=None)
-        
-        # Parse response
-        chosen_option, reasoning, confidence = parse_decision_response(response)
+        # Call AI service with monitoring
+        with ParserMonitorContext(parser_monitor, "decision") as monitor_ctx:
+            response = local_llm_generate(prompt, model_key=None)
+            
+            # Use unified parser for decision parsing
+            chosen_option, reasoning, confidence = unified_parser.parse_decision(response, request.options)
         
         # Map option number to actual option text
         try:
@@ -333,23 +332,12 @@ async def think_endpoint(request: ThinkRequest):
         max_tokens = {"quick": 100, "normal": 200, "deep": 400}.get(request.depth, 200)
         temperature = {"quick": 0.5, "normal": 0.7, "deep": 0.9}.get(request.depth, 0.7)
         
-        # Call AI service
-        response = local_llm_generate(prompt, model_key=None)
-        
-        # Determine mood from thought
-        mood = "contemplative"
-        mood_keywords = {
-            "happy": ["joy", "happy", "glad", "pleased", "delighted"],
-            "sad": ["sad", "unhappy", "melancholy", "depressed"],
-            "worried": ["worried", "anxious", "concerned", "nervous"],
-            "excited": ["excited", "thrilled", "eager", "enthusiastic"],
-            "angry": ["angry", "frustrated", "annoyed", "irritated"]
-        }
-        
-        for mood_name, keywords in mood_keywords.items():
-            if any(keyword in response.lower() for keyword in keywords):
-                mood = mood_name
-                break
+        # Call AI service with monitoring
+        with ParserMonitorContext(parser_monitor, "thinking") as monitor_ctx:
+            response = local_llm_generate(prompt, model_key=None)
+            
+            # Use unified parser for mood extraction
+            mood = unified_parser.parse_mood(response)
         
         # Calculate processing time
         processing_time = (datetime.now() - start_time).total_seconds()

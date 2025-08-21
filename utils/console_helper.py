@@ -17,7 +17,9 @@ except ImportError:
 if sys.platform == "win32":
     try:
         # Set console code page to UTF-8
-        os.system("chcp 65001 > nul")
+        with open(os.devnull, 'w') as devnull:
+            import subprocess
+            subprocess.run(["chcp", "65001"], stdout=devnull, stderr=devnull, shell=True)
         # Force UTF-8 encoding for stdout and stderr
         if hasattr(sys.stdout, 'reconfigure'):
             sys.stdout.reconfigure(encoding='utf-8')

@@ -111,3 +111,36 @@ models/gpt4all/
 CLAUDE.local.md
 CLAUDE.md
 codex.tar.gz
+Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf
+nul
+
+# Debug and session files
+debug_system/*.json
+debug_system/*_session.json
+debug_system/*_traces.json
+
+# Temporary files
+*.tmp
+*.temp
+*_backup
+*_old
+
+# AI service logs
+ai_service.log
+ai_bridge.log
+
+# Removed optimizer files (now integrated into existing modules)
+memory_optimizer.py
+network_optimizer.py
+performance_optimizer.py
+demo_performance_suite.py
+
+# Config files
+ai_service/config.py
+Modelfile.qwen3
+ai_config.json
+
+# Old documentation
+README_OLD.md
+*GUIDE_OLD.md
+*REFERENCE_OLD.md

@@ -12,13 +12,18 @@ import os
 import time
 import random
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 from datetime import datetime
 
 import requests
 from fastapi import FastAPI
 from pydantic import BaseModel
-from gpt4all import GPT4All
+try:
+    from llama_cpp import Llama
+    LLAMACPP_AVAILABLE = True
+except ImportError:
+    LLAMACPP_AVAILABLE = False
+    print("[ai_service] llama-cpp-python not available, falling back to simple responses")
 from importlib import import_module
 
 # Import configuration manager, error handling and monitoring
@@ -99,7 +104,8 @@ def handle_api_errors(func):
 
 # Use paths and models from configuration
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-MODELS_DIR = Path(_model_config.models_dir)
+# Ensure MODELS_DIR is relative to PROJECT_ROOT
+MODELS_DIR = PROJECT_ROOT / _model_config.models_dir if not Path(_model_config.models_dir).is_absolute() else Path(_model_config.models_dir)
 
 # Supported models from configuration
 SUPPORTED_GGUF: Dict[str, str] = _model_config.supported_models
@@ -107,8 +113,8 @@ SUPPORTED_GGUF: Dict[str, str] = _model_config.supported_models
 # Active model from configuration
 _ACTIVE_MODEL_KEY: str = _model_config.active_model.lower()
 
-# Cache of GPT4All instances by model key
-_MODEL_INSTANCES: Dict[str, GPT4All] = {}
+# Cache of Llama instances by model key
+_MODEL_INSTANCES: Dict[str, Llama] = {}
 
 
 def set_active_model(model_key: str) -> bool:
@@ -128,8 +134,8 @@ def get_active_model() -> str:
 
 
 @handle_model_errors
-def _get_model_instance(model_key: str) -> GPT4All:
-    """Get or lazily create a GPT4All instance for the given key."""
+def _get_model_instance(model_key: str) -> Llama:
+    """Get or lazily create a Llama instance for the given key."""
     model_key = model_key.lower()
     if model_key not in SUPPORTED_GGUF:
         print(f"[ai_service] Unsupported model key '{model_key}', falling back to 'qwen'")
@@ -158,39 +164,46 @@ def _get_model_instance(model_key: str) -> GPT4All:
             ErrorType.CONFIGURATION_ERROR
         )
 
-    # Resolve desired device. Force CPU for llama to avoid Kompute/Vulkan crashes.
-    force_cpu_env = _model_config.force_cpu
-    desired_device = "cpu" if (force_cpu_env or model_key in ("llama",)) else "gpu"
-    print(f"[ai_service] Desired device for '{model_key}': {desired_device}{' (forced by env)' if force_cpu_env else ''}")
-
-    # Create instance; prefer desired device but fallback to CPU on failure
-    try:
-        ai = GPT4All(
-            model_name=model_file,
-            model_path=str(MODELS_DIR),
-            allow_download=False,
-            device=desired_device,
+    # Check if llama-cpp-python is available
+    if not LLAMACPP_AVAILABLE:
+        raise NonRetryableError(
+            "llama-cpp-python not available",
+            ErrorType.CONFIGURATION_ERROR
         )
-    except Exception as dev_error:
-        if desired_device != "cpu":
-            print(f"[ai_service] Device '{desired_device}' init failed for '{model_key}': {dev_error}; falling back to CPU")
-            ai = GPT4All(
-                model_name=model_file,
-                model_path=str(MODELS_DIR),
-                allow_download=False,
-                device="cpu",
-            )
-        else:
-            raise
+
+    # Create Llama instance with optimized settings
+    print(f"[ai_service] Loading model '{model_key}' with llama-cpp-python")
+    try:
+        ai = Llama(
+            model_path=str(model_path),
+            n_ctx=4096,
+            n_threads=8,
+            n_gpu_layers=-1 if not _model_config.force_cpu else 0,
+            verbose=False,
+            n_batch=512,
+            seed=42,
+            f16_kv=True,
+            use_mlock=True,
+            use_mmap=True,
+        )
+        print(f"[ai_service] Successfully loaded model '{model_key}' with llama-cpp-python")
+    except Exception as load_error:
+        print(f"[ai_service] Failed to load model '{model_key}': {load_error}")
+        raise
     _MODEL_INSTANCES[model_key] = ai
     return ai
 
-# Unified API request/response models
+# Unified API request/response models - Fixed Pydantic definitions
 class BaseRequest(BaseModel):
     """Base request model"""
     request_id: Optional[str] = None
     timestamp: Optional[str] = None
     version: str = "v1"
+    
+    class Config:
+        """Pydantic config"""
+        use_enum_values = True
+        validate_assignment = True
 
 class BaseResponse(BaseModel):
     """Base response model"""
@@ -199,26 +212,58 @@ class BaseResponse(BaseModel):
     version: str = "v1"
     processing_time_ms: Optional[float] = None
     status: str = "success"
+    
+    class Config:
+        """Pydantic config"""
+        use_enum_values = True
+        validate_assignment = True
 
 class ChatRequest(BaseRequest):
+    """Chat request model with proper typing"""
     model_key: Optional[str] = None
     prompt: str
     max_tokens: Optional[int] = None
     temperature: Optional[float] = None
     context: Optional[Dict[str, Any]] = None
+    
+    class Config:
+        """Pydantic config"""
+        use_enum_values = True
+        validate_assignment = True
 
 class ChatResponse(BaseResponse):
+    """Chat response model with proper typing"""
     response: str
     model_used: str
     fallback_used: bool = False
     metadata: Optional[Dict[str, Any]] = None
+    
+    class Config:
+        """Pydantic config"""
+        use_enum_values = True
+        validate_assignment = True
 
 class ErrorResponse(BaseResponse):
-    """Error response model"""
+    """Error response model with proper typing"""
     status: str = "error"
     error_code: str
     error_message: str
     error_details: Optional[Dict[str, Any]] = None
+    
+    class Config:
+        """Pydantic config"""
+        use_enum_values = True
+        validate_assignment = True
+
+# Rebuild all models to fix Pydantic issues
+try:
+    BaseRequest.model_rebuild()
+    BaseResponse.model_rebuild() 
+    ChatRequest.model_rebuild()
+    ChatResponse.model_rebuild()
+    ErrorResponse.model_rebuild()
+except Exception as e:
+    print(f"[ai_service] Warning: Failed to rebuild Pydantic models: {e}")
 
 # Backward compatible endpoints
 @app.post("/chat", response_model=ChatResponse)
@@ -510,7 +555,7 @@ async def unload_model_endpoint(model_key: str):
 def _format_prompt(prompt: str, model_key: str) -> str:
     """Format prompt based on model template."""
     mk = model_key.lower()
-    if mk == "qwen":
+    if mk in ("qwen", "qwen3"):
         return (
             f"<|im_start|>system\nYou are a helpful AI assistant. Respond concisely and accurately.<|im_end|>\n"
             f"<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
@@ -531,7 +576,7 @@ def _clean_response(raw: str, model_key: str) -> str:
     """Clean model artifacts according to template."""
     text = raw.strip()
     mk = model_key.lower()
-    if mk == "qwen" and "<|im_end|>" in text:
+    if mk in ("qwen", "qwen3") and "<|im_end|>" in text:
         text = text.split("<|im_end|>")[0].strip()
     elif mk == "llama" and "<|end|>" in text:
         text = text.split("<|end|>")[0].strip()
@@ -574,41 +619,32 @@ def local_llm_generate(prompt: str, model_key: Optional[str] = None, max_retries
     retry_handler = RetryHandler(GENERATION_RETRY_CONFIG)
     
     def _generate_with_model():
-        tokens = ""
-        token_count = 0
-        params = {
-            "prompt": formatted_prompt,
-            "max_tokens": _model_config.max_tokens,
-            "temp": _model_config.temperature,
-            "top_p": _model_config.top_p,
-            "repeat_penalty": _model_config.repeat_penalty,
-            "streaming": False,
-        }
-        
         try:
-            for tok in ai.generate(**params):
-                tokens += tok
-                token_count += 1
-                if token_count % 100 == 0:
-                    print(f"[ai_service] Generated {token_count} tokens...")
-        except Exception as gen_error:
-            print(f"[ai_service] Primary generation failed: {gen_error}")
-            error_monitor.record_error(gen_error, ErrorType.GENERATION_ERROR)
+            # Use llama-cpp-python generation
+            output = ai(
+                formatted_prompt,
+                max_tokens=_model_config.max_tokens,
+                temperature=_model_config.temperature,
+                top_p=_model_config.top_p,
+                repeat_penalty=_model_config.repeat_penalty,
+                stop=["<|im_end|>", "<|im_start|>"] if mk in ("qwen", "qwen3") else ["<|end|>"],
+                echo=False
+            )
             
-            # Try fallback mode
-            print(f"[ai_service] Trying fallback generation...")
-            try:
-                for tok in ai.generate(prompt, max_tokens=400, temp=0.5):
-                    tokens += tok
-            except Exception as fallback_error:
-                error_monitor.record_error(fallback_error, ErrorType.GENERATION_ERROR)
-                raise RetryableError(f"Both primary and fallback generation failed: {fallback_error}")
+            tokens = output['choices'][0]['text']
+            print(f"[ai_service] Generated {len(tokens)} characters")
+            
+        except Exception as gen_error:
+            print(f"[ai_service] Generation failed: {gen_error}")
+            error_monitor.record_error(gen_error, ErrorType.GENERATION_ERROR)
+            raise RetryableError(f"Generation failed: {gen_error}")
 
         cleaned = _clean_response(tokens, mk)
         if not cleaned:
             # Perform sanity check
             try:
-                sanity = "".join(ai.generate("Say hello", max_tokens=10))
+                sanity_output = ai("Say hello", max_tokens=10, echo=False)
+                sanity = sanity_output['choices'][0]['text']
                 if not sanity.strip():
                     raise RetryableError("Model sanity check failed - no output produced")
             except Exception as sanity_error:

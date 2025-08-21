@@ -1,16 +1,16 @@
 """
-酒吧场景渲染器 - 文本界面显示酒吧场景
+Bar Scene Renderer - Text interface for displaying bar scenes
 """
 import json
 import os
 from typing import Dict, List, Tuple
 from colorama import init, Fore, Back, Style
-from bar_agents import BarAgent, BarSimulation
+from .bar_agents import BarAgent, BarSimulation
 
-init(autoreset=True)  # 初始化colorama
+init(autoreset=True)  # Initialize colorama
 
 class BarRenderer:
-    """酒吧场景渲染器"""
+    """Bar scene renderer"""
     
     def __init__(self, config_path: str):
         self.config = self._load_config(config_path)
@@ -32,7 +32,7 @@ class BarRenderer:
             "floor_wood": "."
         }
         
-        # 颜色映射
+        # Color mapping
         self.color_map = {
             "wall_brick": Fore.RED + Style.BRIGHT,
             "door": Fore.YELLOW + Style.BRIGHT,
@@ -45,22 +45,22 @@ class BarRenderer:
         }
         
     def _load_config(self, config_path: str) -> Dict:
-        """加载配置文件"""
+        """Load configuration file"""
         with open(config_path, 'r', encoding='utf-8') as f:
             return json.load(f)
     
     def update_agent_positions(self, agents: Dict[str, BarAgent]):
-        """更新代理位置"""
+        """Update agent positions"""
         self.agent_positions = {name: agent.position for name, agent in agents.items()}
     
     def get_char_at_position(self, x: int, y: int) -> Tuple[str, str]:
-        """获取指定位置的字符和颜色"""
-        # 检查是否有代理在此位置
+        """Get character and color at specified position"""
+        # Check if there's an agent at this position
         for name, pos in self.agent_positions.items():
             if pos == [x, y]:
                 return name[0].upper(), Fore.WHITE + Back.RED + Style.BRIGHT
         
-        # 获取地图字符
+        # Get map character
         if 0 <= y < len(self.tiles) and 0 <= x < len(self.tiles[y]):
             tile_char = self.tiles[y][x]
             tile_type = self.legend.get(tile_char, "floor_wood")
@@ -71,12 +71,12 @@ class BarRenderer:
         return " ", Fore.WHITE
     
     def render_room(self) -> str:
-        """渲染房间"""
+        """Render room"""
         output = []
         output.append(f"\n{Fore.YELLOW + Style.BRIGHT}=== {self.room['name']} ==={Style.RESET_ALL}")
         output.append(f"{Fore.CYAN}{self.room.get('description', '')}{Style.RESET_ALL}\n")
         
-        # 渲染地图
+        # Render map
         for y in range(len(self.tiles)):
             row = ""
             for x in range(len(self.tiles[y])):
@@ -87,14 +87,14 @@ class BarRenderer:
         return "\n".join(output)
     
     def render_legend(self) -> str:
-        """渲染图例"""
+        """Render legend"""
         output = [f"\n{Fore.YELLOW}Legend:{Style.RESET_ALL}"]
         for symbol, tile_type in self.legend.items():
             char = self.char_map.get(tile_type, symbol)
             color = self.color_map.get(tile_type, Fore.WHITE)
             output.append(f"  {color}{char}{Style.RESET_ALL} - {tile_type.replace('_', ' ').title()}")
         
-        # 添加代理图例
+        # Add agent legend
         output.append(f"\n{Fore.YELLOW}Characters:{Style.RESET_ALL}")
         for name in self.spawn_points.keys():
             if name != "player":
@@ -103,7 +103,7 @@ class BarRenderer:
         return "\n".join(output)
     
     def render_agent_status(self, agents: Dict[str, BarAgent]) -> str:
-        """渲染代理状态"""
+        """Render agent status"""
         output = [f"\n{Fore.YELLOW}Character Status:{Style.RESET_ALL}"]
         
         for agent in agents.values():
@@ -130,18 +130,18 @@ class BarRenderer:
         return "\n".join(output)
     
     def render_events(self, events: List[str]) -> str:
-        """渲染最近事件"""
+        """Render recent events"""
         if not events:
             return f"\n{Fore.YELLOW}Recent Events:{Style.RESET_ALL}\n  The bar is quiet..."
         
         output = [f"\n{Fore.YELLOW}Recent Events:{Style.RESET_ALL}"]
-        for event in events[-5:]:  # 显示最近5个事件
+        for event in events[-5:]:  # Show last 5 events
             output.append(f"  {Fore.GREEN}-{Style.RESET_ALL} {event}")
         
         return "\n".join(output)
     
     def render_menu(self) -> str:
-        """渲染酒吧菜单"""
+        """Render bar menu"""
         menu = self.room.get("bar_menu", {})
         output = [f"\n{Fore.YELLOW + Style.BRIGHT}Bar Menu:{Style.RESET_ALL}"]
         
@@ -153,11 +153,11 @@ class BarRenderer:
         return "\n".join(output)
     
     def clear_screen(self):
-        """清屏"""
+        """Clear screen"""
         os.system('cls' if os.name == 'nt' else 'clear')
     
     def render_full_scene(self, simulation: BarSimulation) -> str:
-        """渲染完整场景"""
+        """Render complete scene"""
         self.update_agent_positions(simulation.agents)
         
         output = []
@@ -169,7 +169,7 @@ class BarRenderer:
         return "\n".join(output)
 
 class InteractiveBarGame:
-    """交互式酒吧游戏"""
+    """Interactive bar game"""
     
     def __init__(self, config_path: str):
         self.renderer = BarRenderer(config_path)
@@ -178,8 +178,8 @@ class InteractiveBarGame:
         self.setup_game()
     
     def setup_game(self):
-        """设置游戏"""
-        # 创建NPC
+        """Setup game"""
+        # Create NPCs
         npc_roles = self.renderer.room["npc_roles"]
         spawn_points = self.renderer.room["spawn_points"]
         
@@ -189,7 +189,7 @@ class InteractiveBarGame:
             self.simulation.add_agent(agent)
     
     def display_help(self):
-        """显示帮助信息"""
+        """Display help information"""
         help_text = f"""
 {Fore.YELLOW + Style.BRIGHT}Available Commands:{Style.RESET_ALL}
   {Fore.GREEN}help{Style.RESET_ALL} or {Fore.GREEN}h{Style.RESET_ALL} - Show this help
@@ -205,21 +205,21 @@ class InteractiveBarGame:
         print(help_text)
     
     def handle_talk_command(self, target_name: str):
-        """处理对话命令"""
+        """Handle talk command"""
         target_name = target_name.strip().title()
         if target_name in self.simulation.agents:
             agent = self.simulation.agents[target_name]
             dialogue = agent.generate_bar_dialogue("conversation", "Player")
             print(f"\n{Fore.CYAN + Style.BRIGHT}{target_name}:{Style.RESET_ALL} \"{dialogue}\"")
             
-            # 增加互动记忆
+            # Add interaction memory
             agent.add_memory(f"I talked with the player", "social", 0.6)
         else:
             available = ", ".join(self.simulation.agents.keys())
             print(f"\n{Fore.RED}No one named '{target_name}' here. Available: {available}{Style.RESET_ALL}")
     
     def auto_simulation(self):
-        """自动模拟模式"""
+        """Auto-simulation mode"""
         print(f"\n{Fore.YELLOW}Entering auto-simulation mode. Press Ctrl+C to stop.{Style.RESET_ALL}")
         try:
             while True:
@@ -228,17 +228,17 @@ class InteractiveBarGame:
                 print(f"\n{Fore.GREEN}[Auto-simulation running... Press Ctrl+C to stop]{Style.RESET_ALL}")
                 
                 import time
-                time.sleep(3)  # 等待3秒
-                self.simulation.simulate_time_passage(5)  # 模拟5分钟
+                time.sleep(3)  # Wait 3 seconds
+                self.simulation.simulate_time_passage(5)  # Simulate 5 minutes
         except KeyboardInterrupt:
             print(f"\n{Fore.YELLOW}Exiting auto-simulation mode.{Style.RESET_ALL}")
     
     def run(self):
-        """运行游戏"""
+        """Run game"""
         print(f"{Fore.YELLOW + Style.BRIGHT}Welcome to the Cozy Bar Demo!{Style.RESET_ALL}")
         print(f"Type '{Fore.GREEN}help{Style.RESET_ALL}' for available commands.")
         
-        # 初始显示
+        # Initial display
         print(self.renderer.render_full_scene(self.simulation))
         
         while self.running:
@@ -274,7 +274,7 @@ class InteractiveBarGame:
                     self.auto_simulation()
                 
                 elif command.startswith('talk '):
-                    target = command[5:]  # 移除 'talk '
+                    target = command[5:]  # Remove 'talk '
                     self.handle_talk_command(target)
                 
                 else:

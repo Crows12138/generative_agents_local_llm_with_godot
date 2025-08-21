@@ -1,6 +1,6 @@
 """
 Enhanced AI Service Configuration Management
-统一配置管理，支持YAML、自动模型检测、热重载
+Unified configuration management supporting YAML, automatic model detection, hot reload
 """
 
 import os
@@ -16,14 +16,14 @@ import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-# 项目根目录
+# Project root directory
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODELS_DIR = PROJECT_ROOT / "models"
 CONFIG_DIR = PROJECT_ROOT / "config"
 
 @dataclass
 class ModelMetadata:
-    """模型元数据"""
+    """Model metadata"""
     name: str
     path: str
     size_mb: float
@@ -33,48 +33,48 @@ class ModelMetadata:
     
 @dataclass
 class ModelConfig:
-    """增强的模型配置"""
-    # LLM模型配置
+    """Enhanced model configuration"""
+    # LLM model configuration
     active_model: str = "auto"  # auto, qwen, or model name
     models_dir: str = str(MODELS_DIR / "gpt4all")
     auto_detect: bool = True
     detected_models: Dict[str, ModelMetadata] = field(default_factory=dict)
     
-    # 生成参数
+    # Generation parameters
     max_tokens: int = 800
     temperature: float = 0.3
     top_p: float = 0.9
     repeat_penalty: float = 1.1
     max_retries: int = 3
     
-    # 降级策略
+    # Fallback strategy
     fallback_chain: List[str] = field(default_factory=lambda: ["qwen", "simple"])
     enable_fallback: bool = True
     
-    # 性能配置
+    # Performance configuration
     force_cpu: bool = False
     preload_models: bool = True
-    model_cache_size: int = 2  # 最多缓存的模型数量
+    model_cache_size: int = 2  # Maximum number of cached models
     
-    # 兼容旧配置API的字段
+    # Fields compatible with old configuration API
     supported_models: Dict[str, str] = field(default_factory=lambda: {
         "qwen3": "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf"
     })
     
     def detect_models(self) -> Dict[str, ModelMetadata]:
-        """自动检测可用模型"""
+        """Automatically detect available models"""
         detected = {}
         models_path = Path(self.models_dir)
         
         if models_path.exists():
-            # 搜索GGUF文件
+            # Search for GGUF files
             gguf_files = glob.glob(str(models_path / "*.gguf"))
             for gguf_file in gguf_files:
                 path = Path(gguf_file)
                 size_mb = path.stat().st_size / (1024 * 1024)
                 name = path.stem
                 
-                # 推断模型类型和用途
+                # Infer model type and usage
                 model_type = "llm"
                 recommended_use = "general"
                 
@@ -92,7 +92,7 @@ class ModelConfig:
                     requirements={"ram_gb": max(4, size_mb / 1000 * 2)}
                 )
         
-        # 检测sentence-transformers模型
+        # Detect sentence-transformers models
         st_path = MODELS_DIR / "all-MiniLM-L6-v2"
         if st_path.exists():
             detected["sentence-transformer"] = ModelMetadata(
@@ -109,31 +109,31 @@ class ModelConfig:
 
 @dataclass
 class EmbeddingConfig:
-    """增强的嵌入配置"""
-    model_path: str = "auto"  # auto或具体路径
+    """Enhanced embedding configuration"""
+    model_path: str = "auto"  # auto or specific path
     model_name: str = "all-MiniLM-L6-v2"
     embedding_dim: int = 384
     normalize: bool = True
     batch_size: int = 32
     
-    # 缓存配置
+    # Cache configuration
     enable_cache: bool = True
     cache_max_size: int = 10000
     cache_ttl: int = 3600
     
-    # 性能配置
+    # Performance configuration
     device: str = "auto"  # auto, cpu, cuda
     preload_warmup: bool = True
     warmup_samples: int = 100
     
-    # 并发配置
+    # Concurrency configuration
     max_concurrent_requests: int = 10
     request_timeout: float = 30.0
     
     def auto_detect_path(self) -> str:
-        """自动检测嵌入模型路径"""
+        """Automatically detect embedding model path"""
         if self.model_path == "auto":
-            # 搜索常见的sentence-transformer模型
+            # Search for common sentence-transformer models
             possible_paths = [
                 MODELS_DIR / "all-MiniLM-L6-v2",
                 MODELS_DIR / "sentence-transformers" / "all-MiniLM-L6-v2",
@@ -145,67 +145,67 @@ class EmbeddingConfig:
                     self.model_path = str(path)
                     return self.model_path
                     
-            # 如果找不到，使用默认路径
+            # If not found, use default path
             self.model_path = str(MODELS_DIR / "all-MiniLM-L6-v2")
             
         return self.model_path
 
 @dataclass
 class MonitoringConfig:
-    """监控配置"""
+    """Monitoring configuration"""
     enable_monitoring: bool = True
     enable_health_check: bool = True
-    health_check_interval: int = 60  # 秒
+    health_check_interval: int = 60  # seconds
     
-    # 性能监控
+    # Performance monitoring
     track_inference_time: bool = True
     track_memory_usage: bool = True
     track_error_rate: bool = True
     
-    # 日志配置
+    # Logging configuration
     log_level: str = "INFO"
     log_file: str = "ai_service.log"
     log_rotation: str = "daily"
     log_max_size_mb: int = 100
     
-    # 指标导出
+    # Metrics export
     export_metrics: bool = True
-    metrics_export_interval: int = 300  # 秒
+    metrics_export_interval: int = 300  # seconds
     metrics_export_path: str = "metrics/"
 
 @dataclass
 class ServiceConfig:
-    """服务配置"""
+    """Service configuration"""
     host: str = "127.0.0.1"
     port: int = 8001
     enable_cors: bool = True
     cors_origins: List[str] = field(default_factory=lambda: ["*"])
     
-    # API配置
+    # API configuration
     api_prefix: str = "/api/v1"
     enable_docs: bool = True
     docs_url: str = "/docs"
     
-    # 安全配置
+    # Security configuration
     enable_auth: bool = False
     api_key: Optional[str] = None
-    rate_limit: int = 100  # 请求/分钟
+    rate_limit: int = 100  # requests/minute
 
 @dataclass
 class AIServiceConfig:
-    """完整的增强AI服务配置"""
+    """Complete enhanced AI service configuration"""
     model: ModelConfig = field(default_factory=ModelConfig)
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
     monitoring: MonitoringConfig = field(default_factory=MonitoringConfig)
     service: ServiceConfig = field(default_factory=ServiceConfig)
     
-    # 配置元数据
+    # Configuration metadata
     version: str = "2.0.0"
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     last_modified: str = field(default_factory=lambda: datetime.now().isoformat())
 
 class ConfigFileHandler(FileSystemEventHandler):
-    """配置文件变更处理器"""
+    """Configuration file change handler"""
     
     def __init__(self, config_manager):
         self.config_manager = config_manager
@@ -216,14 +216,14 @@ class ConfigFileHandler(FileSystemEventHandler):
             self.config_manager.reload()
 
 class EnhancedConfigManager:
-    """增强的配置管理器"""
+    """Enhanced configuration manager"""
     
     def __init__(self, config_file: Optional[str] = None):
-        # 支持YAML和JSON
+        # Support YAML and JSON
         if config_file:
             self.config_file = config_file
         else:
-            # 优先查找YAML配置
+            # Prioritize YAML configuration
             yaml_config = CONFIG_DIR / "ai_service.yaml"
             json_config = PROJECT_ROOT / "ai_config.json"
             
@@ -239,12 +239,12 @@ class EnhancedConfigManager:
         self._apply_env_overrides()
         self._auto_detect_models()
         
-        # 热重载支持
+        # Hot reload support
         self.observer = None
         self._hot_reload_enabled = False
         
     def _load_config(self):
-        """从配置文件加载配置"""
+        """Load configuration from file"""
         if os.path.exists(self.config_file):
             try:
                 with open(self.config_file, 'r', encoding='utf-8') as f:
@@ -253,7 +253,7 @@ class EnhancedConfigManager:
                     else:
                         data = json.load(f)
                 
-                # 更新配置
+                # Update configuration
                 self._update_config_from_dict(data)
                 print(f"[ConfigManager] Loaded config from: {self.config_file}")
                 
@@ -261,11 +261,11 @@ class EnhancedConfigManager:
                 print(f"[ConfigManager] Failed to load config file: {e}, using defaults")
         else:
             print(f"[ConfigManager] Config file not found: {self.config_file}, using defaults")
-            # 创建默认配置文件
+            # Create default configuration file
             self.save_config()
     
     def _update_config_from_dict(self, data: Dict[str, Any]):
-        """从字典更新配置"""
+        """Update configuration from dictionary"""
         if 'model' in data:
             for key, value in data['model'].items():
                 if hasattr(self.config.model, key):
@@ -286,29 +286,29 @@ class EnhancedConfigManager:
                 if hasattr(self.config.service, key):
                     setattr(self.config.service, key, value)
         
-        # 更新修改时间
+        # Update modification time
         self.config.last_modified = datetime.now().isoformat()
     
     def _apply_env_overrides(self):
-        """应用环境变量覆盖"""
+        """Apply environment variable overrides"""
         env_mappings = {
-            # 模型配置
+            # Model configuration
             'AI_MODEL': ('model', 'active_model'),
             'AI_MODELS_DIR': ('model', 'models_dir'),
             'AI_AUTO_DETECT': ('model', 'auto_detect', bool),
             'AI_MAX_TOKENS': ('model', 'max_tokens', int),
             'AI_TEMPERATURE': ('model', 'temperature', float),
             
-            # 嵌入配置
+            # Embedding configuration
             'EMBEDDING_MODEL': ('embedding', 'model_name'),
             'EMBEDDING_PATH': ('embedding', 'model_path'),
             'EMBEDDING_DEVICE': ('embedding', 'device'),
             
-            # 监控配置
+            # Monitoring configuration
             'AI_MONITORING': ('monitoring', 'enable_monitoring', bool),
             'AI_LOG_LEVEL': ('monitoring', 'log_level'),
             
-            # 服务配置
+            # Service configuration
             'AI_HOST': ('service', 'host'),
             'AI_PORT': ('service', 'port', int),
             'AI_API_KEY': ('service', 'api_key'),
@@ -339,16 +339,16 @@ class EnhancedConfigManager:
                     print(f"[ConfigManager] Failed to apply env {env_var}: {e}")
     
     def _auto_detect_models(self):
-        """自动检测可用模型"""
+        """Automatically detect available models"""
         if self.config.model.auto_detect:
             detected = self.config.model.detect_models()
             print(f"[ConfigManager] Detected {len(detected)} models:")
             for name, meta in detected.items():
                 print(f"  - {name}: {meta.size_mb}MB, {meta.recommended_use}")
             
-            # 如果active_model是auto，选择第一个检测到的模型
+            # If active_model is auto, select the first detected model
             if self.config.model.active_model == "auto" and detected:
-                # 优先选择qwen
+                # Prioritize qwen
                 for preferred in ["qwen"]:
                     for model_name in detected.keys():
                         if preferred in model_name.lower():
@@ -356,17 +356,17 @@ class EnhancedConfigManager:
                             print(f"[ConfigManager] Auto-selected model: {model_name}")
                             return
                 
-                # 如果没有首选模型，选择第一个
+                # If no preferred model, select the first one
                 self.config.model.active_model = list(detected.keys())[0]
                 print(f"[ConfigManager] Auto-selected model: {self.config.model.active_model}")
         
-        # 自动检测嵌入模型路径
+        # Auto-detect embedding model path
         if self.config.embedding.model_path == "auto":
             path = self.config.embedding.auto_detect_path()
             print(f"[ConfigManager] Auto-detected embedding model: {path}")
     
     def enable_hot_reload(self, enable: bool = True):
-        """启用/禁用热重载"""
+        """Enable/disable hot reload"""
         self._hot_reload_enabled = enable
         
         if enable and self.observer is None:
@@ -384,17 +384,17 @@ class EnhancedConfigManager:
             print("[ConfigManager] Hot reload disabled")
     
     def reload(self):
-        """重新加载配置"""
+        """Reload configuration"""
         self._load_config()
         self._apply_env_overrides()
         self._auto_detect_models()
         print("[ConfigManager] Configuration reloaded")
     
     def save_config(self, file_path: Optional[str] = None):
-        """保存配置到文件"""
+        """Save configuration to file"""
         file_path = file_path or self.config_file
         
-        # 确保目录存在
+        # Ensure directory exists
         Path(file_path).parent.mkdir(parents=True, exist_ok=True)
         
         try:
@@ -410,7 +410,7 @@ class EnhancedConfigManager:
                 }
             }
             
-            # 移除detected_models（运行时数据）
+            # Remove detected_models (runtime data)
             if 'detected_models' in config_dict['model']:
                 del config_dict['model']['detected_models']
             
@@ -429,27 +429,27 @@ class EnhancedConfigManager:
             return False
     
     def get_model_metadata(self, model_name: str) -> Optional[ModelMetadata]:
-        """获取模型元数据"""
+        """Get model metadata"""
         return self.config.model.detected_models.get(model_name)
     
     def list_available_models(self) -> List[str]:
-        """列出所有可用模型"""
+        """List all available models"""
         return list(self.config.model.detected_models.keys())
     
     def validate_config(self) -> bool:
-        """验证配置有效性"""
+        """Validate configuration validity"""
         errors = []
         
-        # 验证模型路径
+        # Validate model path
         models_dir = Path(self.config.model.models_dir)
         if not models_dir.exists():
             errors.append(f"Models directory not found: {models_dir}")
         
-        # 验证活动模型
+        # Validate active model
         if self.config.model.active_model not in ["auto", "simple"] + self.list_available_models():
             errors.append(f"Active model '{self.config.model.active_model}' not available")
         
-        # 验证端口
+        # Validate port
         port = self.config.service.port
         if not (1024 <= port <= 65535):
             errors.append(f"Invalid port: {port}")
@@ -464,14 +464,14 @@ class EnhancedConfigManager:
         return True
     
     def print_config(self):
-        """打印当前配置"""
+        """Print current configuration"""
         print("=== AI Service Configuration ===")
         print(f"Version: {self.config.version}")
         print(f"Config file: {self.config_file}")
         
         print("\nModel Config:")
         model_dict = asdict(self.config.model)
-        model_dict.pop('detected_models', None)  # 不打印检测到的模型详情
+        model_dict.pop('detected_models', None)  # Don't print detected model details
         for key, value in model_dict.items():
             print(f"  {key}: {value}")
         
@@ -494,23 +494,23 @@ class EnhancedConfigManager:
             print(f"  {key}: {value}")
     
     def __del__(self):
-        """清理资源"""
+        """Clean up resources"""
         if self.observer:
             self.observer.stop()
             self.observer.join()
 
-# 全局配置管理器实例
+# Global configuration manager instance
 _config_manager = None
 
 def get_config() -> EnhancedConfigManager:
-    """获取全局配置管理器"""
+    """Get global configuration manager"""
     global _config_manager
     if _config_manager is None:
         _config_manager = EnhancedConfigManager()
     return _config_manager
 
 def create_default_config(file_path: str = None, format: str = "yaml"):
-    """创建默认配置文件"""
+    """Create default configuration file"""
     if file_path is None:
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         file_path = str(CONFIG_DIR / f"ai_service.{format}")
@@ -518,22 +518,22 @@ def create_default_config(file_path: str = None, format: str = "yaml"):
     config_mgr = EnhancedConfigManager(file_path)
     return config_mgr.save_config()
 
-# 测试函数
+# Test functions
 def test_enhanced_config():
-    """测试增强配置管理器"""
+    """Test enhanced configuration manager"""
     print("=== Enhanced Config Manager Test ===")
     
-    # 创建配置管理器
+    # Create configuration manager
     config_mgr = EnhancedConfigManager()
     
-    # 打印配置
+    # Print configuration
     config_mgr.print_config()
     
-    # 验证配置
+    # Validate configuration
     is_valid = config_mgr.validate_config()
     print(f"\nValidation: {'PASSED' if is_valid else 'FAILED'}")
     
-    # 测试热重载
+    # Test hot reload
     print("\nTesting hot reload...")
     config_mgr.enable_hot_reload(True)
     time.sleep(1)

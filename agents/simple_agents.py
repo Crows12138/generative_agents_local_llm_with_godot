@@ -13,6 +13,8 @@ from enum import Enum
 
 # Import AI service (fixed import)
 from ai_service.ai_service import local_llm_generate
+from ai_service.unified_parser import get_unified_parser
+from monitoring.parser_monitor import get_parser_monitor, ParserMonitorContext
 
 class EmotionalState(Enum):
     """Character emotional states"""
@@ -162,6 +164,10 @@ class SimpleAgent:
         self.in_conversation: bool = False
         self.conversation_partner: Optional[str] = None
         
+        # Initialize unified parser and monitoring
+        self.parser = get_unified_parser()
+        self.monitor = get_parser_monitor()
+        
         # Initialize with background
         if background:
             self.memory.add_memory(f"Background: {background}", importance=0.9, tags=["background"])
@@ -225,36 +231,44 @@ Available actions:
 What action would {self.name} choose and why? Format: ACTION: [action] REASON: [reason]"""
         
         try:
-            # Generate decision (fixed function call)
-            response = local_llm_generate(context, model_key=None)
-            
-            # Parse response
-            chosen_action = available_actions[0]  # default
-            reason = "No specific reason"
-            
-            lines = response.split('\\n')
-            for line in lines:
-                if "ACTION:" in line:
-                    action_text = line.split("ACTION:")[-1].strip()
-                    # Find closest matching action
-                    for action in available_actions:
-                        if action.lower() in action_text.lower():
-                            chosen_action = action
-                            break
-                elif "REASON:" in line:
-                    reason = line.split("REASON:")[-1].strip()
-            
-            # Update activity based on action
-            self._update_activity_from_action(chosen_action)
-            
-            return chosen_action, reason
+            # Use monitoring context for decision parsing
+            with ParserMonitorContext(self.monitor, "decision") as monitor_ctx:
+                # Generate decision (fixed function call)
+                response = local_llm_generate(context, model_key=None)
+                
+                # Use unified parser for decision parsing
+                chosen_action, reason, confidence = self.parser.parse_decision(response, available_actions)
+                
+                # Record confidence for monitoring
+                monitor_ctx.confidence = confidence
+                
+                # Update activity based on action
+                self._update_activity_from_action(chosen_action)
+                
+                # Store decision in memory with enhanced metadata
+                self.memory.add_memory(
+                    f"Decided to: {chosen_action} (reason: {reason})",
+                    importance=0.6,
+                    tags=["decision", "action", self.emotional_state.value]
+                )
+                
+                return chosen_action, reason
             
         except Exception as e:
-            # Fallback decision logic
-            chosen_action = self._fallback_decision(available_actions)
-            reason = f"Simple decision based on current needs"
-            self._update_activity_from_action(chosen_action)
-            return chosen_action, reason
+            # Enhanced fallback with monitoring
+            with ParserMonitorContext(self.monitor, "decision_fallback"):
+                chosen_action = self._fallback_decision(available_actions)
+                reason = f"Simple decision based on current needs (fallback due to: {str(e)[:50]})"
+                self._update_activity_from_action(chosen_action)
+                
+                # Store fallback decision
+                self.memory.add_memory(
+                    f"Fallback decision: {chosen_action}",
+                    importance=0.3,
+                    tags=["decision", "fallback", "error"]
+                )
+                
+                return chosen_action, reason
     
     def respond_to(self, speaker: str, message: str) -> str:
         """Generate response to another character"""
@@ -282,43 +296,67 @@ Recent memories: {self.memory.summarize_memories()}
 How does {self.name} respond? (Stay in character, be natural and concise)"""
         
         try:
-            # Generate response (fixed function call)
-            response = local_llm_generate(context, model_key=None)
-            
-            # Store interaction in memory
-            self.memory.add_memory(
-                f"{speaker} said: {message}",
-                importance=0.6,
-                tags=["conversation", speaker]
-            )
-            self.memory.add_memory(
-                f"I responded: {response}",
-                importance=0.5,
-                tags=["conversation", "self"]
-            )
-            
-            # Update relationship slightly
-            self.update_relationship(speaker, 0.05)
-            
-            return response
+            # Use monitoring context for response generation
+            with ParserMonitorContext(self.monitor, "chat_response") as monitor_ctx:
+                # Generate response (fixed function call)
+                response = local_llm_generate(context, model_key=None)
+                
+                # Parse emotion from response using unified parser
+                detected_emotion = self.parser.parse_emotion(response)
+                if detected_emotion:
+                    # Update emotional state based on detected emotion
+                    try:
+                        new_emotional_state = EmotionalState(detected_emotion)
+                        if new_emotional_state != self.emotional_state:
+                            self.emotional_state = new_emotional_state
+                            self.memory.add_memory(
+                                f"Emotional state changed to {detected_emotion} during conversation with {speaker}",
+                                importance=0.7,
+                                tags=["emotion", "conversation", speaker]
+                            )
+                    except ValueError:
+                        # Detected emotion not in our enum, just log it
+                        self.memory.add_memory(
+                            f"Expressed emotion: {detected_emotion}",
+                            importance=0.4,
+                            tags=["emotion", "conversation"]
+                        )
+                
+                # Store interaction in memory with enhanced metadata
+                self.memory.add_memory(
+                    f"{speaker} said: {message}",
+                    importance=0.6,
+                    tags=["conversation", speaker, "received"]
+                )
+                self.memory.add_memory(
+                    f"I responded: {response}",
+                    importance=0.5,
+                    tags=["conversation", "self", "sent", detected_emotion or "no_emotion"]
+                )
+                
+                # Update relationship slightly
+                self.update_relationship(speaker, 0.05)
+                
+                return response
             
         except Exception as e:
-            # Fallback response
-            fallback_response = self._generate_fallback_response(speaker, message)
-            
-            # Still store the interaction
-            self.memory.add_memory(
-                f"{speaker} said: {message}",
-                importance=0.6,
-                tags=["conversation", speaker]
-            )
-            self.memory.add_memory(
-                f"I responded: {fallback_response}",
-                importance=0.3,
-                tags=["conversation", "self", "fallback"]
-            )
-            
-            return fallback_response
+            # Enhanced fallback with monitoring
+            with ParserMonitorContext(self.monitor, "chat_response_fallback"):
+                fallback_response = self._generate_fallback_response(speaker, message)
+                
+                # Still store the interaction with fallback marker
+                self.memory.add_memory(
+                    f"{speaker} said: {message}",
+                    importance=0.6,
+                    tags=["conversation", speaker, "received"]
+                )
+                self.memory.add_memory(
+                    f"I responded (fallback): {fallback_response}",
+                    importance=0.3,
+                    tags=["conversation", "self", "fallback", "error"]
+                )
+                
+                return fallback_response
     
     def _fallback_decision(self, available_actions: List[str]) -> str:
         """Simple fallback decision logic when AI service fails"""

@@ -13,6 +13,7 @@ import json
 import argparse
 import platform
 import shutil
+import psutil
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import threading
@@ -34,9 +35,10 @@ class Colors:
 class DemoLauncher:
     """Main demo launcher class"""
     
-    def __init__(self, config_file: str = None):
+    def __init__(self, config_file: str = None, performance_mode: str = "medium"):
         self.project_root = Path(__file__).resolve().parent
         self.config_file = config_file or str(self.project_root / "config" / "ai_service.yaml")
+        self.performance_mode = performance_mode
         self.processes = []
         self.services_status = {
             "ai_bridge": False,
@@ -50,9 +52,94 @@ class DemoLauncher:
         print("=" * 60)
         print("   AI-GODOT DEMO LAUNCHER")
         print("   Generative Agents with Local LLM")
+        print(f"   Performance Mode: {self.performance_mode.upper()}")
         print("=" * 60)
         print(f"{Colors.ENDC}")
         
+    def check_system_requirements(self) -> bool:
+        """Check system requirements for optimal performance"""
+        try:
+            print(f"{Colors.CYAN}🔍 Checking system requirements...{Colors.ENDC}")
+        except UnicodeEncodeError:
+            print(f"{Colors.CYAN}[*] Checking system requirements...{Colors.ENDC}")
+        
+        # Performance mode requirements
+        mode_requirements = {
+            "low": {"memory": 4, "disk": 1, "recommended_memory": 6},
+            "medium": {"memory": 6, "disk": 2, "recommended_memory": 8},
+            "high": {"memory": 8, "disk": 3, "recommended_memory": 12},
+            "ultra": {"memory": 12, "disk": 5, "recommended_memory": 16}
+        }
+        
+        requirements = mode_requirements.get(self.performance_mode, mode_requirements["medium"])
+        
+        # Check memory
+        memory = psutil.virtual_memory()
+        memory_gb = memory.total / (1024**3)
+        print(f"  RAM: {memory_gb:.1f}GB total, {memory.percent}% used")
+        
+        if memory_gb < requirements["memory"]:
+            try:
+                print(f"  {Colors.WARNING}⚠️ Warning: {memory_gb:.1f}GB RAM detected. Required: {requirements['memory']}GB+ for {self.performance_mode} mode{Colors.ENDC}")
+            except UnicodeEncodeError:
+                print(f"  {Colors.WARNING}[!] Warning: {memory_gb:.1f}GB RAM detected. Required: {requirements['memory']}GB+ for {self.performance_mode} mode{Colors.ENDC}")
+        elif memory_gb < requirements["recommended_memory"]:
+            try:
+                print(f"  {Colors.WARNING}⚠️ Note: {memory_gb:.1f}GB RAM detected. Recommended: {requirements['recommended_memory']}GB+ for optimal {self.performance_mode} mode{Colors.ENDC}")
+            except UnicodeEncodeError:
+                print(f"  {Colors.WARNING}[!] Note: {memory_gb:.1f}GB RAM detected. Recommended: {requirements['recommended_memory']}GB+ for optimal {self.performance_mode} mode{Colors.ENDC}")
+        else:
+            try:
+                print(f"  ✓ Sufficient RAM for {self.performance_mode} mode")
+            except UnicodeEncodeError:
+                print(f"  [OK] Sufficient RAM for {self.performance_mode} mode")
+        
+        # Check CPU cores
+        cpu_count = psutil.cpu_count()
+        print(f"  CPU cores: {cpu_count}")
+        if cpu_count < 4:
+            try:
+                print(f"  {Colors.WARNING}⚠️ Warning: {cpu_count} CPU cores detected. Recommended: 4+ cores{Colors.ENDC}")
+            except UnicodeEncodeError:
+                print(f"  {Colors.WARNING}[!] Warning: {cpu_count} CPU cores detected. Recommended: 4+ cores{Colors.ENDC}")
+        else:
+            try:
+                print(f"  ✓ Sufficient CPU cores")
+            except UnicodeEncodeError:
+                print(f"  [OK] Sufficient CPU cores")
+        
+        # Check disk space
+        disk = psutil.disk_usage('.')
+        disk_gb = disk.free / (1024**3)
+        print(f"  Disk: {disk_gb:.1f}GB free")
+        
+        if disk_gb < requirements["disk"]:
+            try:
+                print(f"  {Colors.WARNING}⚠️ Warning: Low disk space ({disk_gb:.1f}GB free). Required: {requirements['disk']}GB+ for {self.performance_mode} mode{Colors.ENDC}")
+            except UnicodeEncodeError:
+                print(f"  {Colors.WARNING}[!] Warning: Low disk space ({disk_gb:.1f}GB free). Required: {requirements['disk']}GB+ for {self.performance_mode} mode{Colors.ENDC}")
+        else:
+            try:
+                print(f"  ✓ Sufficient disk space")
+            except UnicodeEncodeError:
+                print(f"  [OK] Sufficient disk space")
+        
+        # Check Python version
+        python_version = sys.version_info
+        if python_version.major < 3 or python_version.minor < 8:
+            try:
+                print(f"  {Colors.WARNING}⚠️ Warning: Python {python_version.major}.{python_version.minor} detected. Recommended: Python 3.8+{Colors.ENDC}")
+            except UnicodeEncodeError:
+                print(f"  {Colors.WARNING}[!] Warning: Python {python_version.major}.{python_version.minor} detected. Recommended: Python 3.8+{Colors.ENDC}")
+        else:
+            try:
+                print(f"  ✓ Python {python_version.major}.{python_version.minor}")
+            except UnicodeEncodeError:
+                print(f"  [OK] Python {python_version.major}.{python_version.minor}")
+        
+        print()
+        return memory_gb >= requirements["memory"] and disk_gb >= requirements["disk"]
+    
     def check_dependencies(self) -> bool:
         """Check if all dependencies are installed"""
         print(f"{Colors.CYAN}Checking dependencies...{Colors.ENDC}")
@@ -290,6 +377,15 @@ class DemoLauncher:
         """Main run method"""
         self.print_header()
         
+        # Check system requirements
+        if not self.check_system_requirements():
+            if not args.force:
+                print(f"\n{Colors.FAIL}System requirements not met for {self.performance_mode} mode.{Colors.ENDC}")
+                print("Use --force to continue anyway, or try a lower performance mode")
+                return 1
+            else:
+                print(f"{Colors.WARNING}Continuing with insufficient system resources...{Colors.ENDC}")
+        
         # Check dependencies
         if not self.check_dependencies():
             if not args.force:
@@ -321,7 +417,7 @@ class DemoLauncher:
         
         # Wait for interrupt
         try:
-            print(f"\n{Colors.GREEN}Demo is running!{Colors.ENDC}")
+            print(f"\n{Colors.GREEN}Demo is running in {self.performance_mode} mode!{Colors.ENDC}")
             print("Press Ctrl+C to stop...")
             while True:
                 time.sleep(1)
@@ -339,10 +435,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python demo_launcher.py                    # Start with defaults
-  python demo_launcher.py --port 8081        # Use custom port
-  python demo_launcher.py --no-godot         # Start only AI service
-  python demo_launcher.py --force            # Ignore dependency checks
+  python demo_launcher.py                         # Start with defaults (medium mode)
+  python demo_launcher.py --performance high      # Start in high performance mode
+  python demo_launcher.py --port 8081             # Use custom port
+  python demo_launcher.py --no-godot              # Start only AI service
+  python demo_launcher.py --force                 # Ignore dependency checks
         """
     )
     
@@ -351,11 +448,13 @@ Examples:
     parser.add_argument("--no-godot", action="store_true", help="Don't start Godot editor")
     parser.add_argument("--force", action="store_true", help="Force start even with missing dependencies")
     parser.add_argument("--config", help="Path to configuration file")
+    parser.add_argument("--performance", choices=["low", "medium", "high", "ultra"], 
+                       default="medium", help="Performance optimization level (default: medium)")
     
     args = parser.parse_args()
     
     # Create and run launcher
-    launcher = DemoLauncher(config_file=args.config)
+    launcher = DemoLauncher(config_file=args.config, performance_mode=args.performance)
     
     # Handle signals
     def signal_handler(sig, frame):
