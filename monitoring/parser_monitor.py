@@ -172,14 +172,18 @@ class ParserMonitor:
     """Main parser monitoring system"""
     
     def __init__(self, 
-                 log_file: str = "parser_monitor.log",
-                 metrics_file: str = "parser_metrics.json",
-                 alerts_config_file: str = "alerts_config.json"):
+                 log_file: str = "logs/parser_monitor.log",
+                 metrics_file: str = "logs/parser_metrics.json",
+                 alerts_config_file: str = "logs/alerts_config.json"):
         
         self.metrics = ParserMetrics()
         self.log_file = Path(log_file)
         self.metrics_file = Path(metrics_file)
         self.alerts_config_file = Path(alerts_config_file)
+        
+        # Ensure logs directory exists
+        self.log_file.parent.mkdir(exist_ok=True)
+        self.metrics_file.parent.mkdir(exist_ok=True)
         
         # Set up logging
         logging.basicConfig(

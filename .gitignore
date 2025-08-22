@@ -114,6 +114,8 @@ codex.tar.gz
 Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf
 nul
 .flake8
+scripts/
+memory_cache/
 
 # Debug and session files
 debug_system/*.json
@@ -145,3 +147,10 @@ ai_config.json
 README_OLD.md
 *GUIDE_OLD.md
 *REFERENCE_OLD.md
+
+# Session data and temporary monitoring files
+session_data.json
+.last_save
+parser_metrics.json
+temp_data/
+logs/

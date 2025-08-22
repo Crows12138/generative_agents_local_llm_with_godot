@@ -16,6 +16,22 @@ from ai_service.ai_service import local_llm_generate
 from ai_service.unified_parser import get_unified_parser
 from monitoring.parser_monitor import get_parser_monitor, ParserMonitorContext
 
+# Import memory adapter for reverie integration
+try:
+    from agents.memory_adapter import ReverieMemoryAdapter
+    REVERIE_MEMORY_AVAILABLE = True
+except ImportError:
+    REVERIE_MEMORY_AVAILABLE = False
+    print("[simple_agents] Reverie memory adapter not available")
+
+# Import cognitive wrapper for reverie cognitive modules
+try:
+    from agents.cognitive_wrapper import CognitiveModuleWrapper, EnhancedAgent
+    REVERIE_COGNITIVE_AVAILABLE = True
+except ImportError:
+    REVERIE_COGNITIVE_AVAILABLE = False
+    print("[simple_agents] Reverie cognitive wrapper not available")
+
 class EmotionalState(Enum):
     """Character emotional states"""
     HAPPY = "happy"
@@ -145,8 +161,22 @@ class SimpleAgent:
         self.emotional_state = emotional_state
         self.activity = activity
         
-        # Memory system
+        # Memory system - dual system approach
         self.memory = SimpleMemorySystem()
+        
+        # Enhanced memory with reverie integration
+        if REVERIE_MEMORY_AVAILABLE:
+            try:
+                self.reverie_memory = ReverieMemoryAdapter(name)
+                self.use_reverie_memory = True
+                print(f"[SimpleAgent] Initialized reverie memory for {name}")
+            except Exception as e:
+                print(f"[SimpleAgent] Failed to initialize reverie memory for {name}: {e}")
+                self.reverie_memory = None
+                self.use_reverie_memory = False
+        else:
+            self.reverie_memory = None
+            self.use_reverie_memory = False
         
         # Relationships
         self.relationships: Dict[str, float] = {}  # name -> affinity (-1 to 1)
@@ -168,33 +198,93 @@ class SimpleAgent:
         self.parser = get_unified_parser()
         self.monitor = get_parser_monitor()
         
+        # Initialize cognitive modules if available
+        if REVERIE_COGNITIVE_AVAILABLE and self.use_reverie_memory:
+            try:
+                self.cognitive = CognitiveModuleWrapper(self)
+                self.use_cognitive_modules = True
+                print(f"[SimpleAgent] Initialized cognitive modules for {name}")
+            except Exception as e:
+                print(f"[SimpleAgent] Failed to initialize cognitive modules for {name}: {e}")
+                self.cognitive = None
+                self.use_cognitive_modules = False
+        else:
+            self.cognitive = None
+            self.use_cognitive_modules = False
+        
         # Initialize with background
         if background:
             self.memory.add_memory(f"Background: {background}", importance=0.9, tags=["background"])
+            # Also add to reverie memory if available
+            if self.use_reverie_memory:
+                self.reverie_memory.add_event_memory(f"{name}'s background: {background}", importance=8)
+        
+        # Initialize spatial memory with current location
+        if self.use_reverie_memory and location:
+            location_data = {
+                "world": {
+                    location.zone: {
+                        location.name: ["environment", "objects"]
+                    }
+                }
+            }
+            self.reverie_memory.add_spatial_memory(location_data)
     
     def perceive(self, observation: str, importance: float = 0.5):
-        """Process an observation"""
+        """Enhanced perception with reverie memory integration"""
+        # Store in simple memory system
         self.memory.add_memory(observation, importance=importance, tags=["observation"])
+        
+        # Store in reverie memory if available
+        if self.use_reverie_memory:
+            # Convert importance scale (0-1 to 1-10)
+            reverie_importance = int(importance * 10)
+            self.reverie_memory.add_event_memory(
+                f"{self.name} perceives: {observation}", 
+                importance=reverie_importance
+            )
+            
+            # Retrieve relevant memories for context
+            relevant_memories = self.reverie_memory.retrieve_relevant_memories(observation, n=3)
+            
+            # Create enhanced perception context
+            perception_context = {
+                "current": observation,
+                "memories": [mem.get("description", str(mem)) for mem in relevant_memories],
+                "spatial_context": self.reverie_memory.get_spatial_context(self.location.name)
+            }
+        else:
+            perception_context = {"current": observation, "memories": [], "spatial_context": ""}
         
         # Update emotional state based on observation
         if "danger" in observation.lower() or "threat" in observation.lower():
             self.emotional_state = EmotionalState.WORRIED
         elif "friend" in observation.lower() or "happy" in observation.lower():
             self.emotional_state = EmotionalState.HAPPY
+            
+        return perception_context
     
     def think(self, topic: Optional[str] = None) -> str:
-        """Generate internal thoughts"""
+        """Enhanced thinking with reverie memory integration"""
         if topic is None:
             topic = f"current {self.activity.value} activity"
         
-        # Build context
+        # Get relevant memories for enhanced context
+        memory_context = self.memory.summarize_memories()
+        if self.use_reverie_memory:
+            relevant_memories = self.reverie_memory.retrieve_relevant_memories(topic, n=5)
+            if relevant_memories:
+                reverie_context = "\\n".join([f"- {mem.get('description', str(mem))}" for mem in relevant_memories])
+                memory_context += f"\\n\\nRelevant memories:\\n{reverie_context}"
+        
+        # Build enhanced context
         context = f"""Character: {self.name}
 Personality: {self.personality}
 Current emotion: {self.emotional_state.value}
 Current activity: {self.activity.value}
 Location: {self.location.name}
 Energy: {self.energy:.1f}
-Recent memories: {self.memory.summarize_memories()}
+{memory_context}
 
 What is {self.name} thinking about regarding {topic}?"""
         
@@ -202,14 +292,24 @@ What is {self.name} thinking about regarding {topic}?"""
             # Generate thought (fixed function call)
             thought = local_llm_generate(context, model_key=None)
             
-            # Store as memory
+            # Store as memory in both systems
             self.memory.add_memory(f"Thought: {thought}", importance=0.3, tags=["thought"])
+            
+            # Store thought in reverie memory
+            if self.use_reverie_memory:
+                self.reverie_memory.add_thought_memory(f"{self.name} thinks: {thought}", importance=4)
+                self.reverie_memory.update_current_time(datetime.now())
             
             return thought
         except Exception as e:
             # Fallback response if AI service fails
             fallback_thought = f"I'm {self.emotional_state.value} and thinking about {topic}."
             self.memory.add_memory(f"Thought: {fallback_thought}", importance=0.2, tags=["thought", "fallback"])
+            
+            # Store fallback in reverie memory too
+            if self.use_reverie_memory:
+                self.reverie_memory.add_thought_memory(f"{self.name} thinks: {fallback_thought}", importance=2)
+                
             return fallback_thought
     
     def decide_action(self, available_actions: List[str]) -> Tuple[str, str]:
@@ -468,6 +568,172 @@ How does {self.name} respond? (Stay in character, be natural and concise)"""
             self.activity = ActivityType.SOCIALIZING
         else:
             self.activity = ActivityType.IDLE
+    
+    def save_memories(self):
+        """Save reverie memories to disk"""
+        if self.use_reverie_memory and self.reverie_memory:
+            try:
+                self.reverie_memory.save_memories()
+                print(f"[SimpleAgent] Saved memories for {self.name}")
+            except Exception as e:
+                print(f"[SimpleAgent] Error saving memories for {self.name}: {e}")
+    
+    def get_memory_summary(self) -> Dict[str, Any]:
+        """Get comprehensive memory summary"""
+        summary = {
+            "name": self.name,
+            "simple_memory": {
+                "short_term_count": len(self.memory.short_term),
+                "long_term_count": len(self.memory.long_term)
+            }
+        }
+        
+        if self.use_reverie_memory and self.reverie_memory:
+            try:
+                reverie_summary = self.reverie_memory.get_memory_summary()
+                summary["reverie_memory"] = reverie_summary
+            except Exception as e:
+                summary["reverie_memory"] = {"error": str(e)}
+        else:
+            summary["reverie_memory"] = "Not available"
+        
+        return summary
+    
+    def perceive_with_cognition(self, environment_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Enhanced perception using cognitive modules"""
+        if self.use_cognitive_modules and self.cognitive:
+            try:
+                # Use cognitive modules for enhanced perception
+                cognitive_perception = self.cognitive.perceive_environment(environment_data)
+                
+                # Also run normal perception for comparison
+                normal_perception = self.perceive(
+                    environment_data.get("description", "Observing environment"), 
+                    importance=0.6
+                )
+                
+                return {
+                    "cognitive_events": cognitive_perception,
+                    "normal_perception": normal_perception,
+                    "enhanced": True
+                }
+            except Exception as e:
+                print(f"[SimpleAgent] Error in cognitive perception: {e}")
+                # Fallback to normal perception
+                return {"normal_perception": self.perceive(environment_data.get("description", ""), 0.5), "enhanced": False}
+        else:
+            # Use normal perception
+            return {"normal_perception": self.perceive(environment_data.get("description", ""), 0.5), "enhanced": False}
+    
+    def think_with_cognition(self, environment_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Enhanced thinking using cognitive modules"""
+        if self.use_cognitive_modules and self.cognitive:
+            try:
+                # Get relevant memories using cognitive retrieval
+                recent_thoughts = [mem.content for mem in self.memory.get_recent_memories(3)]
+                if recent_thoughts:
+                    memories = self.cognitive.retrieve_memories(recent_thoughts, n=5)
+                else:
+                    memories = {}
+                
+                # Generate reflection
+                reflection = self.cognitive.reflect_on_experience()
+                
+                # Generate plan if needed
+                plan = None
+                if not self.current_goal or self.energy < 0.3:
+                    plan = self.cognitive.plan_action(environment_data)
+                
+                return {
+                    "memories": memories,
+                    "reflection": reflection,
+                    "plan": plan,
+                    "enhanced": True
+                }
+            except Exception as e:
+                print(f"[SimpleAgent] Error in cognitive thinking: {e}")
+                # Fallback to normal thinking
+                return {"thought": self.think(), "enhanced": False}
+        else:
+            # Use normal thinking
+            return {"thought": self.think(), "enhanced": False}
+    
+    def decide_with_cognition(self, environment_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Enhanced decision making using cognitive modules"""
+        available_actions = environment_data.get("available_actions", ["idle", "move", "interact", "rest", "eat"])
+        
+        if self.use_cognitive_modules and self.cognitive:
+            try:
+                # Use cognitive execution module
+                execution_result = self.cognitive.execute_action(environment_data)
+                
+                # Also get normal decision for comparison
+                normal_action, normal_reason = self.decide_action(available_actions)
+                
+                return {
+                    "cognitive_action": execution_result,
+                    "normal_action": {"action": normal_action, "reason": normal_reason},
+                    "enhanced": True
+                }
+            except Exception as e:
+                print(f"[SimpleAgent] Error in cognitive decision: {e}")
+                # Fallback to normal decision
+                action, reason = self.decide_action(available_actions)
+                return {"action": action, "reason": reason, "enhanced": False}
+        else:
+            # Use normal decision making
+            action, reason = self.decide_action(available_actions)
+            return {"action": action, "reason": reason, "enhanced": False}
+    
+    def converse_with_cognition(self, target_agent_name: str, message: str, environment_data: Dict[str, Any] = None) -> str:
+        """Enhanced conversation using cognitive modules"""
+        if self.use_cognitive_modules and self.cognitive and environment_data:
+            try:
+                # Create mock target agent for cognitive conversation
+                target_agent = type('TargetAgent', (), {'name': target_agent_name})()
+                
+                # Use cognitive conversation
+                cognitive_response = self.cognitive.converse_with_agent(target_agent, environment_data)
+                
+                # Store conversation in memory
+                self.memory.add_memory(
+                    f"Cognitive conversation with {target_agent_name}: {message} -> {cognitive_response}",
+                    importance=0.7,
+                    tags=["conversation", "cognitive", target_agent_name]
+                )
+                
+                return cognitive_response
+            except Exception as e:
+                print(f"[SimpleAgent] Error in cognitive conversation: {e}")
+                # Fallback to normal conversation
+                return self.respond_to(target_agent_name, message)
+        else:
+            # Use normal conversation
+            return self.respond_to(target_agent_name, message)
+    
+    def get_cognitive_summary(self) -> Dict[str, Any]:
+        """Get summary of cognitive capabilities and status"""
+        summary = {
+            "agent_name": self.name,
+            "cognitive_modules_available": self.use_cognitive_modules,
+            "reverie_memory_available": self.use_reverie_memory
+        }
+        
+        if self.use_cognitive_modules and self.cognitive:
+            summary["cognitive_status"] = "Active"
+            summary["reverie_integration"] = self.cognitive.use_reverie
+        else:
+            summary["cognitive_status"] = "Fallback mode"
+            summary["reverie_integration"] = False
+        
+        return summary
+    
+    def cleanup(self):
+        """Cleanup resources and save memories"""
+        self.save_memories()
+        if self.in_conversation:
+            self.in_conversation = False
+            self.conversation_partner = None
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert agent state to dictionary for Godot"""
