@@ -191,18 +191,52 @@ def _clean_response(raw: str, model_key: str) -> str:
     
     return cleaned
 
-def _core_llm_generate(prompt: str, model_key: Optional[str] = None) -> str:
-    """Core LLM generation function"""
+def _determine_optimal_tokens(prompt: str) -> int:
+    """Determine optimal token count based on prompt analysis"""
+    prompt_lower = prompt.lower()
+    
+    # Base token count - much higher than original
+    base_tokens = 300  # Increased from 50-100
+    
+    # Task-specific adjustments
+    if any(word in prompt_lower for word in ["list", "enumerate", "plan", "schedule", "describe"]):
+        base_tokens = 400
+    elif any(word in prompt_lower for word in ["daily", "hourly", "routine"]):
+        base_tokens = 500
+    elif any(word in prompt_lower for word in ["json", "format", "structure"]):
+        base_tokens = 350
+    elif any(word in prompt_lower for word in ["reflect", "think", "consider", "analyze"]):
+        base_tokens = 450
+    elif any(word in prompt_lower for word in ["conversation", "talk", "chat", "speak"]):
+        base_tokens = 250
+    elif any(word in prompt_lower for word in ["action", "do", "choose", "decide"]):
+        base_tokens = 200
+    
+    # Prompt length adjustment
+    if len(prompt) > 200:
+        base_tokens += 100
+    elif len(prompt) > 100:
+        base_tokens += 50
+    
+    # Cap the maximum
+    return min(base_tokens, 600)
+
+def _core_llm_generate(prompt: str, model_key: Optional[str] = None, max_tokens: Optional[int] = None) -> str:
+    """Core LLM generation function with intelligent token allocation"""
     mk = (model_key or get_active_model()).lower()
     
     try:
         ai = _get_model_instance(mk)
         formatted_prompt = _format_prompt(prompt, mk)
         
+        # Intelligent token allocation based on prompt analysis
+        if max_tokens is None:
+            max_tokens = _determine_optimal_tokens(prompt)
+        
         # Generate response
         output = ai(
             formatted_prompt,
-            max_tokens=512,
+            max_tokens=max_tokens,
             temperature=0.7,
             top_p=0.9,
             repeat_penalty=1.1,
@@ -515,9 +549,9 @@ def get_ai_service(enable_optimizations: bool = True) -> AIService:
     return _ai_service
 
 # Legacy compatibility functions
-def local_llm_generate(prompt: str, model_key: Optional[str] = None) -> str:
-    """Legacy compatibility function - delegates to service"""
-    return _core_llm_generate(prompt, model_key)
+def local_llm_generate(prompt: str, model_key: Optional[str] = None, max_tokens: Optional[int] = None, **kwargs) -> str:
+    """Legacy compatibility function - delegates to service with enhanced token handling"""
+    return _core_llm_generate(prompt, model_key, max_tokens)
 
 # Export everything
 __all__ = [

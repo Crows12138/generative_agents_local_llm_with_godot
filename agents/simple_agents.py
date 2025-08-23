@@ -32,6 +32,14 @@ except ImportError:
     REVERIE_COGNITIVE_AVAILABLE = False
     print("[simple_agents] Reverie cognitive wrapper not available")
 
+# Import lightweight cognitive module
+try:
+    from agents.lightweight_cognitive import create_lightweight_cognitive, LightweightCognitive
+    LIGHTWEIGHT_COGNITIVE_AVAILABLE = True
+except ImportError:
+    LIGHTWEIGHT_COGNITIVE_AVAILABLE = False
+    print("[simple_agents] Lightweight cognitive module not available")
+
 class EmotionalState(Enum):
     """Character emotional states"""
     HAPPY = "happy"
@@ -198,19 +206,31 @@ class SimpleAgent:
         self.parser = get_unified_parser()
         self.monitor = get_parser_monitor()
         
-        # Initialize cognitive modules if available
-        if REVERIE_COGNITIVE_AVAILABLE and self.use_reverie_memory:
+        # Initialize cognitive modules with priority order
+        self.cognitive = None
+        self.use_cognitive_modules = False
+        
+        # 1. Try lightweight cognitive first (better performance)
+        if LIGHTWEIGHT_COGNITIVE_AVAILABLE:
+            try:
+                self.cognitive = create_lightweight_cognitive(name, personality)
+                self.use_cognitive_modules = True
+                self.cognitive_type = "lightweight"
+                print(f"[SimpleAgent] Initialized lightweight cognitive for {name}")
+            except Exception as e:
+                print(f"[SimpleAgent] Failed to initialize lightweight cognitive for {name}: {e}")
+        
+        # 2. Fallback to reverie cognitive if lightweight fails
+        if not self.use_cognitive_modules and REVERIE_COGNITIVE_AVAILABLE and self.use_reverie_memory:
             try:
                 self.cognitive = CognitiveModuleWrapper(self)
                 self.use_cognitive_modules = True
-                print(f"[SimpleAgent] Initialized cognitive modules for {name}")
+                self.cognitive_type = "reverie"
+                print(f"[SimpleAgent] Initialized reverie cognitive modules for {name}")
             except Exception as e:
-                print(f"[SimpleAgent] Failed to initialize cognitive modules for {name}: {e}")
+                print(f"[SimpleAgent] Failed to initialize reverie cognitive modules for {name}: {e}")
                 self.cognitive = None
                 self.use_cognitive_modules = False
-        else:
-            self.cognitive = None
-            self.use_cognitive_modules = False
         
         # Initialize with background
         if background:
@@ -603,10 +623,33 @@ How does {self.name} respond? (Stay in character, be natural and concise)"""
         """Enhanced perception using cognitive modules"""
         if self.use_cognitive_modules and self.cognitive:
             try:
-                # Use cognitive modules for enhanced perception
-                cognitive_perception = self.cognitive.perceive_environment(environment_data)
+                # Lightweight cognitive module
+                if self.cognitive_type == "lightweight":
+                    cognitive_perception = self.cognitive.perceive_environment(environment_data)
+                    
+                    # Process perceptions into simple memory
+                    for perception in cognitive_perception:
+                        if isinstance(perception, dict):
+                            content = perception.get('description', str(perception))
+                            importance = perception.get('importance', 5) / 10.0
+                        else:
+                            content = str(perception)
+                            importance = 0.5
+                        
+                        self.perceive(content, importance)
+                    
+                    return {
+                        "enhanced": True,
+                        "cognitive_type": "lightweight",
+                        "cognitive_events": cognitive_perception,
+                        "processed_count": len(cognitive_perception)
+                    }
                 
-                # Also run normal perception for comparison
+                # Reverie cognitive module
+                elif self.cognitive_type == "reverie":
+                    cognitive_perception = self.cognitive.perceive_environment(environment_data)
+                    
+                    # Also run normal perception for comparison
                 normal_perception = self.perceive(
                     environment_data.get("description", "Observing environment"), 
                     importance=0.6
@@ -629,27 +672,47 @@ How does {self.name} respond? (Stay in character, be natural and concise)"""
         """Enhanced thinking using cognitive modules"""
         if self.use_cognitive_modules and self.cognitive:
             try:
-                # Get relevant memories using cognitive retrieval
-                recent_thoughts = [mem.content for mem in self.memory.get_recent_memories(3)]
-                if recent_thoughts:
-                    memories = self.cognitive.retrieve_memories(recent_thoughts, n=5)
-                else:
-                    memories = {}
+                # Lightweight cognitive module
+                if self.cognitive_type == "lightweight":
+                    # Generate reflection
+                    recent_memory_content = " ".join([mem.content for mem in self.memory.get_recent_memories(2)])
+                    reflection = self.cognitive.reflect_on_experience(recent_memory_content)
+                    
+                    # Generate plan
+                    plan = self.cognitive.think_and_plan(self.current_goal)
+                    
+                    return {
+                        "reflection": reflection,
+                        "plan": plan,
+                        "enhanced": True,
+                        "cognitive_type": "lightweight"
+                    }
                 
-                # Generate reflection
-                reflection = self.cognitive.reflect_on_experience()
-                
-                # Generate plan if needed
-                plan = None
-                if not self.current_goal or self.energy < 0.3:
-                    plan = self.cognitive.plan_action(environment_data)
-                
-                return {
-                    "memories": memories,
-                    "reflection": reflection,
-                    "plan": plan,
-                    "enhanced": True
-                }
+                # Reverie cognitive module
+                elif self.cognitive_type == "reverie":
+                    # Get relevant memories using cognitive retrieval
+                    recent_thoughts = [mem.content for mem in self.memory.get_recent_memories(3)]
+                    if recent_thoughts:
+                        memories = self.cognitive.retrieve_memories(recent_thoughts, n=5)
+                    else:
+                        memories = {}
+                    
+                    # Generate reflection
+                    reflection = self.cognitive.reflect_on_experience()
+                    
+                    # Generate plan if needed
+                    plan = None
+                    if not self.current_goal or self.energy < 0.3:
+                        plan = self.cognitive.plan_action(environment_data)
+                    
+                    return {
+                        "memories": memories,
+                        "reflection": reflection,
+                        "plan": plan,
+                        "enhanced": True,
+                        "cognitive_type": "reverie"
+                    }
+                    
             except Exception as e:
                 print(f"[SimpleAgent] Error in cognitive thinking: {e}")
                 # Fallback to normal thinking
@@ -664,17 +727,38 @@ How does {self.name} respond? (Stay in character, be natural and concise)"""
         
         if self.use_cognitive_modules and self.cognitive:
             try:
-                # Use cognitive execution module
-                execution_result = self.cognitive.execute_action(environment_data)
+                # Lightweight cognitive module
+                if self.cognitive_type == "lightweight":
+                    # Get plan from cognitive module
+                    plan = self.cognitive.think_and_plan(self.current_goal)
+                    action = plan.get('action', 'observe') if isinstance(plan, dict) else 'observe'
+                    reasoning = plan.get('reasoning', 'cognitive_decision') if isinstance(plan, dict) else 'cognitive_decision'
+                    
+                    # Map to available actions
+                    if action not in available_actions:
+                        action = available_actions[0] if available_actions else 'idle'
+                    
+                    return {
+                        "cognitive_action": {"action": action, "reasoning": reasoning},
+                        "enhanced": True,
+                        "cognitive_type": "lightweight"
+                    }
                 
-                # Also get normal decision for comparison
-                normal_action, normal_reason = self.decide_action(available_actions)
-                
-                return {
-                    "cognitive_action": execution_result,
-                    "normal_action": {"action": normal_action, "reason": normal_reason},
-                    "enhanced": True
-                }
+                # Reverie cognitive module  
+                elif self.cognitive_type == "reverie":
+                    # Use cognitive execution module
+                    execution_result = self.cognitive.execute_action(environment_data)
+                    
+                    # Also get normal decision for comparison
+                    normal_action, normal_reason = self.decide_action(available_actions)
+                    
+                    return {
+                        "cognitive_action": execution_result,
+                        "normal_action": {"action": normal_action, "reason": normal_reason},
+                        "enhanced": True,
+                        "cognitive_type": "reverie"
+                    }
+                    
             except Exception as e:
                 print(f"[SimpleAgent] Error in cognitive decision: {e}")
                 # Fallback to normal decision
@@ -687,22 +771,39 @@ How does {self.name} respond? (Stay in character, be natural and concise)"""
     
     def converse_with_cognition(self, target_agent_name: str, message: str, environment_data: Dict[str, Any] = None) -> str:
         """Enhanced conversation using cognitive modules"""
-        if self.use_cognitive_modules and self.cognitive and environment_data:
+        if self.use_cognitive_modules and self.cognitive:
             try:
-                # Create mock target agent for cognitive conversation
-                target_agent = type('TargetAgent', (), {'name': target_agent_name})()
+                # Lightweight cognitive module
+                if self.cognitive_type == "lightweight":
+                    # Use lightweight conversation
+                    cognitive_response = self.cognitive.converse(target_agent_name, message, environment_data)
+                    
+                    # Store conversation in memory
+                    self.memory.add_memory(
+                        f"Conversation with {target_agent_name}: {message[:30]}",
+                        importance=0.6,
+                        tags=["conversation", "lightweight", target_agent_name]
+                    )
+                    
+                    return cognitive_response
                 
-                # Use cognitive conversation
-                cognitive_response = self.cognitive.converse_with_agent(target_agent, environment_data)
-                
-                # Store conversation in memory
-                self.memory.add_memory(
-                    f"Cognitive conversation with {target_agent_name}: {message} -> {cognitive_response}",
-                    importance=0.7,
-                    tags=["conversation", "cognitive", target_agent_name]
-                )
-                
-                return cognitive_response
+                # Reverie cognitive module
+                elif self.cognitive_type == "reverie" and environment_data:
+                    # Create mock target agent for cognitive conversation
+                    target_agent = type('TargetAgent', (), {'name': target_agent_name})()
+                    
+                    # Use cognitive conversation
+                    cognitive_response = self.cognitive.converse_with_agent(target_agent, environment_data)
+                    
+                    # Store conversation in memory
+                    self.memory.add_memory(
+                        f"Cognitive conversation with {target_agent_name}: {message} -> {cognitive_response}",
+                        importance=0.7,
+                        tags=["conversation", "cognitive", target_agent_name]
+                    )
+                    
+                    return cognitive_response
+                    
             except Exception as e:
                 print(f"[SimpleAgent] Error in cognitive conversation: {e}")
                 # Fallback to normal conversation
@@ -716,12 +817,23 @@ How does {self.name} respond? (Stay in character, be natural and concise)"""
         summary = {
             "agent_name": self.name,
             "cognitive_modules_available": self.use_cognitive_modules,
+            "cognitive_type": getattr(self, 'cognitive_type', 'none'),
             "reverie_memory_available": self.use_reverie_memory
         }
         
         if self.use_cognitive_modules and self.cognitive:
             summary["cognitive_status"] = "Active"
-            summary["reverie_integration"] = self.cognitive.use_reverie
+            
+            # Lightweight cognitive module
+            if self.cognitive_type == "lightweight":
+                if hasattr(self.cognitive, 'get_status'):
+                    status = self.cognitive.get_status()
+                    summary["lightweight_status"] = status
+                summary["reverie_integration"] = False
+            
+            # Reverie cognitive module
+            elif self.cognitive_type == "reverie":
+                summary["reverie_integration"] = getattr(self.cognitive, 'use_reverie', False)
         else:
             summary["cognitive_status"] = "Fallback mode"
             summary["reverie_integration"] = False

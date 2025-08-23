@@ -32,6 +32,129 @@ else:
 def temp_sleep(seconds=0.1):
   time.sleep(seconds)
 
+def _extract_json_output(response_text, verbose=False):
+  """
+  Enhanced JSON extraction function with better error handling
+  """
+  import re
+  
+  if not response_text or not response_text.strip():
+    return None
+    
+  response_text = response_text.strip()
+  
+  # Try multiple extraction strategies
+  strategies = [
+    # Strategy 1: Find complete JSON object
+    lambda text: _find_complete_json(text),
+    # Strategy 2: Extract from JSON markers
+    lambda text: _extract_from_markers(text),
+    # Strategy 3: Find last valid JSON
+    lambda text: _find_last_json(text),
+    # Strategy 4: Clean and extract
+    lambda text: _clean_and_extract(text)
+  ]
+  
+  for i, strategy in enumerate(strategies, 1):
+    try:
+      result = strategy(response_text)
+      if result:
+        if verbose:
+          print(f"[JSON Extract] Strategy {i} successful: {str(result)[:100]}...")
+        return result
+    except Exception as e:
+      if verbose:
+        print(f"[JSON Extract] Strategy {i} failed: {e}")
+      continue
+  
+  if verbose:
+    print(f"[JSON Extract] All strategies failed for: {response_text[:200]}...")
+  return None
+
+def _find_complete_json(text):
+  """Find complete JSON object in text"""
+  import json
+  import re
+  
+  # Look for JSON-like patterns
+  json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
+  matches = re.findall(json_pattern, text)
+  
+  for match in matches:
+    try:
+      parsed = json.loads(match)
+      if isinstance(parsed, dict) and "output" in parsed:
+        return parsed["output"]
+    except:
+      continue
+  return None
+
+def _extract_from_markers(text):
+  """Extract JSON between common markers"""
+  import json
+  import re
+  
+  # Common JSON markers
+  markers = [
+    (r'```json\s*(.*?)\s*```', re.DOTALL),
+    (r'```\s*(.*?)\s*```', re.DOTALL),
+    (r'\{.*\}', re.DOTALL)
+  ]
+  
+  for pattern, flags in markers:
+    matches = re.findall(pattern, text, flags)
+    for match in matches:
+      try:
+        parsed = json.loads(match.strip())
+        if isinstance(parsed, dict) and "output" in parsed:
+          return parsed["output"]
+      except:
+        continue
+  return None
+
+def _find_last_json(text):
+  """Find the last valid JSON in text"""
+  import json
+  
+  # Find last occurrence of }
+  end_index = text.rfind('}')
+  if end_index == -1:
+    return None
+    
+  # Try different start positions
+  for start_char in ['{', '"']:
+    start_index = text.find(start_char)
+    if start_index != -1 and start_index < end_index:
+      json_candidate = text[start_index:end_index + 1]
+      try:
+        parsed = json.loads(json_candidate)
+        if isinstance(parsed, dict) and "output" in parsed:
+          return parsed["output"]
+      except:
+        continue
+  return None
+
+def _clean_and_extract(text):
+  """Clean text and extract JSON"""
+  import json
+  import re
+  
+  # Remove common prefixes/suffixes
+  text = re.sub(r'^[^{]*', '', text)  # Remove everything before first {
+  text = re.sub(r'[^}]*$', '', text)  # Remove everything after last }
+  
+  if not text:
+    return None
+    
+  try:
+    parsed = json.loads(text)
+    if isinstance(parsed, dict) and "output" in parsed:
+      return parsed["output"]
+  except:
+    pass
+  
+  return None
+
 def ChatGPT_single_request(prompt): 
   temp_sleep()
   
@@ -115,9 +238,15 @@ def GPT4_safe_generate_response(prompt,
 
     try: 
       curr_gpt_response = GPT4_request(prompt).strip()
-      end_index = curr_gpt_response.rfind('}') + 1
-      curr_gpt_response = curr_gpt_response[:end_index]
-      curr_gpt_response = json.loads(curr_gpt_response)["output"]
+      # Use enhanced JSON extraction
+      extracted_output = _extract_json_output(curr_gpt_response, verbose=verbose)
+      if extracted_output is not None:
+        curr_gpt_response = extracted_output
+      else:
+        # Fallback to original method
+        end_index = curr_gpt_response.rfind('}') + 1
+        curr_gpt_response = curr_gpt_response[:end_index]
+        curr_gpt_response = json.loads(curr_gpt_response)["output"]
       
       if func_validate(curr_gpt_response, prompt=prompt): 
         return func_clean_up(curr_gpt_response, prompt=prompt)
@@ -155,9 +284,15 @@ def ChatGPT_safe_generate_response(prompt,
 
     try: 
       curr_gpt_response = ChatGPT_request(prompt).strip()
-      end_index = curr_gpt_response.rfind('}') + 1
-      curr_gpt_response = curr_gpt_response[:end_index]
-      curr_gpt_response = json.loads(curr_gpt_response)["output"]
+      # Use enhanced JSON extraction
+      extracted_output = _extract_json_output(curr_gpt_response, verbose=verbose)
+      if extracted_output is not None:
+        curr_gpt_response = extracted_output
+      else:
+        # Fallback to original method
+        end_index = curr_gpt_response.rfind('}') + 1
+        curr_gpt_response = curr_gpt_response[:end_index]
+        curr_gpt_response = json.loads(curr_gpt_response)["output"]
 
       # print ("---ashdfaf")
       # print (curr_gpt_response)

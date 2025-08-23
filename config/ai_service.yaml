@@ -19,11 +19,22 @@ model:
   auto_detect: true
   
   # Generation parameters
-  max_tokens: 800
-  temperature: 0.3
+  max_tokens: 200
+  temperature: 0.1
   top_p: 0.9
   repeat_penalty: 1.1
   max_retries: 3
+  n_ctx: 16384          # Increased context window
+  n_ctx_per_seq: 16384  # Per-sequence context limit
+  n_batch: 512          # Batch size for processing
+  n_threads: 4          # CPU threads for inference
+  n_gpu_layers: 0       # GPU layers (0 for CPU-only)
+  
+  # Memory and performance optimizations
+  use_mlock: false      # Don't lock memory to prevent swapping
+  use_mmap: true        # Use memory mapping for better efficiency
+  low_vram: true        # Enable low VRAM mode
+  f16_kv: true          # Use half precision for key-value cache
   
   # Fallback chain for model failures
   fallback_chain:

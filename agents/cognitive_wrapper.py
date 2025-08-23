@@ -65,15 +65,17 @@ class MockMaze:
 class CognitiveModuleWrapper:
     """Wrapper for reverie's cognitive modules"""
     
-    def __init__(self, agent):
+    def __init__(self, agent, simplified_mode=True):
         self.agent = agent
-        self.use_reverie = REVERIE_COGNITIVE_AVAILABLE and hasattr(agent, 'reverie_memory')
+        self.simplified_mode = simplified_mode  # Enable simplified mode by default
+        self.use_reverie = REVERIE_COGNITIVE_AVAILABLE and hasattr(agent, 'reverie_memory') and not simplified_mode
         
         if self.use_reverie:
             self.setup_persona_compatibility()
             print(f"[cognitive_wrapper] Initialized reverie cognitive modules for {agent.name}")
         else:
-            print(f"[cognitive_wrapper] Using fallback cognitive functions for {agent.name}")
+            mode = "simplified" if simplified_mode else "fallback"
+            print(f"[cognitive_wrapper] Using {mode} cognitive functions for {agent.name}")
     
     def setup_persona_compatibility(self):
         """Make agent compatible with reverie's persona expectations"""
@@ -130,8 +132,8 @@ class CognitiveModuleWrapper:
     
     def perceive_environment(self, environment_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Enhanced perception using reverie's perceive module"""
-        if not self.use_reverie:
-            return self._fallback_perceive(environment_data)
+        if not self.use_reverie or self.simplified_mode:
+            return self._simplified_perceive(environment_data)
         
         try:
             # Create mock maze for reverie compatibility
@@ -333,6 +335,26 @@ class CognitiveModuleWrapper:
             actions.append("explore")
         
         return actions
+    
+    # Simplified methods for better performance
+    def _simplified_perceive(self, environment_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Simplified perception method for better performance"""
+        events = []
+        for i, event in enumerate(environment_data.get("events", [])):
+            # Skip processing if too many events (performance optimization)
+            if i >= 5:  # Limit to 5 events max
+                break
+                
+            # Simple importance scoring
+            importance = 4 if any(word in event.lower() for word in ['important', 'urgent', 'critical']) else 3
+            
+            events.append({
+                "description": event,
+                "importance": importance,
+                "timestamp": datetime.now(),
+                "simplified": True
+            })
+        return events
     
     # Fallback methods when reverie is not available
     def _fallback_perceive(self, environment_data: Dict[str, Any]) -> List[Dict[str, Any]]:

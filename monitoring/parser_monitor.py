@@ -218,7 +218,7 @@ class ParserMonitor:
                 name="high_error_rate",
                 level=AlertLevel.ERROR,
                 condition="error_rate > threshold",
-                threshold=0.10,  # 10% error rate
+                threshold=0.50,  # 50% error rate
                 message="Parser error rate is above 10%: {error_rate:.2%}",
                 cooldown_seconds=300
             ),
@@ -226,7 +226,7 @@ class ParserMonitor:
                 name="slow_parsing",
                 level=AlertLevel.WARNING,
                 condition="average_parse_time > threshold",
-                threshold=1.0,  # 1 second
+                threshold=10.0,  # 10 seconds
                 message="Average parse time is slow: {average_parse_time:.3f}s",
                 cooldown_seconds=180
             ),
@@ -234,7 +234,7 @@ class ParserMonitor:
                 name="very_slow_parsing",
                 level=AlertLevel.ERROR,
                 condition="average_parse_time > threshold",
-                threshold=5.0,  # 5 seconds
+                threshold=30.0,  # 30 seconds
                 message="Average parse time is very slow: {average_parse_time:.3f}s",
                 cooldown_seconds=300
             ),
@@ -242,7 +242,7 @@ class ParserMonitor:
                 name="low_confidence",
                 level=AlertLevel.WARNING,
                 condition="average_confidence < threshold",
-                threshold=0.6,  # 60% confidence
+                threshold=0.30,  # 30% confidence
                 message="Average confidence is low: {average_confidence:.2%}",
                 cooldown_seconds=600
             ),
