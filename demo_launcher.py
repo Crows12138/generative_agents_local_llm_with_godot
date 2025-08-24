@@ -80,17 +80,17 @@ class DemoLauncher:
         
         if memory_gb < requirements["memory"]:
             try:
-                print(f"  {Colors.WARNING}⚠️ Warning: {memory_gb:.1f}GB RAM detected. Required: {requirements['memory']}GB+ for {self.performance_mode} mode{Colors.ENDC}")
+                print(f"  {Colors.WARNING}[WARNING] {memory_gb:.1f}GB RAM detected. Required: {requirements['memory']}GB+ for {self.performance_mode} mode{Colors.ENDC}")
             except UnicodeEncodeError:
                 print(f"  {Colors.WARNING}[!] Warning: {memory_gb:.1f}GB RAM detected. Required: {requirements['memory']}GB+ for {self.performance_mode} mode{Colors.ENDC}")
         elif memory_gb < requirements["recommended_memory"]:
             try:
-                print(f"  {Colors.WARNING}⚠️ Note: {memory_gb:.1f}GB RAM detected. Recommended: {requirements['recommended_memory']}GB+ for optimal {self.performance_mode} mode{Colors.ENDC}")
+                print(f"  {Colors.WARNING}[WARNING] Note: {memory_gb:.1f}GB RAM detected. Recommended: {requirements['recommended_memory']}GB+ for optimal {self.performance_mode} mode{Colors.ENDC}")
             except UnicodeEncodeError:
                 print(f"  {Colors.WARNING}[!] Note: {memory_gb:.1f}GB RAM detected. Recommended: {requirements['recommended_memory']}GB+ for optimal {self.performance_mode} mode{Colors.ENDC}")
         else:
             try:
-                print(f"  ✓ Sufficient RAM for {self.performance_mode} mode")
+                print(f"  [OK] Sufficient RAM for {self.performance_mode} mode")
             except UnicodeEncodeError:
                 print(f"  [OK] Sufficient RAM for {self.performance_mode} mode")
         
@@ -99,12 +99,12 @@ class DemoLauncher:
         print(f"  CPU cores: {cpu_count}")
         if cpu_count < 4:
             try:
-                print(f"  {Colors.WARNING}⚠️ Warning: {cpu_count} CPU cores detected. Recommended: 4+ cores{Colors.ENDC}")
+                print(f"  {Colors.WARNING}[WARNING] Warning: {cpu_count} CPU cores detected. Recommended: 4+ cores{Colors.ENDC}")
             except UnicodeEncodeError:
                 print(f"  {Colors.WARNING}[!] Warning: {cpu_count} CPU cores detected. Recommended: 4+ cores{Colors.ENDC}")
         else:
             try:
-                print(f"  ✓ Sufficient CPU cores")
+                print(f"  [OK] Sufficient CPU cores")
             except UnicodeEncodeError:
                 print(f"  [OK] Sufficient CPU cores")
         
@@ -115,12 +115,12 @@ class DemoLauncher:
         
         if disk_gb < requirements["disk"]:
             try:
-                print(f"  {Colors.WARNING}⚠️ Warning: Low disk space ({disk_gb:.1f}GB free). Required: {requirements['disk']}GB+ for {self.performance_mode} mode{Colors.ENDC}")
+                print(f"  {Colors.WARNING}[WARNING] Warning: Low disk space ({disk_gb:.1f}GB free). Required: {requirements['disk']}GB+ for {self.performance_mode} mode{Colors.ENDC}")
             except UnicodeEncodeError:
                 print(f"  {Colors.WARNING}[!] Warning: Low disk space ({disk_gb:.1f}GB free). Required: {requirements['disk']}GB+ for {self.performance_mode} mode{Colors.ENDC}")
         else:
             try:
-                print(f"  ✓ Sufficient disk space")
+                print(f"  [OK] Sufficient disk space")
             except UnicodeEncodeError:
                 print(f"  [OK] Sufficient disk space")
         
@@ -128,12 +128,12 @@ class DemoLauncher:
         python_version = sys.version_info
         if python_version.major < 3 or python_version.minor < 8:
             try:
-                print(f"  {Colors.WARNING}⚠️ Warning: Python {python_version.major}.{python_version.minor} detected. Recommended: Python 3.8+{Colors.ENDC}")
+                print(f"  {Colors.WARNING}[WARNING] Warning: Python {python_version.major}.{python_version.minor} detected. Recommended: Python 3.8+{Colors.ENDC}")
             except UnicodeEncodeError:
                 print(f"  {Colors.WARNING}[!] Warning: Python {python_version.major}.{python_version.minor} detected. Recommended: Python 3.8+{Colors.ENDC}")
         else:
             try:
-                print(f"  ✓ Python {python_version.major}.{python_version.minor}")
+                print(f"  [OK] Python {python_version.major}.{python_version.minor}")
             except UnicodeEncodeError:
                 print(f"  [OK] Python {python_version.major}.{python_version.minor}")
         
@@ -168,13 +168,13 @@ class DemoLauncher:
         # Check for model files
         models_dir = self.project_root / "models" / "gpt4all"
         if not models_dir.exists():
-            print(f"{Colors.WARNING}  ⚠ Models directory not found: {models_dir}{Colors.ENDC}")
+            print(f"{Colors.WARNING}  [!] Models directory not found: {models_dir}{Colors.ENDC}")
             print(f"    Creating directory...")
             models_dir.mkdir(parents=True, exist_ok=True)
         
         gguf_files = list(models_dir.glob("*.gguf"))
         if not gguf_files:
-            print(f"{Colors.WARNING}  ⚠ No GGUF model files found in {models_dir}{Colors.ENDC}")
+            print(f"{Colors.WARNING}  [!] No GGUF model files found in {models_dir}{Colors.ENDC}")
             print(f"    Please download model files from:")
             print(f"    - https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507-GGUF")
             print(f"    - https://gpt4all.io/models/models.json")
@@ -187,7 +187,7 @@ class DemoLauncher:
         # Check for Godot
         godot_project = self.project_root / "godot" / "live-with-ai" / "project.godot"
         if not godot_project.exists():
-            print(f"{Colors.WARNING}  ⚠ Godot project not found: {godot_project}{Colors.ENDC}")
+            print(f"{Colors.WARNING}  [!] Godot project not found: {godot_project}{Colors.ENDC}")
         else:
             print(f"  [OK] Godot project found")
         
@@ -293,7 +293,7 @@ class DemoLauncher:
         # Find Godot executable
         godot_exe = self.check_godot_executable()
         if not godot_exe:
-            print(f"{Colors.WARNING}  ⚠ Godot executable not found!{Colors.ENDC}")
+            print(f"{Colors.WARNING}  [!] Godot executable not found!{Colors.ENDC}")
             print("  Please install Godot 4.x from: https://godotengine.org/download")
             print("  Or specify the path to Godot executable")
             return None

@@ -119,12 +119,8 @@ func _spawn_demo_characters():
 func spawn_ai_character(character_name: String, personality: String, position: Vector2) -> CharacterBody2D:
 	"""Spawn an AI character"""
 	
-	# Try to use specific character scene
-	var character_scene = character_scenes.get(character_name.to_lower())
-	
-	# Fall back to generic character scene
-	if !character_scene:
-		character_scene = preload("res://scenes/characters/ai_character.tscn") if ResourceLoader.exists("res://scenes/characters/ai_character.tscn") else null
+	# Fall back to generic character scene directly
+	var character_scene = preload("res://scenes/ai_character.tscn") if ResourceLoader.exists("res://scenes/ai_character.tscn") else null
 	
 	if !character_scene:
 		print("Warning: No character scene found for ", character_name)

@@ -1,121 +1,121 @@
-# 🎯 Cozy Bar TileMap 手动创建指南
+# 🎯 Cozy Bar TileMap Manual Creation Guide
 
-## 📋 概述
+## 📋 Overview
 
-这是一个完整的指南，教你如何在Godot编辑器中**手动**创建Cozy Bar的TileMap系统，包括TileSet资源的分割和瓦片的手动放置。
+This is a complete guide teaching you how to **manually** create the Cozy Bar TileMap system in the Godot editor, including TileSet resource segmentation and manual tile placement.
 
-## 🛠️ 第一步：设置TileSet资源
+## 🛠️ Step 1: Setup TileSet Resource
 
-### 1.1 创建TileSet资源
+### 1.1 Create TileSet Resource
 
-1. 在Godot编辑器中打开 `tilesets/cozy_bar_tileset.tres`
-2. 如果文件不存在，右键点击 `tilesets` 文件夹 → **New Resource** → 选择 **TileSet**
-3. 保存为 `cozy_bar_tileset.tres`
+1. Open `tilesets/cozy_bar_tileset.tres` in the Godot editor
+2. If the file doesn't exist, right-click the `tilesets` folder → **New Resource** → select **TileSet**
+3. Save as `cozy_bar_tileset.tres`
 
-### 1.2 添加瓦片源 (TileSetAtlasSource)
+### 1.2 Add Tile Sources (TileSetAtlasSource)
 
-在TileSet编辑器中：
+In the TileSet editor:
 
-#### 📁 Source 0: 地板和墙壁
-1. 点击 **Add Source** → 选择 **Atlas**
-2. 拖拽 `assets/sprites/tiles/v2/TopDownHouse_FloorsAndWalls.png` 到 **Texture** 字段
-3. 设置 **Texture Region Size** 为 `32x32`
-4. **ID** 保持为 `0`
+#### 📁 Source 0: Floors and Walls
+1. Click **Add Source** → select **Atlas**
+2. Drag `assets/sprites/tiles/v2/TopDownHouse_FloorsAndWalls.png` to the **Texture** field
+3. Set **Texture Region Size** to `32x32`
+4. Keep **ID** as `0`
 
-#### 📁 Source 1: 家具
-1. 点击 **Add Source** → 选择 **Atlas** 
-2. 拖拽 `assets/sprites/tiles/v2/TopDownHouse_FurnitureState1.png` 到 **Texture** 字段
-3. 设置 **Texture Region Size** 为 `32x32`
-4. **ID** 设置为 `1`
+#### 📁 Source 1: Furniture
+1. Click **Add Source** → select **Atlas** 
+2. Drag `assets/sprites/tiles/v2/TopDownHouse_FurnitureState1.png` to the **Texture** field
+3. Set **Texture Region Size** to `32x32`
+4. Set **ID** to `1`
 
-#### 📁 Source 2: 小物品
-1. 点击 **Add Source** → 选择 **Atlas**
-2. 拖拽 `assets/sprites/tiles/v2/TopDownHouse_SmallItems.png` 到 **Texture** 字段  
-3. 设置 **Texture Region Size** 为 `32x32`
-4. **ID** 设置为 `2`
+#### 📁 Source 2: Small Items
+1. Click **Add Source** → select **Atlas**
+2. Drag `assets/sprites/tiles/v2/TopDownHouse_SmallItems.png` to the **Texture** field  
+3. Set **Texture Region Size** to `32x32`
+4. Set **ID** to `2`
 
-### 1.3 手动分割瓦片
+### 1.3 Manual Tile Segmentation
 
-对每个Source，你需要手动点击来分割瓦片：
+For each Source, you need to manually click to segment tiles:
 
-#### Source 0 (地板和墙壁) - 重要瓦片分割：
-1. **木质地板** - 点击坐标 `(1,1)` 的瓦片
-   - 右侧面板设置 **Setup** → 确认瓦片已被添加
+#### Source 0 (Floors and Walls) - Important Tile Segmentation:
+1. **Wooden Floor** - Click the tile at coordinates `(1,1)`
+   - Right panel **Setup** → confirm tile has been added
    
-2. **砖墙** - 点击坐标 `(2,0)` 的瓦片
-   - 在 **Physics** 标签页 → 点击 **Add** → 选择矩形形状
-   - 调整碰撞形状覆盖整个瓦片
+2. **Brick Wall** - Click the tile at coordinates `(2,0)`
+   - In **Physics** tab → click **Add** → select rectangle shape
+   - Adjust collision shape to cover the entire tile
 
-3. **门** - 点击坐标 `(3,2)` 的瓦片
-   - **Setup** → 添加瓦片
-   - **不要**添加物理碰撞（门可以通过）
+3. **Door** - Click the tile at coordinates `(3,2)`
+   - **Setup** → add tile
+   - **Do not** add physics collision (door can be passed through)
 
-#### Source 1 (家具) - 重要瓦片分割：
-1. **吧台** - 点击坐标 `(4,1)` 的瓦片
-   - **Physics** → 添加矩形碰撞形状
+#### Source 1 (Furniture) - Important Tile Segmentation:
+1. **Bar Counter** - Click the tile at coordinates `(4,1)`
+   - **Physics** → add rectangle collision shape
    
-2. **桌子** - 点击坐标 `(2,1)` 的瓦片
-   - **Physics** → 添加矩形碰撞形状
+2. **Table** - Click the tile at coordinates `(2,1)`
+   - **Physics** → add rectangle collision shape
    
-3. **音乐舞台** - 点击坐标 `(5,3)` 的瓦片
-   - **Setup** → 添加瓦片
-   - **不添加碰撞**（可以站在舞台上）
+3. **Music Stage** - Click the tile at coordinates `(5,3)`
+   - **Setup** → add tile
+   - **No collision** (can stand on stage)
    
-4. **吧台凳** - 点击坐标 `(0,2)` 的瓦片
-   - **Setup** → 添加瓦片，**无碰撞**
+4. **Bar Stool** - Click the tile at coordinates `(0,2)`
+   - **Setup** → add tile, **no collision**
    
-5. **椅子** - 点击坐标 `(1,2)` 的瓦片
-   - **Setup** → 添加瓦片，**无碰撞**
+5. **Chair** - Click the tile at coordinates `(1,2)`
+   - **Setup** → add tile, **no collision**
 
-## 🏗️ 第二步：设置场景中的TileMap图层
+## 🏗️ Step 2: Setup TileMap Layers in Scene
 
-### 2.1 打开cozy_bar.tscn场景
+### 2.1 Open cozy_bar.tscn Scene
 
-在场景编辑器中找到 `TileMaps` 节点下的5个TileMap图层：
+In the scene editor, find the 5 TileMap layers under the `TileMaps` node:
 
-### 2.2 配置每个图层
+### 2.2 Configure Each Layer
 
-#### FloorLayer (地板层)
-1. 选中 `FloorLayer` 节点
-2. 在检视器中设置：
-   - **Tile Set** → 选择 `cozy_bar_tileset.tres`
+#### FloorLayer (Floor Layer)
+1. Select the `FloorLayer` node
+2. In the inspector, set:
+   - **Tile Set** → select `cozy_bar_tileset.tres`
    - **Layer 0** → **Z Index** = `0`
    - **Layer 0** → **Y Sort Enabled** = `false`
 
-#### WallLayer (墙壁层)  
-1. 选中 `WallLayer` 节点
-2. 设置：
-   - **Tile Set** → 选择 `cozy_bar_tileset.tres`
+#### WallLayer (Wall Layer)  
+1. Select the `WallLayer` node
+2. Set:
+   - **Tile Set** → select `cozy_bar_tileset.tres`
    - **Layer 0** → **Z Index** = `1`
    - **Layer 0** → **Y Sort Enabled** = `false`
 
-#### FurnitureLayer (家具层)
-1. 选中 `FurnitureLayer` 节点
-2. 设置：
-   - **Tile Set** → 选择 `cozy_bar_tileset.tres`
+#### FurnitureLayer (Furniture Layer)
+1. Select the `FurnitureLayer` node
+2. Set:
+   - **Tile Set** → select `cozy_bar_tileset.tres`
    - **Layer 0** → **Z Index** = `2`
-   - **Layer 0** → **Y Sort Enabled** = `true` ⚠️ **重要**
+   - **Layer 0** → **Y Sort Enabled** = `true` ⚠️ **Important**
    - **Layer 0** → **Y Sort Origin** = `16`
 
-#### DecorationLayer (装饰层)
-1. 选中 `DecorationLayer` 节点
-2. 设置：
-   - **Tile Set** → 选择 `cozy_bar_tileset.tres`
+#### DecorationLayer (Decoration Layer)
+1. Select the `DecorationLayer` node
+2. Set:
+   - **Tile Set** → select `cozy_bar_tileset.tres`
    - **Layer 0** → **Z Index** = `3`
-   - **Layer 0** → **Y Sort Enabled** = `true` ⚠️ **重要**
+   - **Layer 0** → **Y Sort Enabled** = `true` ⚠️ **Important**
    - **Layer 0** → **Y Sort Origin** = `16`
 
-#### CollisionLayer (碰撞层)
-1. 选中 `CollisionLayer` 节点
-2. 设置：
-   - **Tile Set** → 选择 `cozy_bar_tileset.tres`
+#### CollisionLayer (Collision Layer)
+1. Select the `CollisionLayer` node
+2. Set:
+   - **Tile Set** → select `cozy_bar_tileset.tres`
    - **Layer 0** → **Z Index** = `-1`
-   - **Layer 0** → **Enabled** = `false` (隐藏)
+   - **Layer 0** → **Enabled** = `false` (hidden)
    - **Layer 0** → **Y Sort Enabled** = `false`
 
-## 🎨 第三步：手动放置瓦片创建12x10房间
+## 🎨 Step 3: Manually Place Tiles to Create a 12x10 Room
 
-### 3.1 房间布局设计
+### 3.1 Room Layout Design
 
 ```
    0 1 2 3 4 5 6 7 8 9 10 11
@@ -131,122 +131,122 @@
 9  W W W W W D D W W W W  W
 ```
 
-### 3.2 开始手动放置
+### 3.2 Start Manual Placement
 
-#### 步骤1: 放置地板 (FloorLayer)
-1. 选中 `FloorLayer` 节点
-2. 在TileMap编辑器中：
-   - 选择 **Source 0**
-   - 点击木质地板瓦片 `(1,1)`
-   - 使用画笔工具在所有 `.` 位置放置地板瓦片
-   - 覆盖范围：x=1到10, y=1到8
+#### Step 1: Place Floors (FloorLayer)
+1. Select the `FloorLayer` node
+2. In the TileMap editor:
+   - Select **Source 0**
+   - Click wooden floor tile `(1,1)`
+   - Use the brush tool to place floor tiles at all `.` positions
+   - Coverage: x=1 to 10, y=1 to 8
 
-#### 步骤2: 放置墙壁 (WallLayer)  
-1. 选中 `WallLayer` 节点
-2. 放置外墙：
-   - 选择砖墙瓦片 `(2,0)` from Source 0
-   - 放置顶部墙壁：y=0, x=0到11
-   - 放置左右墙壁：x=0和x=11, y=1到8  
-   - 放置底部墙壁：y=9, x=0到4和x=7到11
-3. 放置门：
-   - 选择门瓦片 `(3,2)` from Source 0
-   - 放置在 `(5,9)` 和 `(6,9)` 位置
+#### Step 2: Place Walls (WallLayer)  
+1. Select the `WallLayer` node
+2. Place outer walls:
+   - Select brick wall tile `(2,0)` from Source 0
+   - Place top wall: y=0, x=0 to 11
+   - Place left and right walls: x=0 and x=11, y=1 to 8  
+   - Place bottom wall: y=9, x=0 to 4 and x=7 to 11
+3. Place door:
+   - Select door tile `(3,2)` from Source 0
+   - Place at `(5,9)` and `(6,9)` positions
 
-#### 步骤3: 放置家具 (FurnitureLayer)
-1. 选中 `FurnitureLayer` 节点
-2. 放置吧台：
-   - 选择吧台瓦片 `(4,1)` from Source 1
-   - 在y=2, x=3到8放置6个吧台瓦片
-3. 放置桌子：
-   - 选择桌子瓦片 `(2,1)` from Source 1  
-   - 左桌：(2,5) 和 (3,5)
-   - 右桌：(8,5) 和 (9,5)
-4. 放置舞台：
-   - 选择舞台瓦片 `(5,3)` from Source 1
-   - 位置：(5,8) 和 (6,8)
+#### Step 3: Place Furniture (FurnitureLayer)
+1. Select the `FurnitureLayer` node
+2. Place bar counter:
+   - Select bar counter tile `(4,1)` from Source 1
+   - Place 6 bar counter tiles at y=2, x=3 to 8
+3. Place tables:
+   - Select table tile `(2,1)` from Source 1  
+   - Left table: (2,5) and (3,5)
+   - Right table: (8,5) and (9,5)
+4. Place stage:
+   - Select stage tile `(5,3)` from Source 1
+   - Position: (5,8) and (6,8)
 
-#### 步骤4: 放置装饰 (DecorationLayer)
-1. 选中 `DecorationLayer` 节点
-2. 放置吧台凳：
-   - 选择吧台凳瓦片 `(0,2)` from Source 1
-   - 在y=3, x=3到8放置6个凳子
-3. 放置椅子：
-   - 选择椅子瓦片 `(1,2)` from Source 1
-   - 左桌椅子：(2,6) 和 (3,6)  
-   - 右桌椅子：(8,6) 和 (9,6)
+#### Step 4: Place Decoration (DecorationLayer)
+1. Select the `DecorationLayer` node
+2. Place bar stools:
+   - Select bar stool tile `(0,2)` from Source 1
+   - Place 6 stools at y=3, x=3 to 8
+3. Place chairs:
+   - Select chair tile `(1,2)` from Source 1
+   - Left table chair: (2,6) and (3,6)  
+   - Right table chair: (8,6) and (9,6)
 
-## 🎮 第四步：设置角色生成点
+## 🎮 Step 4: Set Up Character Spawn Points
 
-### 4.1 配置Marker2D节点
+### 4.1 Configure Marker2D Nodes
 
-在 `SpawnPoints` 节点下找到4个Marker2D节点并设置位置：
+Find 4 Marker2D nodes under the `SpawnPoints` node and set their positions:
 
-1. **PlayerSpawn** - Position: `(192, 160)` (房间中央)
-2. **BobSpawn** - Position: `(192, 64)` (吧台后方) 
-3. **AliceSpawn** - Position: `(96, 192)` (左桌旁)
-4. **SamSpawn** - Position: `(288, 192)` (右桌旁)
+1. **PlayerSpawn** - Position: `(192, 160)` (center of the room)
+2. **BobSpawn** - Position: `(192, 64)` (behind the bar) 
+3. **AliceSpawn** - Position: `(96, 192)` (next to the left table)
+4. **SamSpawn** - Position: `(288, 192)` (next to the right table)
 
-### 4.2 配置交互区域
+### 4.2 Configure Interaction Areas
 
-设置 `InteractiveObjects` 下的Area2D节点：
+Set Area2D nodes under `InteractiveObjects`:
 
 1. **BarCounter** - Position: `(192, 96)`
 2. **Table1** - Position: `(96, 192)`  
 3. **Table2** - Position: `(288, 192)`
 4. **MusicStage** - Position: `(192, 288)`
 
-## ✅ 完成检查清单
+## ✅ Completion Checklist
 
-### TileSet设置验证：
-- [ ] 三个瓦片源已添加并设置正确的纹理
-- [ ] 重要瓦片已手动分割（地板、墙壁、门、家具）
-- [ ] 墙壁和家具瓦片有碰撞形状
-- [ ] 地板、装饰瓦片无碰撞形状
+### TileSet Settings Verification:
+- [ ] Three tile sources have been added and set with correct textures
+- [ ] Important tiles have been manually segmented (floors, walls, doors, furniture)
+- [ ] Wall and furniture tiles have collision shapes
+- [ ] Floor and decoration tiles have no collision shapes
 
-### 场景配置验证：
-- [ ] 5个TileMap图层都链接到cozy_bar_tileset.tres
-- [ ] Z-index设置正确（Floor=0, Wall=1, Furniture=2, Decoration=3, Collision=-1）
-- [ ] Y-sort仅在Furniture和Decoration层启用
-- [ ] CollisionLayer已隐藏
+### Scene Configuration Verification:
+- [ ] All 5 TileMap layers are linked to cozy_bar_tileset.tres
+- [ ] Z-index settings correct (Floor=0, Wall=1, Furniture=2, Decoration=3, Collision=-1)
+- [ ] Y-sort only enabled on Furniture and Decoration layers
+- [ ] CollisionLayer is hidden
 
-### 手动放置验证：
-- [ ] 地板覆盖所有开放区域 (1-10, 1-8)
-- [ ] 外墙完整，门在正确位置 (5,9)(6,9)
-- [ ] 吧台6格宽，位于正确位置
-- [ ] 4张椅子和2张桌子已放置
-- [ ] 舞台位于房间底部中央
-- [ ] 6个吧台凳和4个椅子已放置
+### Manual Placement Verification:
+- [ ] Floors cover all open areas (1-10, 1-8)
+- [ ] Outer walls complete, doors in correct positions (5,9)(6,9)
+- [ ] Bar counter 6 tiles wide, in correct position
+- [ ] 4 chairs and 2 tables placed
+- [ ] Stage located at bottom center of the room
+- [ ] 6 bar stools and 4 chairs placed
 
-### 生成点验证：
-- [ ] 4个角色生成点位置正确
-- [ ] 4个交互区域位置正确
+### Spawn Point Verification:
+- [ ] 4 character spawn points in correct positions
+- [ ] 4 interaction areas in correct positions
 
-## 🔧 常见问题解决
+## 🔧 Common Issues and Solutions
 
-### 问题1: 瓦片不显示
-- **检查**：TileMap节点是否正确链接到TileSet资源
-- **检查**：瓦片是否在TileSet中已正确分割
+### Issue 1: Tiles not displayed
+- **Check**：TileMap node correctly linked to TileSet resource
+- **Check**：Tiles correctly segmented in TileSet
 
-### 问题2: 碰撞不工作  
-- **检查**：墙壁和家具瓦片是否在TileSet中添加了物理形状
-- **检查**：CollisionLayer是否包含相同的碰撞瓦片
+### Issue 2: Collision not working  
+- **Check**：Wall and furniture tiles have physics shapes added in TileSet
+- **Check**：CollisionLayer contains the same collision tiles
 
-### 问题3: 渲染顺序错误
-- **检查**：各图层Z-index设置是否正确
-- **检查**：Furniture和Decoration层是否启用了Y-sort
+### Issue 3: Rendering order error
+- **Check**：Correct Z-index settings for each layer
+- **Check**：Furniture and Decoration layers enabled Y-sort
 
-### 问题4: Y-sorting不工作
-- **检查**：Y Sort Origin设置为16（瓦片中心）
-- **检查**：只有Furniture和Decoration层启用Y-sort
+### Issue 4: Y-sorting not working
+- **Check**：Y Sort Origin set to 16 (tile center)
+- **Check**：Only Furniture and Decoration layers enabled Y-sort
 
-## 🎉 完成！
+## 🎉 Completion!
 
-你现在拥有一个完全手动创建的Cozy Bar TileMap系统！这个12x10的房间包含：
-- ✨ 完整的吧台区域（6格吧台 + 6个凳子）
-- ✨ 2张客桌（各有2把椅子）  
-- ✨ 音乐表演舞台
-- ✨ 4个角色生成点
-- ✨ 正确的碰撞检测
-- ✨ 分层渲染和Y-sorting
+You now have a fully manually created Cozy Bar TileMap system! This 12x10 room includes:
+- ✨ Complete bar area (6 bar + 6 stools)
+- ✨ 2 guest tables (each with 2 chairs)  
+- ✨ Music performance stage
+- ✨ 4 character spawn points
+- ✨ Correct collision detection
+- ✨ Layered rendering and Y-sorting
 
-现在可以运行游戏，角色应该能正确地在房间中移动并与物品交互！
+You can now run the game, and characters should move correctly in the room and interact with items!
