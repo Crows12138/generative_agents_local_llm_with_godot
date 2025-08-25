@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://buhrkf3qrgfxx"]
 
 [ext_resource type="TileSet" uid="uid://bv4ms0g8ykqne" path="res://tilesets/cozy_bar_tileset.tres" id="1_0mnap"]
-[ext_resource type="Script" uid="uid://bpoxolp3qp0xl" path="res://scripts/bar_updater.gd" id="1_l1gog"]
+[ext_resource type="Script" uid="uid://bkqyobvd7k247" path="res://scripts/bar_server_client_fixed.gd" id="1_6ieo7"]
 [ext_resource type="Script" uid="uid://cc7su1hbnuxe3" path="res://scripts/camera_fix.gd" id="2_6ieo7"]
 
 [sub_resource type="Environment" id="Environment_1qr6n"]
@@ -12,7 +12,7 @@ ambient_light_color = Color(1, 0.9, 0.7, 1)
 ambient_light_energy = 0.3
 
 [node name="CozyBar" type="Node2D"]
-script = ExtResource("1_l1gog")
+script = ExtResource("1_6ieo7")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(192, 160)

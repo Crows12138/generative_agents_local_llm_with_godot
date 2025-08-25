@@ -10,6 +10,10 @@ import json
 import hashlib
 from pathlib import Path
 
+# Ensure we can find ai_service module
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
+
 # Simple file-based cache for instant responses
 CACHE_FILE = Path("llm_cache.json")
 cache = {}
