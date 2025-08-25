@@ -9,11 +9,12 @@ model:
   active_model: "qwen3"
   
   # Directory containing GGUF model files
-  models_dir: "models"
+  models_dir: "models/llms"
   
   # Supported models mapping
   supported_models:
     qwen3: "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf"
+    qwen3-4b: "Qwen3-4B-Instruct-2507-Q4_0.gguf"
   
   # Enable automatic model detection
   auto_detect: true

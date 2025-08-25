@@ -109,7 +109,7 @@ def _initialize_config():
             # Fallback configuration
             _active_model = "qwen3"
             _model_config = type('Config', (), {
-                'model_path': 'models/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf',
+                'model_path': 'models/llms/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf',
                 'context_length': 4096,
                 'threads': 4
             })()

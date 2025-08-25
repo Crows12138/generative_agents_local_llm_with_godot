@@ -13,7 +13,7 @@ class FixedModelLoader:
         self.models = {}
         self.model_configs = {
             "qwen3": {
-                "model_name": "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf",  # Match actual file
+                "model_name": "llms/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf",  # Updated path
                 "n_ctx": 4096,  # Match actual context limit
                 "n_batch": 512,
                 "device": "cpu",  # Or "cuda" if available

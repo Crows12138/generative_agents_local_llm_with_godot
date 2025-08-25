@@ -83,7 +83,7 @@ def load_llm():
         # Import directly from llama_cpp
         from llama_cpp import Llama
         
-        model_path = "models/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf"
+        model_path = "models/llms/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf"
         
         if not os.path.exists(model_path):
             logger.error(f"[LLM] Model not found: {model_path}")

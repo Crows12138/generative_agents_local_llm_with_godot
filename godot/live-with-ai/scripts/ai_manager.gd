@@ -4,7 +4,7 @@ extends Node
 signal ai_response_received(response)
 signal ai_error(error_message)
 
-const AI_SERVICE_URL = "http://127.0.0.1:8080"
+const AI_SERVICE_URL = "http://127.0.0.1:8000"  # Changed to port 8000 for force_llm_server
 const TIMEOUT = 30.0
 
 var http_request: HTTPRequest

@@ -58,7 +58,8 @@ class ModelConfig:
     
     # Fields compatible with old configuration API
     supported_models: Dict[str, str] = field(default_factory=lambda: {
-        "qwen3": "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf"
+        "qwen3": "llms/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf",
+        "qwen3-4b": "llms/Qwen3-4B-Instruct-2507-Q4_0.gguf"
     })
     
     def detect_models(self) -> Dict[str, ModelMetadata]:

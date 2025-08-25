@@ -49,7 +49,7 @@ class LlamaCppClient:
     """Client for running GGUF models directly via llama-cpp-python"""
     
     def __init__(self, model_path: str = None):
-        self.model_path = model_path or os.path.join(os.path.dirname(__file__), "..", "models", "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf")
+        self.model_path = model_path or os.path.join(os.path.dirname(__file__), "..", "models", "llms", "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf")
         self.model = None
         
     def load_model(self):

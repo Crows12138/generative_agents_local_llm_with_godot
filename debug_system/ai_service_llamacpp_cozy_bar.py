@@ -58,7 +58,7 @@ class AIServiceClient:
         """Initialize LlamaCpp as fallback"""
         try:
             from llama_cpp import Llama
-            model_path = os.path.join(os.path.dirname(__file__), "..", "models", "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf")
+            model_path = os.path.join(os.path.dirname(__file__), "..", "models", "llms", "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf")
             
             if os.path.exists(model_path):
                 debug_trace("Initializing LlamaCpp fallback")

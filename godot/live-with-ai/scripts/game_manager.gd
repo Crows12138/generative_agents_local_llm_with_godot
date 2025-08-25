@@ -73,7 +73,8 @@ func _initialize_game():
 
 func _load_character_scenes():
 	"""Load character scene files"""
-	var character_scene_path = "res://scenes/characters/"
+	# Fix: Use correct scenes pat
+	var character_scene_path = "res://scenes/"
 	var dir = DirAccess.open(character_scene_path)
 	
 	if dir:
@@ -81,7 +82,7 @@ func _load_character_scenes():
 		var file_name = dir.get_next()
 		
 		while file_name != "":
-			if file_name.ends_with(".tscn"):
+			if file_name.ends_with(".tscn") and file_name.contains("character"):
 				var scene_path = character_scene_path + file_name
 				var character_name = file_name.trim_suffix(".tscn")
 				character_scenes[character_name] = load(scene_path)
@@ -119,8 +120,12 @@ func _spawn_demo_characters():
 func spawn_ai_character(character_name: String, personality: String, position: Vector2) -> CharacterBody2D:
 	"""Spawn an AI character"""
 	
-	# Fall back to generic character scene directly
-	var character_scene = preload("res://scenes/ai_character.tscn") if ResourceLoader.exists("res://scenes/ai_character.tscn") else null
+	# Try to load ai_character first, then fall back to character.tscn
+	var character_scene = null
+	if ResourceLoader.exists("res://scenes/ai_character.tscn"):
+		character_scene = preload("res://scenes/ai_character.tscn")
+	elif ResourceLoader.exists("res://scenes/character.tscn"):
+		character_scene = preload("res://scenes/character.tscn")
 	
 	if !character_scene:
 		print("Warning: No character scene found for ", character_name)

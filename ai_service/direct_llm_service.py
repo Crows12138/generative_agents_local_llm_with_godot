@@ -22,8 +22,8 @@ class DirectLLMService:
         self.model = None
         self.model_loaded = False
         
-        # Model path
-        self.models_dir = Path("models")
+        # Model path - Updated to new directory structure
+        self.models_dir = Path("models/llms")
         self.model_file = self.models_dir / "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf"
         
         # Enhanced generation settings
@@ -175,14 +175,18 @@ class DirectLLMService:
             "list": "Provide a complete numbered list. Include all items:",
             "daily_plan": "Create a full schedule with specific times:",
             "action": "State the specific action to take:",
-            "conversation": "Provide the complete conversation response:",
+            "conversation": "",  # No enhancement for conversation - keep it natural
             "json": "Output complete valid JSON:",
             "default": "Provide a complete detailed answer:"
         }
         
         enhancement = enhancements.get(expected_type, enhancements["default"])
         
-        # Add instructions to prevent truncation
+        # For conversation type, don't add instructions
+        if expected_type == "conversation":
+            return prompt
+        
+        # Add instructions to prevent truncation for other types
         instructions = [
             f"\n{enhancement}",
             "\nDo not use phrases like 'I can help' or 'Let me' at the start.",
