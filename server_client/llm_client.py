@@ -30,9 +30,14 @@ def get_response(message, port=9999):
         return f"Error: {str(e)}"
 
 if __name__ == "__main__":
+    # Fix encoding for Windows
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    
     if len(sys.argv) > 1:
-        message = " ".join(sys.argv[1:])
-        response = get_response(message)
+        message = " ".join(sys.argv[1:-1]) if len(sys.argv) > 2 else sys.argv[1]
+        port = int(sys.argv[-1]) if len(sys.argv) > 2 and sys.argv[-1].isdigit() else 9999
+        response = get_response(message, port)
         print(response)
     else:
-        print("Usage: python llm_client.py 'Your message'")
+        print("Usage: python llm_client.py 'Your message' [port]")

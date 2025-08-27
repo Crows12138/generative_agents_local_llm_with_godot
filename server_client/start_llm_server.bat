@@ -12,6 +12,7 @@ if %errorlevel%==0 (
 
 REM Start the server
 echo Loading model, please wait...
-.venv\Scripts\python.exe llm_server_nocache.py
+cd /d "%~dp0\.."
+.venv\Scripts\python.exe server_client\llm_server_nocache.py
 
 pause
