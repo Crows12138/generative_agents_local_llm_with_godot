@@ -4,7 +4,19 @@ from typing import Callable, Dict, List, Optional
 from basic_functions.maze import Maze, Object
 from basic_functions.persona import Persona
 from basic_functions.decider.decider import ActionIntent
-from ai_service.dialogue_service import get_dialogue_service
+try:
+    # Try to use cognitive dual model for dialogue (1.7B for fast responses)
+    from basic_functions.cognitive.cognitive_llm_service import get_cognitive_llm_service
+    def get_dialogue_service():
+        return get_cognitive_llm_service()
+except ImportError:
+    # Fallback to original dialogue service
+    try:
+        from ai_service.dialogue_service import get_dialogue_service
+    except ImportError:
+        # Final fallback
+        def get_dialogue_service():
+            return None
 from basic_functions.logger.action_logger import log_action
 from basic_functions.conversation.relationship_tracker import relationship_tracker, InteractionType
 from basic_functions.conversation.enhanced_dialogue_generator import dialogue_generator, DialogueContext

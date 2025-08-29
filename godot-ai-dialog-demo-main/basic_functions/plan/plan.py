@@ -3,8 +3,14 @@ import random
 from typing import List, Dict, Any
 from datetime import datetime
 
-# local LLM wrapper
-from ai_service.ai_service import local_llm_generate
+# local LLM wrapper with cognitive dual model
+try:
+    from basic_functions.cognitive.cognitive_llm_service import local_llm_generate_cognitive
+    # Use cognitive version for planning (4B model)
+    local_llm_generate = lambda prompt: local_llm_generate_cognitive(prompt, use_deep_thinking=True)
+except ImportError:
+    # Fallback to original if cognitive service not available
+    from ai_service.ai_service import local_llm_generate
 
 def generate_daily_schedule(
     agent_name: str,

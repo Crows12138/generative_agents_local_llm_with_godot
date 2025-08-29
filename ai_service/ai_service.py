@@ -35,6 +35,18 @@ except ImportError:
     from monitoring import get_performance_monitor, timing_context, get_ai_logger
     from error_handling import handle_generation_errors, RetryHandler, GENERATION_RETRY_CONFIG
 
+# Import cognitive dual model service
+try:
+    from .cognitive_dual_model_service import get_cognitive_service
+    COGNITIVE_SERVICE_AVAILABLE = True
+except ImportError:
+    try:
+        from cognitive_dual_model_service import get_cognitive_service
+        COGNITIVE_SERVICE_AVAILABLE = True
+    except ImportError:
+        COGNITIVE_SERVICE_AVAILABLE = False
+        print("[ai_service] Cognitive dual model service not available")
+
 # Import optimization components
 import sys
 # Add both relative and absolute paths for debug_system
@@ -223,46 +235,49 @@ def _determine_optimal_tokens(prompt: str) -> int:
 
 def _core_llm_generate(prompt: str, model_key: Optional[str] = None, max_tokens: Optional[int] = None) -> str:
     """Core LLM generation function with intelligent token allocation"""
-    mk = (model_key or get_active_model()).lower()
     
-    try:
-        ai = _get_model_instance(mk)
-        formatted_prompt = _format_prompt(prompt, mk)
-        
-        # Intelligent token allocation based on prompt analysis
-        if max_tokens is None:
-            max_tokens = _determine_optimal_tokens(prompt)
-        
-        # Generate response
-        output = ai(
-            formatted_prompt,
-            max_tokens=max_tokens,
-            temperature=0.7,
-            top_p=0.9,
-            repeat_penalty=1.1,
-            stop=["<|im_end|>", "<|im_start|>"] if mk in ("qwen", "qwen3") else ["<|end|>"],
-            echo=False
-        )
-        
-        tokens = output['choices'][0]['text']
-        cleaned = _clean_response(tokens, mk)
-        
-        return cleaned if cleaned else "I need more information to help you."
-        
-    except Exception as e:
-        print(f"[ai_service] Generation error: {e}")
-        return _get_simple_response(prompt)
+    # Try to use CognitiveDualModelService first
+    if COGNITIVE_SERVICE_AVAILABLE:
+        try:
+            cognitive_service = get_cognitive_service()
+            
+            # Determine task type
+            prompt_lower = prompt.lower()
+            is_dialogue = any(word in prompt_lower for word in ['talk', 'say', 'hello', 'greet', 'chat', 'speak', 'dialogue', 'conversation'])
+            is_json_request = 'json' in prompt_lower or 'choose one action' in prompt_lower
+            
+            if is_dialogue:
+                # ONLY dialogue uses 1.7B model for fast response
+                response = cognitive_service.generate_dialogue(
+                    npc_name="Agent",
+                    personality="A helpful assistant",
+                    message=prompt,
+                    conversation_history=[]
+                )
+                return response if response else "I understand."
+            elif is_json_request:
+                # JSON requests (like action decisions) use 4B model with direct generation
+                response = cognitive_service.generate_json_response(prompt)
+                return response if response else '{"action": "wait"}'
+            else:
+                # Other cognitive tasks use planning function
+                response = cognitive_service.cognitive_planning(
+                    npc_name="Agent",
+                    current_state={"location": "unknown", "status": "thinking"},
+                    goals=[prompt],
+                    memories=[]
+                )
+                return response if response else "Let me process that."
+                
+        except Exception as e:
+            print(f"[ai_service] CRITICAL ERROR - Cognitive service failed: {e}")
+            raise RuntimeError(f"AI generation failed: {e}")
+    
+    # No GGUF fallback - fail fast if cognitive service not available
+    raise RuntimeError("No AI service available - cognitive service required")
 
-def _get_simple_response(prompt: str) -> str:
-    """Fallback simple response"""
-    responses = [
-        "I understand. Let me help you with that.",
-        "That's a good question. Here's what I think...",
-        "I can help you with that task.",
-        "Let me consider the best approach for this.",
-        "That sounds like something I can assist with."
-    ]
-    return random.choice(responses)
+# REMOVED: _get_simple_response fallback function
+# All AI calls must succeed or fail explicitly
 
 def warmup_model(model_key: str) -> bool:
     """Warm up a model"""

@@ -8,11 +8,16 @@ from basic_functions.memory.medium_term_memory import MediumTermMemory, MediumTe
 from basic_functions.memory.long_term_memory import LongTermMemory, LongTermMemoryEntry
 from basic_functions.perception.embedding import get_embedding, get_single_embedding
 
-try:  # heavy dependencies may be unavailable during testing
-    from ai_service.ai_service import local_llm_generate
-except Exception:  # pragma: no cover - provide fallback
-    def local_llm_generate(prompt: str) -> str:
-        return '{"insights": [], "adjustments": []}'
+try:  # Try to use cognitive dual model for reflection
+    from basic_functions.cognitive.cognitive_llm_service import local_llm_generate_cognitive
+    # Use 4B model for deep reflection
+    local_llm_generate = lambda prompt: local_llm_generate_cognitive(prompt, use_deep_thinking=True)
+except ImportError:
+    try:  # Fallback to original service
+        from ai_service.ai_service import local_llm_generate
+    except Exception:  # pragma: no cover - provide fallback
+        def local_llm_generate(prompt: str) -> str:
+            return '{"insights": [], "adjustments": []}'
 
 # Original reflection prompt
 REFLECTION_PROMPT = """

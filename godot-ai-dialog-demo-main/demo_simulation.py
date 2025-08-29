@@ -1,9 +1,14 @@
+import sys
 import json
 import time
 import threading
 import queue
 from datetime import datetime, timedelta
 from typing import List, Tuple
+
+# Force unbuffered output
+sys.stdout = sys.__stdout__
+sys.stderr = sys.__stderr__
 
 from basic_functions.persona import Persona
 from ai_service.ai_service import set_active_model, get_active_model
@@ -92,34 +97,23 @@ class ActionDrivenSimulation:
     
     def _generate_daily_schedules(self):
         """Generate enhanced daily schedules for all agents."""
-        current_date = datetime.now().strftime("%Y-%m-%d")
-        
+        print("[DEBUG] Skipping schedule generation for faster startup")
+        # Skip schedule generation for now to avoid LLM calls
         for agent in self.agents:
-            try:
-                schedule = generate_enhanced_daily_schedule(
-                    agent_name=agent.name,
-                    personality_description=agent.personality_description,
-                    high_level_goals=agent.long_term_goals,
-                    medium_term_memories="",  # Will be enhanced later
-                    current_date=current_date,
-                )
-                self.daily_schedules[agent.name] = schedule
-                print(f"\n=== {agent.name}'s Enhanced Daily Schedule ===")
-                for task in schedule:
-                    print(f"  {task['start']}-{task['end']}: {task['task']}")
-                print("=" * 50)
-            except Exception as e:
-                print(f"Error generating schedule for {agent.name}: {e}")
-                self.daily_schedules[agent.name] = []
+            self.daily_schedules[agent.name] = []
+            print(f"[INFO] {agent.name}: No schedule (simplified mode)")
     
     def _action_worker(self):
         """Background worker for processing actions."""
+        print("[DEBUG] Action worker started")
         while self.running:
             try:
                 # Process actions for each agent
                 for agent in self.agents:
                     if not self.running:
                         break
+                    
+                    print(f"[DEBUG] Processing agent: {agent.name}")
                     
                     # Get current task from schedule
                     current_time = datetime.now().strftime("%H:%M")
@@ -152,13 +146,13 @@ class ActionDrivenSimulation:
                     intent = ActionIntent(action_data["action"], action_data.get("target"))
                     target_str = action_data.get("target", "")
                     target_display = f" {target_str}" if target_str else ""
-                    print(f"\n🎯 {agent.name} decides: {action_data['action']}{target_display}")
+                    print(f"\n[ACTION] {agent.name} decides: {action_data['action']}{target_display}")
                     
                     # Execute the action
                     try:
                         self.executor.execute(intent, agent, self.maze)
                     except Exception as e:
-                        print(f"❌ Error executing action for {agent.name}: {e}")
+                        print(f"[ERROR] Error executing action for {agent.name}: {e}")
                         # Add failure to memory
                         agent.memory.add(
                             text=f"Failed to execute action: {action_data['action']} {target_str}",
@@ -185,7 +179,7 @@ class ActionDrivenSimulation:
                 time.sleep(5)
                 
             except Exception as e:
-                print(f"❌ Action processing error: {e}")
+                print(f"[ERROR] Action processing error: {e}")
                 time.sleep(1)
     
     def _get_surroundings_description(self, x: int, y: int) -> str:
@@ -226,10 +220,10 @@ class ActionDrivenSimulation:
                 ttl=None,
             )
             
-            print(f"💭 {agent.name} reflects: {reflection}")
+            print(f"[REFLECT] {agent.name} reflects: {reflection}")
             
         except Exception as e:
-            print(f"❌ Error generating reflection for {agent.name}: {e}")
+            print(f"[ERROR] Error generating reflection for {agent.name}: {e}")
     
     def trigger_dialogue(self, speaker_name: str, target_name: str, custom_message: str = ""):
         """Trigger a dialogue between two entities."""
@@ -240,24 +234,24 @@ class ActionDrivenSimulation:
                 break
         
         if speaker is None:
-            print(f"❌ Speaker '{speaker_name}' not found!")
+            print(f"[ERROR] Speaker '{speaker_name}' not found!")
             return
         
         # Create dialogue intent
         intent = ActionIntent("talk_to", target_name)
         
         # Execute dialogue
-        print(f"\n🗣️  {speaker_name} starts talking to {target_name}...")
+        print(f"\n[TALK] {speaker_name} starts talking to {target_name}...")
         self.executor.execute(intent, speaker, self.maze)
         
         # Get the conversation from memory
         if speaker.memory.entries:
             last_entry = speaker.memory.entries[-1]
             if last_entry.event_type == "talk":
-                print(f"💬 Conversation content:")
+                print(f"[DIALOGUE] Conversation content:")
                 print(f"   {last_entry.text}")
                 if "metadata" in last_entry.__dict__ and last_entry.metadata:
-                    print(f"   📝 Metadata: {last_entry.metadata}")
+                    print(f"   [META] Metadata: {last_entry.metadata}")
     
     def list_available_targets(self):
         """List all available dialogue targets."""
@@ -265,7 +259,7 @@ class ActionDrivenSimulation:
         
         # Add agents
         for agent in self.agents:
-            targets.append(f"👤 {agent.name} (Character)")
+            targets.append(f"[CHAR] {agent.name} (Character)")
         
         # Add objects by scanning the maze
         for x in range(self.maze.width):
@@ -274,7 +268,7 @@ class ActionDrivenSimulation:
                     entities = self.maze.spatial.nearby(x, y, z, 0.0)
                     for entity in entities:
                         if hasattr(entity, 'name') and entity not in self.agents:
-                            targets.append(f"🏷️  {entity.name} (Object)")
+                            targets.append(f"[OBJ] {entity.name} (Object)")
         
         # Remove duplicates while preserving order
         seen = set()
@@ -292,9 +286,9 @@ class ActionDrivenSimulation:
 
 
 def run_demo(settings_file: str = "settings_demo_simulation.json"):
-    """Run the action-driven simulation."""
-    print("🚀 Starting Action-Driven Simulation")
-    print("=" * 60)
+    """Run the action-driven simulation automatically."""
+    print("[START] Starting Automatic Action-Driven Simulation", flush=True)
+    print("=" * 60, flush=True)
     
     # Load world and agents
     maze, agents = load_settings(settings_file)
@@ -309,85 +303,45 @@ def run_demo(settings_file: str = "settings_demo_simulation.json"):
         agent.inventory.clear()
 
     print("\n" + "="*60)
-    print("🎭 Action-Driven Dialogue System Activated!")
-    print("💡 You can manually trigger character dialogues:")
-    print("   - Type 'talk Bob Jean' to make Bob talk to Jean")
-    print("   - Type 'talk Jean Bob' to make Jean talk to Bob")
-    print("   - Type 'talk Bob Tree' to make Bob talk to objects")
-    print("   - Type 'targets' to see all available dialogue targets")
-    print("   - Type 'help' to see help information")
-    print("   - Type 'model <qwen|llama|gpt-oss>' to switch local LLM model")
-    print("   - Type 'quit' to exit simulation")
+    print("[SYSTEM] Automatic Action-Driven Dialogue System Activated!")
+    print("[INFO] Simulation will run automatically for a set duration")
+    print("[INFO] Press Ctrl+C to stop the simulation")
     print("="*60)
     
-    # Main input loop
+    # Run simulation automatically for a specified duration
+    simulation_duration = 120  # Run for 2 minutes for extended testing
+    start_time = time.time()
+    
     try:
         while simulation.running:
-            try:
-                user_input = input("\n💬 Enter command: ").strip()
-                
-                if user_input.lower() == 'quit':
-                    print("👋 Exiting simulation...")
-                    simulation.running = False
-                    break
-                elif user_input.lower() == 'help':
-                    print("\n📖 Help information:")
-                    print("  talk <speaker> <target>  - Trigger dialogue")
-                    print("  targets                  - List all targets")
-                    print("  status                   - Show character status")
-                    print("  help                     - Show help")
-                    print("  quit                     - Exit simulation")
-                elif user_input.lower() == 'targets':
-                    print("\n🎯 Available dialogue targets:")
-                    targets = simulation.list_available_targets()
-                    for target in targets:
-                        print(f"  {target}")
-                elif user_input.lower() == 'status':
-                    print("\n📊 Character status:")
-                    for agent in agents:
-                        print(f"  {agent.name}: Location {agent.location}, Goals: {agent.long_term_goals}")
-                elif user_input.lower().startswith('model'):
-                    parts = user_input.split()
-                    if len(parts) == 1:
-                        print(f"当前模型: {get_active_model()}")
-                    elif len(parts) >= 2:
-                        key = parts[1].lower()
-                        if set_active_model(key):
-                            print(f"✅ 已切换模型为: {get_active_model()}")
-                        else:
-                            print("❌ 无效的模型键。可选: qwen | llama | gpt-oss")
-                    else:
-                        print("❌ 用法: model <qwen|llama|gpt-oss>")
-                elif user_input.lower().startswith('talk '):
-                    parts = user_input.split()
-                    if len(parts) >= 3:
-                        speaker = parts[1]
-                        target = parts[2]
-                        custom_message = ' '.join(parts[3:]) if len(parts) > 3 else ""
-                        
-                        # Validate speaker exists
-                        speaker_exists = any(agent.name.lower() == speaker.lower() for agent in agents)
-                        if not speaker_exists:
-                            print(f"❌ Character '{speaker}' not found!")
-                            continue
-                        
-                        simulation.trigger_dialogue(speaker, target, custom_message)
-                    else:
-                        print("❌ Usage: talk <speaker> <target> [message]")
-                else:
-                    print("❌ Unknown command. Type 'help' for help.")
-                    
-            except KeyboardInterrupt:
-                print("\n👋 Exiting simulation...")
+            current_time = time.time()
+            elapsed = current_time - start_time
+            
+            # Check if simulation duration exceeded
+            if elapsed > simulation_duration:
+                print(f"\n[INFO] Simulation duration ({simulation_duration}s) reached")
                 simulation.running = False
                 break
-            except Exception as e:
-                print(f"❌ Input processing error: {e}")
+            
+            # Display status every 30 seconds
+            if int(elapsed) % 30 == 0 and int(elapsed) > 0:
+                print(f"\n[STATUS] Simulation running for {int(elapsed)}s")
+                for agent in agents:
+                    print(f"  {agent.name}: Location {agent.location}")
+            
+            # Let the action thread handle all interactions
+            time.sleep(1)
+                    
+    except KeyboardInterrupt:
+        print("\n[INFO] Stopping simulation...")
+        simulation.running = False
+    except Exception as e:
+        print(f"[ERROR] Simulation error: {e}")
     
     finally:
         # Cleanup
         simulation.shutdown()
-        print("✅ Simulation ended")
+        print("[END] Simulation ended")
 
 
 if __name__ == "__main__":

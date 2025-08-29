@@ -1,0 +1,64 @@
+{
+  "agents": [
+    {
+      "name": "Bob",
+      "initial_location": [9, 9],
+      "long_term_goals": ["Survive in the wild", "Explore the environment", "Find resources"],
+              "personality": {
+          "traits": ["proud", "impatient", "confident", "impulsive"],
+          "self_identification": "a proud and confident individual who believes in your own abilities. You tend to be impatient and act quickly on your instincts. You don't like waiting around and prefer to take immediate action. Your confidence sometimes borders on arrogance, but it helps you face challenges head-on. You speak your mind directly and don't hesitate to express your opinions."
+        }
+      },
+    {
+      "name": "Jean",
+      "initial_location": [11, 11],
+      "long_term_goals": ["Survive in the wild", "Understand the environment", "Help others"],
+      "personality": {
+        "traits": ["calm", "melancholic", "thoughtful", "reserved"],
+        "self_identification": "a calm and contemplative person who tends to think deeply before acting. You have a melancholic nature and often reflect on the deeper meaning of things. Your prefer to observe and analyze situations carefully rather than rushing into decisions. Your reserved demeanor might make you seem distant, but you are actually quite thoughtful and considerate of others. You find beauty in quiet moments and introspection."
+      }
+    }
+  ],
+  "maze": {
+    "width": 20,
+    "height": 20,
+    "areas": [
+      {"name": "Forest", "x1": 0, "y1": 0, "x2": 19, "y2": 19},
+      {"name": "Kitchen", "x1": 8, "y1": 8, "x2": 11, "y2": 11, "override": true},
+      {"name": "Northern Woods", "x1": 0, "y1": 0, "x2": 19, "y2": 7},
+      {"name": "Southern Forest", "x1": 0, "y1": 12, "x2": 19, "y2": 19},
+      {"name": "Eastern Grove", "x1": 12, "y1": 0, "x2": 19, "y2": 19},
+      {"name": "Western Woods", "x1": 0, "y1": 0, "x2": 7, "y2": 19},
+      {"name": "Central Clearing", "x1": 8, "y1": 8, "x2": 11, "y2": 11, "override": true},
+      {"name": "Northwest Corner", "x1": 0, "y1": 0, "x2": 7, "y2": 7},
+      {"name": "Northeast Corner", "x1": 12, "y1": 0, "x2": 19, "y2": 7},
+      {"name": "Southwest Corner", "x1": 0, "y1": 12, "x2": 7, "y2": 19},
+      {"name": "Southeast Corner", "x1": 12, "y1": 12, "x2": 19, "y2": 19}
+    ],
+    "objects": [
+      {"name": "Oak Tree", "x": 5, "y": 5, "description": "A sturdy oak tree with thick branches"},
+      {"name": "Pine Tree", "x": 2, "y": 8, "description": "A tall pine tree with needles"},
+      {"name": "Birch Tree", "x": 14, "y": 6, "description": "A slender birch tree with white bark"},
+      {"name": "Firewood", "x": 6, "y": 6, "description": "Dry wood suitable for burning"},
+      {"name": "Sink", "x": 9, "y": 9, "description": "A kitchen sink with running water"},
+      {"name": "Faucet", "x": 9, "y": 9, "description": "A water faucet for drinking and washing"},
+      {"name": "Stove", "x": 10, "y": 9, "description": "A cooking stove for preparing food"},
+      {"name": "Axe", "x": 10, "y": 10, "description": "A sharp axe for chopping wood"},
+      {"name": "Carrot", "x": 9, "y": 10, "description": "A fresh orange carrot"},
+      {"name": "Potato", "x": 10, "y": 11, "description": "A raw potato for cooking"},
+      {"name": "Fish", "x": 11, "y": 10, "description": "A fresh fish for eating"},
+      {"name": "Berries", "x": 3, "y": 3, "description": "Wild berries growing on bushes"},
+      {"name": "Mushrooms", "x": 4, "y": 4, "description": "Edible mushrooms in the forest"},
+      {"name": "Stream", "x": 7, "y": 7, "description": "A small stream with clear water"},
+      {"name": "Rock", "x": 12, "y": 12, "description": "A large rock that could be used as a tool"},
+      {"name": "Bush", "x": 13, "y": 13, "description": "A dense bush that provides shelter"},
+      {"name": "Flowers", "x": 16, "y": 16, "description": "Colorful wildflowers"},
+      {"name": "Nest", "x": 17, "y": 17, "description": "A bird's nest in a tree"},
+      {"name": "Cave", "x": 1, "y": 1, "description": "A small cave entrance"},
+      {"name": "Bridge", "x": 8, "y": 8, "description": "A wooden bridge over the stream"}
+    ]
+  },
+  "simulation": {
+    "speed": 1.0
+  }
+}

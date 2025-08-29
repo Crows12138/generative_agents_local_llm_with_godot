@@ -128,7 +128,10 @@ Last action: {context['previous_action']}{context['repetition_warning']}
 
 Available actions: {', '.join(AVAILABLE_ACTIONS)}
 
-Choose one action. Respond with JSON: {{"action": "action_name", "target": "target_name"}}"""
+IMPORTANT: Respond with ONLY a single line of valid JSON, nothing else.
+Output format: {{"action": "action_name", "target": "target_name"}}
+Example: {{"action": "move_towards", "target": "tree"}}
+Now output your decision as JSON:"""
 
         raw_output = local_llm_generate(prompt)
         
@@ -139,11 +142,23 @@ Choose one action. Respond with JSON: {{"action": "action_name", "target": "targ
             for token in ['<|im_start|>', '<|im_end|>', '<|start|>', '<|end|>']:
                 raw_output = raw_output.replace(token, '')
             
-            # Extract JSON
+            # Try to extract first JSON object (4B model often generates multiple)
             if '{' in raw_output and '}' in raw_output:
-                start = raw_output.index('{')
-                end = raw_output.rindex('}') + 1
-                data = json.loads(raw_output[start:end])
+                # Split by newlines and try to parse the first line
+                lines = raw_output.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if line.startswith('{') and line.endswith('}'):
+                        try:
+                            data = json.loads(line)
+                            break
+                        except:
+                            continue
+                else:
+                    # Fallback to original extraction
+                    start = raw_output.index('{')
+                    end = raw_output.index('}') + 1  # Use first closing brace, not last
+                    data = json.loads(raw_output[start:end])
             else:
                 raise ValueError("No JSON found")
             
@@ -153,13 +168,15 @@ Choose one action. Respond with JSON: {{"action": "action_name", "target": "targ
             # Validate action
             valid_actions = [act.split()[0] for act in AVAILABLE_ACTIONS]
             if action not in valid_actions:
-                action = "wander"
-                target = None
+                print(f"[DECIDER ERROR] Invalid action '{action}' from AI")
+                raise ValueError(f"AI returned invalid action: {action}")
             
             return {"action": action, "target": target, "raw_response": raw_output}
             
         except Exception as e:
-            return {"action": "wander", "target": None, "raw_response": f"Error: {e}"}
+            print(f"[DECIDER ERROR] Failed to parse AI response: {e}")
+            print(f"[DECIDER ERROR] Raw output was: {raw_output}")
+            raise RuntimeError(f"Decision generation failed: {e}")
     
     def _apply_repetition_avoidance(self, action_data):
         """Apply repetition avoidance logic."""
@@ -192,8 +209,8 @@ Choose one action. Respond with JSON: {{"action": "action_name", "target": "targ
                 # Return other actions from the same group
                 return [a for a in actions if a != current_action]
         
-        # Default alternatives
-        return ["wander", "observe", "think"]
+        # No default alternatives - action must be valid
+        return []
     
     def _add_to_history(self, action_data):
         """Add action to history."""
@@ -232,8 +249,9 @@ Response:"""
         try:
             reflection = local_llm_generate(prompt)
             return reflection.strip()
-        except:
-            return f"Completed {action_data['action']} and learned from the experience." 
+        except Exception as e:
+            print(f"[REFLECTION ERROR] Failed to generate reflection: {e}")
+            raise RuntimeError(f"Reflection generation failed: {e}") 
 
     def _check_social_opportunities(self, persona_name: str, location: Any, memories: List[MemoryEntry]) -> Optional[Dict[str, Any]]:
         """Check if there are social opportunities and return appropriate action."""
