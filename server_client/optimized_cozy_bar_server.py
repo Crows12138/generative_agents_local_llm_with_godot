@@ -23,8 +23,7 @@ class OptimizedCozyBarServer:
     def __init__(self):
         self.model = None
         self.tokenizer = None
-        self.conversation_history = {}
-        # Removed cache - no pre-generated responses
+        # NO CACHE, NO HISTORY - Every response is fresh!
         
     def load_model(self):
         """Load Qwen3-1.7B with optimized settings"""
@@ -47,6 +46,11 @@ class OptimizedCozyBarServer:
                 "Qwen/Qwen3-1.7B",
                 trust_remote_code=True
             )
+            
+            # Ensure pad_token is set
+            if self.tokenizer.pad_token is None:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+            print(f"[DEBUG] Tokenizer pad_token: {self.tokenizer.pad_token}")
             
             # Load model with optimizations
             self.model = AutoModelForCausalLM.from_pretrained(
@@ -98,53 +102,50 @@ class OptimizedCozyBarServer:
         if self.device == "cuda":
             torch.cuda.synchronize()
     
+    def parse_message(self, raw_input: str) -> dict:
+        """Parse incoming message with clear protocol"""
+        # Protocol: "NPC_NAME|MESSAGE" 
+        if '|' in raw_input:
+            parts = raw_input.split('|', 1)
+            return {
+                'npc_name': parts[0].strip(),
+                'message': parts[1].strip(),
+                'valid': True
+            }
+        else:
+            # Fallback for invalid format
+            return {
+                'npc_name': 'NPC',
+                'message': raw_input,
+                'valid': False
+            }
+    
     def generate_npc_response(self, npc_name: str, player_message: str) -> tuple[str, float]:
-        """Generate optimized NPC response without caching
+        """Generate FRESH NPC response - CLEAN PROTOCOL
         
         Args:
             npc_name: Name of the NPC
-            player_message: Player's message or full prompt
+            player_message: Player's message (clean, no prompt)
             
         Returns:
             Tuple of (response, generation_time)
         """
         start = time.time()
         
-        # Check if player_message is already a full prompt from Godot
-        if player_message.startswith("You are "):
-            # Use the prompt directly from Godot
-            # Extract the actual player message from the prompt
-            import re
-            match = re.search(r"Customer says: (.+)|Someone says: (.+)", player_message)
-            if match:
-                actual_message = match.group(1) or match.group(2)
-                # Build a simpler prompt
-                prompt = f"{npc_name}: *listening to customer*\nCustomer: {actual_message}\n{npc_name}:"
-            else:
-                # Fallback: use the whole thing as prompt
-                prompt = player_message + f"\n{npc_name}:"
-        else:
-            # Original logic for simple messages
-            # Disable conversation history to avoid caching issues
-            context = ""
-            
-            # NPC-specific personalities
-            npc_personalities = {
-                "Isabella": "You are Isabella, a friendly bartender. Keep responses brief and natural.",
-                "John": "You are John, a regular customer who loves sports. Keep responses brief and casual.",
-                "Maria": "You are Maria, a local artist. Keep responses brief and creative.",
-                "Tom": "You are Tom, a tech enthusiast. Keep responses brief and geeky.",
-                "Sophia": "You are Sophia, a wise philosopher. Keep responses brief and thoughtful.",
-                "Bob": "You are Bob, a friendly bartender.",
-                "Alice": "You are Alice, a regular customer.",
-                "Sam": "You are Sam, a musician."
-            }
-            
-            # Use a simpler default personality to avoid confusion
-            personality = npc_personalities.get(npc_name, f"You are {npc_name}.")
-            
-            # Build prompt with better separation to avoid model confusion
-            prompt = f"[Character]: {personality}\n\n{context}Player: {player_message}\n{npc_name}:"
+        # NPC-specific personalities with brief responses
+        npc_personalities = {
+            "Bob": "You are Bob, a friendly bartender. Keep responses brief and natural.",
+            "Alice": "You are Alice, a witty regular customer. Keep responses brief and playful.",
+            "Sam": "You are Sam, a laid-back musician. Keep responses brief and cool."
+        }
+        
+        personality = npc_personalities.get(npc_name, f"You are {npc_name}, a bartender. Keep responses brief.")
+        
+        # Build clear prompt with proper separation
+        prompt = f"[Character]: {personality}\n\nPlayer: {player_message}\n{npc_name}:"
+        
+        # DEBUG: Print the actual prompt being used
+        print(f"[DEBUG] Generating with prompt: {prompt}")
         
         # Tokenize and generate
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
@@ -152,32 +153,41 @@ class OptimizedCozyBarServer:
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
-                max_new_tokens=40,      # Brief responses for natural conversation
+                max_new_tokens=60,      # Longer responses allowed
                 temperature=0.8,        # Natural variation
                 do_sample=True,
                 pad_token_id=self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                stop_strings=["\n", "Player:"],  # Stop at natural breaks
+                stop_strings=[".", "!", "?", "\n"],  # Stop at sentence end
                 tokenizer=self.tokenizer  # Needed for stop_strings
             )
         
-        # Decode response
+        # Decode response properly - using token positions, not string positions
         response = self.tokenizer.decode(
-            outputs[0][len(inputs.input_ids[0]):],
+            outputs[0][len(inputs.input_ids[0]):],  # Skip the input tokens
             skip_special_tokens=True
-        )
+        ).strip()
         
-        # Clean up response
-        response = response.strip()
-        if response.endswith("Player:"):
-            response = response[:-7].strip()
+        # DEBUG: Show what we got
+        print(f"[DEBUG] Raw response: '{response}'")
+        print(f"[DEBUG] Response length: {len(response)} characters")
         
-        # Disabled history tracking to ensure fresh responses every time
-        # No conversation context is maintained between interactions
+        # FILTER inappropriate content
+        response = self.filter_response(response, npc_name)
+        
+        # NO HISTORY - Every interaction is independent
         
         elapsed = time.time() - start
         
         return response, elapsed
+    
+    def filter_response(self, response: str, npc_name: str) -> str:
+        """Simple cleanup - ensure proper ending"""
+        response = response.strip()
+        # Add period if missing (due to stop_strings)
+        if response and not response[-1] in '.!?':
+            response += '.'
+        return response
     
     def run_server(self, port: int = 9999):
         """Run TCP server for Godot integration
@@ -216,30 +226,19 @@ class OptimizedCozyBarServer:
                     if data:
                         request_count += 1
                         
-                        # Parse NPC name from message
-                        # Check if this is a full prompt or NPC_NAME: message format
-                        if data.startswith("You are "):
-                            # This is a full prompt from Godot, extract NPC name
-                            # Format: "You are Bob, a friendly bartender..."
-                            import re
-                            match = re.search(r"You are (\w+),", data)
-                            if match:
-                                npc_name = match.group(1)
-                            else:
-                                npc_name = "NPC"
-                            # Use the entire prompt as the message for now
-                            message = data
-                            print(f"[DEBUG] Full prompt detected. NPC: {npc_name}")
-                        elif ':' in data:
-                            # Original format: "NPC_NAME: message"
-                            npc_name, message = data.split(':', 1)
-                            npc_name = npc_name.strip()
-                            message = message.strip()
-                        else:
-                            npc_name = "NPC"
-                            message = data
+                        # CLEAN PROTOCOL PARSING
+                        print(f"\n[SERVER] Received: {data}", flush=True)
+                        parsed = self.parse_message(data)
+                        npc_name = parsed['npc_name']
+                        message = parsed['message']
                         
-                        # Generate response
+                        if not parsed['valid']:
+                            print(f"[WARNING] Invalid message format. Expected: NPC_NAME|MESSAGE", flush=True)
+                            print(f"[WARNING] Received: {data[:50]}...", flush=True)
+                        else:
+                            print(f"[SERVER] Parsed - NPC: {npc_name}, Message: {message}", flush=True)
+                        
+                        # Generate response with clean message
                         response, elapsed = self.generate_npc_response(npc_name, message)
                         
                         # Send response
