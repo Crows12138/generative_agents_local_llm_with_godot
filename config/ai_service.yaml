@@ -1,20 +1,46 @@
 # AI Service Configuration
 # This file defines all configuration for the AI service
 
-version: "2.0.0"
+version: "2.1.0"
 
-# Model Configuration
+# Dual Model Configuration
+dual_model:
+  # Ultra-fast response model (for greetings and quick responses)
+  ultra_fast_model: "qwen3-1.7b"
+  ultra_fast_model_path: "Qwen/Qwen3-1.7B"  # HuggingFace model ID
+  
+  # Standard model (for normal dialogue and reasoning)
+  standard_model: "qwen3-4b"
+  standard_model_path: "Qwen/Qwen3-4B"  # HuggingFace model ID
+  
+  # Task type mapping to models
+  task_mapping:
+    greeting: "ultra_fast"      # Greetings and farewells
+    quick: "ultra_fast"          # Quick facts and responses
+    simple_query: "ultra_fast"   # Simple questions
+    reactive: "ultra_fast"       # Quick responses
+    dialogue: "standard"         # Normal conversation
+    reasoning: "standard"        # Complex reasoning  
+    planning: "standard"         # Planning tasks
+    reflection: "standard"       # Memory and reflection
+  
+  # Performance targets
+  performance_targets:
+    ultra_fast_model_ms: 500    # Target: <0.5 seconds
+    standard_model_ms: 2000     # Target: <2 seconds
+
+# Model Configuration (backward compatibility)
 model:
   # Active model selection: auto, qwen, or specific model name
-  active_model: "qwen3"
+  active_model: "dual"  # Use dual model strategy
   
   # Directory containing GGUF model files
   models_dir: "models/llms"
   
-  # Supported models mapping
+  # Supported models mapping (using HuggingFace model IDs)
   supported_models:
-    qwen3: "Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf"
-    qwen3-4b: "Qwen3-4B-Instruct-2507-Q4_0.gguf"
+    qwen3-1.7b: "Qwen/Qwen3-1.7B"
+    qwen3-4b: "Qwen/Qwen3-4B"
   
   # Enable automatic model detection
   auto_detect: true
