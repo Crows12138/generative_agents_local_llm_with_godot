@@ -16,9 +16,8 @@ sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 try:
     from ai_service.cognitive_dual_model_service import get_cognitive_service
 except ImportError:
-    # Fallback if cognitive service not available
-    print("[WARNING] Cognitive dual model service not available, using fallback")
-    get_cognitive_service = None
+    # No fallback - require cognitive service
+    raise ImportError("[ERROR] Cognitive dual model service is required. Cannot proceed without AI models.")
 
 
 class CognitiveLLMService:
@@ -28,11 +27,9 @@ class CognitiveLLMService:
     """
     
     def __init__(self):
-        self.service = get_cognitive_service() if get_cognitive_service else None
-        self.fallback_mode = self.service is None
-        
-        if self.fallback_mode:
-            print("[CognitiveLLM] Running in fallback mode (no models loaded)")
+        self.service = get_cognitive_service()
+        if not self.service:
+            raise RuntimeError("[ERROR] Failed to initialize cognitive service. AI models are required.")
     
     # ========== DIALOGUE FUNCTIONS (1.7B) ==========
     
@@ -45,8 +42,8 @@ class CognitiveLLMService:
         Generate dialogue response using 1.7B model
         This is for ALL NPC conversations (fast)
         """
-        if self.fallback_mode:
-            return f"[{npc_name}] Hello! (fallback mode)"
+        if not self.service:
+            raise RuntimeError("Cognitive service not available - AI models required for dialogue")
         
         return self.service.generate_dialogue(
             npc_name, personality, message, conversation_history
@@ -57,7 +54,7 @@ class CognitiveLLMService:
         Simple conversation generation using 1.7B
         Used by executor for talk_to actions
         """
-        if self.fallback_mode:
+        if not self.service:
             return "Hello there!"
         
         # Use dialogue model for fast response
@@ -75,14 +72,8 @@ class CognitiveLLMService:
         Generate a plan using 4B model
         Used by plan.py for daily scheduling
         """
-        if self.fallback_mode:
-            # Return simple fallback schedule
-            return '''[
-                {"start": "06:00", "end": "12:00", "task": "Morning activities"},
-                {"start": "12:00", "end": "18:00", "task": "Afternoon activities"},
-                {"start": "18:00", "end": "22:00", "task": "Evening activities"},
-                {"start": "22:00", "end": "06:00", "task": "Sleep"}
-            ]'''
+        if not self.service:
+            raise RuntimeError("Cognitive service required for plan generation")
         
         # Extract context from prompt
         current_state = {"agent": agent_name}
@@ -105,8 +96,8 @@ class CognitiveLLMService:
         Generate reflection/insights using 4B model
         Used by reflection.py for daily and weekly reflections
         """
-        if self.fallback_mode:
-            return '{"insights": ["Today was productive"], "adjustments": ["Continue current approach"]}'
+        if not self.service:
+            raise RuntimeError("Cognitive service required for reflection generation")
         
         # Extract experiences from prompt
         experiences = ["Completed tasks", "Had conversations"]
@@ -127,8 +118,8 @@ class CognitiveLLMService:
         Make a complex decision using 4B model
         Used by decider modules
         """
-        if self.fallback_mode:
-            return "move_towards"
+        if not self.service:
+            raise RuntimeError("Cognitive service required for decision making")
         
         # Parse decision context from prompt
         situation = "Need to decide next action"
@@ -150,8 +141,8 @@ class CognitiveLLMService:
         General purpose cognitive response
         Automatically selects model based on use_deep_thinking flag
         """
-        if self.fallback_mode:
-            return "Fallback response"
+        if not self.service:
+            raise RuntimeError("Cognitive service required for cognitive response")
         
         if use_deep_thinking:
             # Use 4B for complex cognitive tasks

@@ -10,6 +10,14 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import logging
 from typing import List, Dict, Optional, Tuple, Any
 from pathlib import Path
+try:
+    from performance_monitor import perf_monitor
+except ImportError:
+    # Create a dummy monitor if not available
+    class DummyMonitor:
+        def log_ai_call(self, *args, **kwargs): pass
+        def track_ai_call(self, *args, **kwargs): pass
+    perf_monitor = DummyMonitor()
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -148,6 +156,8 @@ class CognitiveDualModelService:
             inputs = self.dialogue_tokenizer(prompt, return_tensors="pt").to(self.device)
             
             with torch.no_grad():
+                # Monitor model inference time
+                inference_start = time.time()
                 outputs = self.dialogue_model.generate(
                     **inputs,
                     max_new_tokens=60,  # Brief responses
@@ -156,6 +166,8 @@ class CognitiveDualModelService:
                     pad_token_id=self.dialogue_tokenizer.pad_token_id,
                     eos_token_id=self.dialogue_tokenizer.eos_token_id
                 )
+                inference_time = time.time() - inference_start
+                print(f"[MODEL_INFERENCE] Dialogue model (1.7B): {inference_time:.3f}s")
             
             response = self.dialogue_tokenizer.decode(
                 outputs[0][len(inputs.input_ids[0]):],
@@ -189,6 +201,8 @@ class CognitiveDualModelService:
             inputs = self.cognitive_tokenizer(prompt, return_tensors="pt").to(self.device)
             
             with torch.no_grad():
+                # Monitor model inference time
+                inference_start = time.time()
                 outputs = self.cognitive_model.generate(
                     **inputs,
                     max_new_tokens=max_tokens,
@@ -196,6 +210,8 @@ class CognitiveDualModelService:
                     do_sample=True,
                     pad_token_id=self.cognitive_tokenizer.pad_token_id
                 )
+                inference_time = time.time() - inference_start
+                print(f"[MODEL_INFERENCE] Cognitive model (4B) JSON: {inference_time:.3f}s")
             
             response = self.cognitive_tokenizer.decode(
                 outputs[0][len(inputs.input_ids[0]):],
@@ -362,6 +378,5 @@ def get_cognitive_service() -> CognitiveDualModelService:
     global _cognitive_service
     if _cognitive_service is None:
         _cognitive_service = CognitiveDualModelService()
-        # Load dialogue model by default (most common use)
-        _cognitive_service.load_dialogue_model()
+        # Don't auto-load models here - let demo_simulation handle it
     return _cognitive_service

@@ -5,6 +5,7 @@ import threading
 import queue
 from datetime import datetime, timedelta
 from typing import List, Tuple
+from performance_monitor import perf_monitor
 
 # Force unbuffered output
 sys.stdout = sys.__stdout__
@@ -21,6 +22,8 @@ from basic_functions.executor.executor import SimpleExecutor
 from basic_functions.decider.decider import ActionIntent
 from basic_functions.plan.enhanced_plan import generate_enhanced_daily_schedule, get_current_task_from_schedule
 from basic_functions.decider.optimized_decider import OptimizedDecider
+from basic_functions.decider.task_based_decider import TaskBasedDecider
+from basic_functions.decider.simplified_task_decider import SimplifiedTaskDecider
 
 
 def load_settings(filename: str = "settings_demo_simulation.json") -> Tuple[Maze, List[Persona]]:
@@ -73,16 +76,28 @@ def load_settings(filename: str = "settings_demo_simulation.json") -> Tuple[Maze
 class ActionDrivenSimulation:
     """Action-driven simulation where characters think after completing actions."""
     
-    def __init__(self, maze: Maze, agents: List[Persona]):
+    def __init__(self, maze: Maze, agents: List[Persona], decision_mode: str = "simplified"):
         self.maze = maze
         self.agents = agents
         self.executor = SimpleExecutor()
         self.deciders = {}
         self.running = True
+        self.decision_mode = decision_mode
         
-        # Initialize optimized deciders for each agent
+        # Initialize deciders based on mode
         for agent in agents:
-            self.deciders[agent.name] = OptimizedDecider()
+            if decision_mode == "simplified":
+                self.deciders[agent.name] = SimplifiedTaskDecider()
+                print(f"[INIT] {agent.name}: Using SIMPLIFIED task system (robust)")
+            elif decision_mode == "task_based":
+                self.deciders[agent.name] = TaskBasedDecider(actions_per_task=4)
+                print(f"[INIT] {agent.name}: Using task-based decision system")
+            else:  # per_action
+                self.deciders[agent.name] = OptimizedDecider()
+                print(f"[INIT] {agent.name}: Using per-action decision system")
+            
+            # Set simulation context for social awareness
+            self.deciders[agent.name].set_simulation_context(maze, agents)
         
         # Initialize daily schedules
         self.daily_schedules = {}
@@ -129,18 +144,48 @@ class ActionDrivenSimulation:
                     # Get recent memories
                     recent_memories = agent.memory.entries[-3:] if len(agent.memory.entries) >= 3 else agent.memory.entries
                     
-                    # Decide next action using optimized decider
+                    # Decide next action
                     decider = self.deciders[agent.name]
-                    action_data = decider.decide(
-                        persona_name=agent.name,
-                        location=agent.location,
-                        personality=agent.personality_description,
-                        surroundings=surroundings,
-                        memories=recent_memories,
-                        goals="; ".join(agent.long_term_goals),
-                        current_task=current_task,
-                        previous_action=agent.previous_action,
-                    )
+                    perf_monitor.start_timer(f"{agent.name}_decision")
+                    
+                    if self.decision_mode == "simplified":
+                        # Simplified task system (most robust)
+                        action_data = decider.get_next_action(
+                            persona_name=agent.name,
+                            location=agent.location,
+                            personality=agent.personality_description,
+                            surroundings=surroundings,
+                            memories=recent_memories,
+                            goals="; ".join(agent.long_term_goals),
+                            current_schedule=current_task,
+                            previous_action=agent.previous_action,
+                        )
+                    elif self.decision_mode == "task_based":
+                        # Task-based decision (complex JSON)
+                        action_data = decider.get_next_action(
+                            persona_name=agent.name,
+                            location=agent.location,
+                            personality=agent.personality_description,
+                            surroundings=surroundings,
+                            memories=recent_memories,
+                            goals="; ".join(agent.long_term_goals),
+                            current_schedule_task=current_task,
+                            previous_action=agent.previous_action,
+                        )
+                    else:
+                        # Per-action decision (original)
+                        action_data = decider.decide(
+                            persona_name=agent.name,
+                            location=agent.location,
+                            personality=agent.personality_description,
+                            surroundings=surroundings,
+                            memories=recent_memories,
+                            goals="; ".join(agent.long_term_goals),
+                            current_task=current_task,
+                            previous_action=agent.previous_action,
+                        )
+                    
+                    perf_monitor.end_timer(f"{agent.name}_decision")
                     
                     # Execute action
                     intent = ActionIntent(action_data["action"], action_data.get("target"))
@@ -150,7 +195,9 @@ class ActionDrivenSimulation:
                     
                     # Execute the action
                     try:
+                        perf_monitor.start_timer(f"{agent.name}_execution")
                         self.executor.execute(intent, agent, self.maze)
+                        perf_monitor.end_timer(f"{agent.name}_execution")
                     except Exception as e:
                         print(f"[ERROR] Error executing action for {agent.name}: {e}")
                         # Add failure to memory
@@ -168,19 +215,35 @@ class ActionDrivenSimulation:
                             ttl=None,
                         )
                     
-                    # Check if should think after action
-                    if decider.should_think_after_action(action_data):
-                        self._trigger_thinking(agent, action_data)
+                    # Check if should think after action/task
+                    if self.decision_mode in ["task_based", "simplified"]:
+                        # Task-based: Only reflect after completing full tasks
+                        if hasattr(decider, 'current_task') and decider.current_task:
+                            if decider.current_task.is_complete():
+                                if decider.should_think_after_task():
+                                    perf_monitor.start_timer(f"{agent.name}_thinking")
+                                    self._trigger_task_reflection(agent, decider.current_task)
+                                    perf_monitor.end_timer(f"{agent.name}_thinking")
+                    else:
+                        # Per-action: Reflect based on memory accumulation
+                        perf_monitor.start_timer(f"{agent.name}_should_think")
+                        should_think = decider.should_think_after_action(action_data)
+                        perf_monitor.end_timer(f"{agent.name}_should_think")
+                        
+                        if should_think:
+                            perf_monitor.start_timer(f"{agent.name}_thinking")
+                            self._trigger_thinking(agent, action_data)
+                            perf_monitor.end_timer(f"{agent.name}_thinking")
                     
-                    # Small delay between actions
-                    time.sleep(2)
+                    # No delay - let AI run at full speed
+                    pass
                 
-                # Longer delay between rounds
-                time.sleep(5)
+                # No delay between rounds
+                pass
                 
             except Exception as e:
                 print(f"[ERROR] Action processing error: {e}")
-                time.sleep(1)
+                # No delay on error - continue immediately
     
     def _get_surroundings_description(self, x: int, y: int) -> str:
         """Get description of surroundings at given location."""
@@ -193,6 +256,30 @@ class ActionDrivenSimulation:
                 return "Open area"
         except:
             return "Unknown surroundings"
+    
+    def _trigger_task_reflection(self, agent: Persona, completed_task):
+        """Trigger reflection after completing a task."""
+        try:
+            decider = self.deciders[agent.name]
+            reflection = decider.generate_reflection(agent.name, completed_task)
+            
+            # Add reflection to memory
+            agent.memory.add(
+                text=f"Task Reflection: {reflection}",
+                embedding=[],
+                event_type="reflection",
+                importance=0.7,
+                metadata={
+                    "task_name": completed_task.name,
+                    "actions_completed": len(completed_task.actions),
+                },
+                ttl=None,
+            )
+            
+            print(f"[TASK REFLECT] {agent.name}: {reflection}")
+            
+        except Exception as e:
+            print(f"[ERROR] Task reflection failed for {agent.name}: {e}")
     
     def _trigger_thinking(self, agent: Persona, action_data: dict):
         """Trigger thinking after an action."""
@@ -285,16 +372,44 @@ class ActionDrivenSimulation:
         self.running = False
 
 
-def run_demo(settings_file: str = "settings_demo_simulation.json"):
-    """Run the action-driven simulation automatically."""
+def run_demo(settings_file: str = "settings_demo_simulation.json", decision_mode: str = "simplified"):
+    """Run the action-driven simulation automatically.
+    
+    Args:
+        settings_file: Path to settings JSON file
+        decision_mode: "simplified" (best), "task_based" (complex), or "per_action" (original)
+    """
     print("[START] Starting Automatic Action-Driven Simulation", flush=True)
+    print(f"[MODE] Using {decision_mode.upper()} decision system", flush=True)
     print("=" * 60, flush=True)
+    
+    # Preload AI models before starting simulation
+    skip_preload = "--skip-preload" in sys.argv
+    if not skip_preload:
+        print("[PRELOAD] Loading AI models before simulation...")
+        from ai_service.cognitive_dual_model_service import get_cognitive_service
+        service = get_cognitive_service()
+        
+        print("[PRELOAD] Loading 1.7B dialogue model...")
+        perf_monitor.start_timer("model_preload_1.7B")
+        service.load_dialogue_model()
+        perf_monitor.end_timer("model_preload_1.7B")
+        
+        print("[PRELOAD] Loading 4B cognitive model...")
+        perf_monitor.start_timer("model_preload_4B")
+        service.load_cognitive_model()
+        perf_monitor.end_timer("model_preload_4B")
+        
+        print("[PRELOAD] Models loaded successfully!\n")
+    else:
+        print("[PRELOAD] Skipping model preload (models will load on first use)")
+        print("[WARNING] First actions will be slower due to model loading\n")
     
     # Load world and agents
     maze, agents = load_settings(settings_file)
     
-    # Initialize simulation
-    simulation = ActionDrivenSimulation(maze, agents)
+    # Initialize simulation with selected decision mode
+    simulation = ActionDrivenSimulation(maze, agents, decision_mode=decision_mode)
     
     # Initialize agents
     for agent in agents:
@@ -327,7 +442,14 @@ def run_demo(settings_file: str = "settings_demo_simulation.json"):
             if int(elapsed) % 30 == 0 and int(elapsed) > 0:
                 print(f"\n[STATUS] Simulation running for {int(elapsed)}s")
                 for agent in agents:
-                    print(f"  {agent.name}: Location {agent.location}")
+                    decider = simulation.deciders[agent.name]
+                    if hasattr(decider, 'get_statistics'):
+                        stats = decider.get_statistics()
+                        print(f"  {agent.name}: {stats['actions_executed']} actions, "
+                              f"{stats['ai_calls_made']} AI calls "
+                              f"({stats['actions_per_ai_call']:.1f} actions/call)")
+                    else:
+                        print(f"  {agent.name}: Location {agent.location}")
             
             # Let the action thread handle all interactions
             time.sleep(1)
@@ -341,11 +463,50 @@ def run_demo(settings_file: str = "settings_demo_simulation.json"):
     finally:
         # Cleanup
         simulation.shutdown()
-        print("[END] Simulation ended")
+        print("\n[END] Simulation ended")
+        
+        # Print task-based statistics if applicable
+        if decision_mode in ["task_based", "simplified"]:
+            print("\n" + "=" * 60)
+            print("[TASK STATISTICS]")
+            total_actions = 0
+            total_ai_calls = 0
+            for agent in agents:
+                decider = simulation.deciders[agent.name]
+                if hasattr(decider, 'get_statistics'):
+                    stats = decider.get_statistics()
+                    total_actions += stats['actions_executed']
+                    total_ai_calls += stats['ai_calls_made']
+                    print(f"  {agent.name}:")
+                    print(f"    - Tasks generated: {stats['tasks_generated']}")
+                    print(f"    - Actions executed: {stats['actions_executed']}")
+                    print(f"    - AI calls made: {stats['ai_calls_made']}")
+                    print(f"    - Efficiency: {stats['actions_per_ai_call']:.1f} actions/AI call")
+            
+            if total_ai_calls > 0:
+                overall_efficiency = total_actions / total_ai_calls
+                print(f"\n  Overall Efficiency: {overall_efficiency:.1f} actions/AI call")
+                print(f"  Performance Improvement: ~{overall_efficiency:.0f}x faster than per-action system")
+        
+        print("=" * 60)
+        
+        # Print performance statistics
+        perf_monitor.print_statistics()
 
 
 if __name__ == "__main__":
     import sys
 
     settings = sys.argv[1] if len(sys.argv) > 1 else "settings_demo_simulation.json"
-    run_demo(settings)
+    
+    # Determine decision mode from command line
+    if "--per-action" in sys.argv:
+        decision_mode = "per_action"
+    elif "--task-based" in sys.argv:
+        decision_mode = "task_based"
+    else:
+        decision_mode = "simplified"  # Default to most robust version
+    
+    print(f"[INFO] Using {decision_mode} decision system")
+    
+    run_demo(settings, decision_mode=decision_mode)

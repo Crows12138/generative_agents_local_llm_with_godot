@@ -104,27 +104,13 @@ Output a JSON array of objects with keys "start", "end", and "task", for example
                 start = raw_output.index("[")
                 end = raw_output.rindex("]") + 1
                 schedule = json.loads(raw_output[start:end])
-        except Exception:
-            # Fallback to default schedule if parsing fails
-            print(f"[Plan] Failed to parse schedule for {agent_name}, using fallback")
-            schedule = [
-                {"start": "06:00", "end": "08:00", "task": "Morning activities"},
-                {"start": "08:00", "end": "12:00", "task": "Work towards goals"},
-                {"start": "12:00", "end": "13:00", "task": "Lunch break"},
-                {"start": "13:00", "end": "17:00", "task": "Afternoon activities"},
-                {"start": "17:00", "end": "22:00", "task": "Evening activities"},
-                {"start": "22:00", "end": "06:00", "task": "Sleep"}
-            ]
-    except Exception:
-        # Any other error, use fallback
-        print(f"[Plan] Error generating schedule for {agent_name}, using fallback")
-        schedule = [
-            {"start": "06:00", "end": "08:00", "task": "Morning activities"},
-            {"start": "08:00", "end": "12:00", "task": "Work towards goals"},
-            {"start": "12:00", "end": "13:00", "task": "Lunch break"},
-            {"start": "13:00", "end": "17:00", "task": "Afternoon activities"},
-            {"start": "17:00", "end": "22:00", "task": "Evening activities"},
-            {"start": "22:00", "end": "06:00", "task": "Sleep"}
-        ]
+        except Exception as e:
+            # No fallback - AI must generate valid schedule
+            print(f"[Plan] Failed to parse schedule for {agent_name}: {e}")
+            raise RuntimeError(f"Failed to parse AI-generated schedule: {e}")
+    except Exception as e:
+        # No fallback - AI must generate schedule
+        print(f"[Plan] Error generating schedule for {agent_name}: {e}")
+        raise RuntimeError(f"Failed to generate schedule: {e}")
 
     return schedule

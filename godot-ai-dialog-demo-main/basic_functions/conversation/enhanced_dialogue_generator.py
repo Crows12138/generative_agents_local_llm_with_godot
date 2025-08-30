@@ -4,7 +4,6 @@ This module provides sophisticated dialogue generation based on relationships, m
 """
 
 import time
-import random
 from typing import Dict, List, Optional, Tuple, Any
 from basic_functions.memory.memory import MemoryEntry, MemoryType
 from basic_functions.conversation.relationship_tracker import relationship_tracker, InteractionType
@@ -195,14 +194,16 @@ class EnhancedDialogueGenerator:
                 f"Greetings, {context.listener}."
             ]
         
-        return random.choice(templates)
+        # Use first template to avoid randomness
+        return templates[0] if templates else f"Hello {context.listener}."
     
     def _generate_question(self, context: DialogueContext, topic: str = "") -> str:
         """Generate a question based on context and memories."""
         
         # If no specific topic, generate one from recent memories
         if not topic and context.recent_memories:
-            memory = random.choice(context.recent_memories)
+            # Use most recent memory instead of random
+            memory = context.recent_memories[-1]
             topic = memory.text.split()[:5]  # First 5 words
             topic = " ".join(topic)
         
@@ -217,13 +218,15 @@ class EnhancedDialogueGenerator:
             f"Do you have any insights about {topic}?"
         ]
         
-        return random.choice(question_templates)
+        # Use first template to avoid randomness
+        return question_templates[0] if question_templates else f"What do you think about {topic}?"
     
     def _generate_sharing(self, context: DialogueContext, content: str = "") -> str:
         """Generate a sharing statement based on recent memories."""
         
         if not content and context.recent_memories:
-            memory = random.choice(context.recent_memories)
+            # Use most recent memory instead of random
+            memory = context.recent_memories[-1]
             content = memory.text
         
         if not content:
@@ -237,7 +240,8 @@ class EnhancedDialogueGenerator:
             f"I'd like to tell you about {content}."
         ]
         
-        return random.choice(sharing_templates)
+        # Use first template to avoid randomness
+        return sharing_templates[0] if sharing_templates else f"I wanted to share something with you: {content}"
     
     def _generate_reaction(self, context: DialogueContext) -> str:
         """Generate an emotional reaction based on context."""
@@ -255,7 +259,8 @@ class EnhancedDialogueGenerator:
             emotion = "neutral"
         
         responses = self.emotional_responses.get(emotion, self.emotional_responses["neutral"])
-        return random.choice(responses)
+        # Use first response to avoid randomness
+        return responses[0] if responses else "I see."
     
     def _generate_contextual_dialogue(self, context: DialogueContext, custom_message: str = "") -> str:
         """Generate contextual dialogue using AI."""
@@ -268,8 +273,8 @@ class EnhancedDialogueGenerator:
             return response.strip()
         except Exception as e:
             print(f"Error generating AI dialogue: {e}")
-            # Fallback to template-based generation
-            return self._generate_fallback_dialogue(context, custom_message)
+            # No fallback - require AI to generate dialogue
+            raise RuntimeError(f"Failed to generate AI dialogue: {e}")
     
     def _build_dialogue_prompt(self, context: DialogueContext, custom_message: str = "") -> str:
         """Build a comprehensive prompt for AI dialogue generation."""
@@ -323,25 +328,8 @@ Respond as {context.speaker} in a natural, conversational way. Keep your respons
         return prompt
     
     def _generate_fallback_dialogue(self, context: DialogueContext, custom_message: str = "") -> str:
-        """Generate fallback dialogue using templates when AI fails."""
-        
-        if custom_message:
-            return custom_message
-        
-        # Choose a random template based on context
-        if not context.conversation_history:
-            return self._generate_greeting(context)
-        else:
-            # Randomly choose a dialogue type
-            dialogue_types = ["question", "sharing", "reaction"]
-            dialogue_type = random.choice(dialogue_types)
-            
-            if dialogue_type == "question":
-                return self._generate_question(context)
-            elif dialogue_type == "sharing":
-                return self._generate_sharing(context)
-            else:
-                return self._generate_reaction(context)
+        """No fallback - AI must generate dialogue."""
+        raise RuntimeError("AI dialogue generation is required - no fallback available")
     
     def analyze_conversation_sentiment(self, message: str) -> str:
         """Analyze the sentiment of a conversation message."""

@@ -1,10 +1,11 @@
 import json
 import re
-import random
+import time
 from typing import Any, List, Optional, Dict
 from collections import deque
 from basic_functions.memory.memory import MemoryEntry
 from ai_service.ai_service import local_llm_generate
+from performance_monitor import perf_monitor
 
 AVAILABLE_ACTIONS = [
     "move_towards <target>",
@@ -36,6 +37,14 @@ class OptimizedDecider:
         self.enhanced_reflection = None
         self.maze = None  # Will be set by simulation
         self.all_agents = []  # Will be set by simulation
+        
+        # Memory-based reflection tracking
+        self.memory_since_last_reflection = 0
+        self.importance_since_reflection = 0.0
+        self.time_since_reflection = time.time()
+        self.reflection_memory_threshold = 5  # Reflect after 5 memories
+        self.reflection_importance_threshold = 15.0  # Or after importance accumulates to 15
+        self.reflection_time_threshold = 600  # Or after 10 minutes
     
     def set_simulation_context(self, maze, agents):
         """Set the maze and agents for context-aware decision making."""
@@ -133,7 +142,13 @@ Output format: {{"action": "action_name", "target": "target_name"}}
 Example: {{"action": "move_towards", "target": "tree"}}
 Now output your decision as JSON:"""
 
+        # Monitor AI call
+        perf_monitor.log_ai_call(prompt, start=True)
+        ai_start = time.time()
         raw_output = local_llm_generate(prompt)
+        ai_elapsed = time.time() - ai_start
+        perf_monitor.log_ai_call("", start=False)
+        perf_monitor.track_ai_call(ai_elapsed)
         
         # Parse response
         try:
@@ -162,8 +177,11 @@ Now output your decision as JSON:"""
             else:
                 raise ValueError("No JSON found")
             
-            action = data.get("action", "wander")
+            action = data.get("action")
             target = data.get("target")
+            
+            if not action:
+                raise ValueError("AI did not provide an action")
             
             # Validate action
             valid_actions = [act.split()[0] for act in AVAILABLE_ACTIONS]
@@ -179,37 +197,14 @@ Now output your decision as JSON:"""
             raise RuntimeError(f"Decision generation failed: {e}")
     
     def _apply_repetition_avoidance(self, action_data):
-        """Apply repetition avoidance logic."""
-        action_key = f"{action_data['action']}_{action_data['target']}"
-        
-        # Check if this action was recently performed
-        if action_key in self.action_history:
-            # Get alternative actions
-            alternatives = self._get_alternatives(action_data['action'])
-            if alternatives:
-                action_data['action'] = random.choice(alternatives)
-                action_data['target'] = None
-                action_data['avoided_repetition'] = True
-        
+        """Let AI handle repetition avoidance naturally through context."""
+        # AI should handle repetition avoidance based on context
+        # No hardcoded alternatives
         return action_data
     
     def _get_alternatives(self, current_action):
-        """Get alternative actions to avoid repetition."""
-        action_groups = {
-            "movement": ["move_towards", "move_away", "wander"],
-            "interaction": ["talk_to", "observe", "search"],
-            "manipulation": ["pickup", "drop", "create", "throw_towards"],
-            "activity": ["work", "play", "exercise", "rest"],
-            "basic": ["eat", "sleep", "read", "write", "think", "wait"]
-        }
-        
-        # Find which group the current action belongs to
-        for group, actions in action_groups.items():
-            if current_action in actions:
-                # Return other actions from the same group
-                return [a for a in actions if a != current_action]
-        
-        # No default alternatives - action must be valid
+        """Deprecated - AI should handle action selection."""
+        # AI should handle all action selection
         return []
     
     def _add_to_history(self, action_data):
@@ -218,24 +213,61 @@ Now output your decision as JSON:"""
         self.action_history.append(action_key)
     
     def should_think_after_action(self, action_data):
-        """Determine if character should think after this action."""
-        # Actions that should trigger thinking
-        thinking_triggers = [
-            "observe", "search", "talk_to", "think", "work", "create"
-        ]
+        """Intelligently determine if character should reflect based on memory accumulation."""
+        # Track memory accumulation
+        self.memory_since_last_reflection += 1
         
-        # Actions that shouldn't trigger thinking (too frequent)
-        non_thinking_actions = [
-            "wander", "move_towards", "move_away", "wait"
-        ]
+        # Estimate importance based on action type (avoid AI call)
+        action_importance_map = {
+            "talk_to": 6.0,
+            "create": 5.0,
+            "work": 4.0,
+            "observe": 3.0,
+            "search": 3.0,
+            "eat": 2.0,
+            "move_towards": 1.0,
+            "move_away": 1.0,
+            "wander": 0.5,
+            "wait": 0.5,
+            "think": 7.0  # Thinking itself is important
+        }
         
-        if action_data['action'] in thinking_triggers:
-            return True
-        elif action_data['action'] in non_thinking_actions:
-            return False
-        else:
-            # Random chance for other actions
-            return random.random() < 0.3
+        action_importance = action_importance_map.get(action_data['action'], 2.0)
+        self.importance_since_reflection += action_importance
+        
+        # Check reflection conditions
+        should_reflect = False
+        reason = ""
+        
+        # Condition 1: Memory count threshold
+        if self.memory_since_last_reflection >= self.reflection_memory_threshold:
+            should_reflect = True
+            reason = f"memory accumulation ({self.memory_since_last_reflection} memories)"
+        
+        # Condition 2: Importance accumulation threshold
+        elif self.importance_since_reflection >= self.reflection_importance_threshold:
+            should_reflect = True
+            reason = f"importance accumulation ({self.importance_since_reflection:.1f} total)"
+        
+        # Condition 3: Time threshold
+        elif (time.time() - self.time_since_reflection) > self.reflection_time_threshold:
+            should_reflect = True
+            reason = "time interval"
+        
+        # Condition 4: Critical actions always trigger reflection
+        elif action_data['action'] in ['talk_to', 'create', 'work']:
+            if self.memory_since_last_reflection >= 2:  # At least some context
+                should_reflect = True
+                reason = f"important action: {action_data['action']}"
+        
+        if should_reflect:
+            print(f"[REFLECTION_TRIGGER] Triggered by {reason}")
+            # Reset counters when reflection is triggered
+            self.memory_since_last_reflection = 0
+            self.importance_since_reflection = 0.0
+            self.time_since_reflection = time.time()
+        
+        return should_reflect
     
     def generate_reflection(self, persona_name, action_data, result_description):
         """Generate a reflection after an action."""
@@ -247,7 +279,13 @@ Briefly reflect on this action and what you learned. Keep it under 50 words.
 Response:"""
 
         try:
+            # Monitor AI call
+            perf_monitor.log_ai_call(prompt, start=True)
+            ai_start = time.time()
             reflection = local_llm_generate(prompt)
+            ai_elapsed = time.time() - ai_start
+            perf_monitor.log_ai_call("", start=False)
+            perf_monitor.track_ai_call(ai_elapsed)
             return reflection.strip()
         except Exception as e:
             print(f"[REFLECTION ERROR] Failed to generate reflection: {e}")
@@ -298,15 +336,7 @@ Response:"""
                 "distance": closest_character['distance']
             }
         
-        # If not close enough but within reasonable range, move towards
-        elif closest_character['distance'] <= 8.0 and closest_character['distance'] > 5.0:
-            # Random chance to move towards (30% probability)
-            if random.random() < 0.3:
-                return {
-                    "action": "move_towards",
-                    "target": closest_character['name'],
-                    "social_opportunity": True,
-                    "distance": closest_character['distance']
-                }
+        # Let AI decide if they want to move towards nearby characters
+        # No hardcoded probability - AI makes the decision
         
         return None 

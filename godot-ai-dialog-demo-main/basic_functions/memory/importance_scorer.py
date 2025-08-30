@@ -11,7 +11,7 @@ try:
     from ai_service.ai_service import local_llm_generate
 except ImportError:
     def local_llm_generate(prompt: str) -> str:
-        return "5"  # Default fallback score
+        raise RuntimeError("AI model required for importance scoring")
 
 class ImportanceScorer:
     """
@@ -60,8 +60,8 @@ class ImportanceScorer:
             return score
         except Exception as e:
             print(f"Warning: Failed to score importance for '{event_description}': {e}")
-            # Return default score based on memory type
-            return self._get_default_score(memory_type)
+            # No defaults - AI must generate score
+            raise RuntimeError(f"Failed to score importance for {memory_type}: {e}")
     
     def _create_scoring_prompt(
         self, 
@@ -129,14 +129,8 @@ Respond with only the number (e.g., "7.5"):
             return 5.0
     
     def _get_default_score(self, memory_type: MemoryType) -> float:
-        """Get default importance score based on memory type."""
-        defaults = {
-            MemoryType.SIGHT: 3.0,
-            MemoryType.ACTION: 4.0,
-            MemoryType.INTERACTION: 6.0,
-            MemoryType.REFLECTION: 7.0
-        }
-        return defaults.get(memory_type, 5.0)
+        """No default scores - AI must generate."""
+        raise RuntimeError(f"AI must generate importance score for {memory_type}")
     
     def score_batch_importance(
         self, 

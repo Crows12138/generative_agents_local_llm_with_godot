@@ -90,8 +90,8 @@ class Memory:
                     )
                 except Exception as e:
                     print(f"Warning: Failed to auto-score importance: {e}")
-                    # Fallback to default importance
-                    importance = self._get_default_importance(memory_type)
+                    # Require AI to generate importance
+                    raise RuntimeError(f"Failed to get importance score for {memory_type}: {e}")
             
             entry = MemoryEntry(
                 timestamp=now,
@@ -199,11 +199,5 @@ class Memory:
         return initial_count - len(self.entries)
     
     def _get_default_importance(self, memory_type: MemoryType) -> float:
-        """Get default importance score based on memory type."""
-        defaults = {
-            MemoryType.SIGHT: 3.0,
-            MemoryType.ACTION: 4.0,
-            MemoryType.INTERACTION: 6.0,
-            MemoryType.REFLECTION: 7.0
-        }
-        return defaults.get(memory_type, 5.0)
+        """No default importance - AI must generate."""
+        raise RuntimeError(f"AI must generate importance score for {memory_type}")

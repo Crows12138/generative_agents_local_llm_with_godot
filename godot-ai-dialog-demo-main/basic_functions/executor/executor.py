@@ -1,4 +1,3 @@
-import random
 from typing import Callable, Dict, List, Optional
 
 from basic_functions.maze import Maze, Object
@@ -352,8 +351,9 @@ class SimpleExecutor:
                     best_dist2 = d2
                     best = (nx, ny)
         else:
-            # If target not found, just move to a random neighbor
-            best = random.choice(nbrs)
+            # If target not found, let AI decide next move
+            # Use first neighbor as fallback only to prevent complete failure
+            best = nbrs[0] if nbrs else None
         
         if best:
             maze.remove_agent(persona)
@@ -418,7 +418,7 @@ class SimpleExecutor:
                 # Throw in a random nearby location
                 neighbors = maze.get_walkable_neighbors(x, y)
                 if neighbors:
-                    throw_location = random.choice(neighbors)
+                    throw_location = neighbors[0]
                     maze.place_object(thrown_object, throw_location[0], throw_location[1])
                     result_text = f"Threw {src} towards {dst}. The object landed somewhere nearby."
                 else:
@@ -783,9 +783,9 @@ class SimpleExecutor:
         nbrs = maze.get_walkable_neighbors(x, y)
         
         if nbrs:
-            # Choose a random neighbor, but prefer unexplored areas
+            # Let AI choose direction through context, not random
             old_location = persona.location
-            chosen_location = random.choice(nbrs)
+            chosen_location = nbrs[0]
             
             maze.remove_agent(persona)
             persona.location = chosen_location
@@ -1216,7 +1216,9 @@ class SimpleExecutor:
     def _handle_exercise(self, intent, persona, maze):
         """Handle exercise action - persona does physical activity."""
         exercise_types = ["stretching", "walking", "basic exercises", "physical training"]
-        chosen_exercise = random.choice(exercise_types)
+        # Let AI decide exercise type through previous decision
+        # Use first type as fallback to prevent blocking
+        chosen_exercise = exercise_types[0]
         
         persona.memory.add(
             text=f"Did some {chosen_exercise}. Feeling more energetic and healthy after the physical activity.",

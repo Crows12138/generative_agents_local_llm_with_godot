@@ -133,20 +133,10 @@ Start your response with [ and end with ]. No other text.
             print(f"[Enhanced Plan] Parsing attempt {i+1} failed for {agent_name}: {e}")
             continue
     
-    # If all parsing attempts failed, use fallback
+    # If all parsing attempts failed, no fallback
     if schedule is None:
-        print(f"[Enhanced Plan] All parsing attempts failed for {agent_name}, using enhanced fallback")
-        schedule = [
-            {"start": "06:00", "end": "08:00", "task": "Search for water sources and check stream quality"},
-            {"start": "08:00", "end": "10:00", "task": "Gather firewood and building materials"},
-            {"start": "10:00", "end": "12:00", "task": "Build or improve shelter structure"},
-            {"start": "12:00", "end": "13:00", "task": "Prepare and eat lunch using gathered resources"},
-            {"start": "13:00", "end": "15:00", "task": "Explore forest area for edible plants and herbs"},
-            {"start": "15:00", "end": "17:00", "task": "Check and maintain tools and equipment"},
-            {"start": "17:00", "end": "19:00", "task": "Prepare evening meal and secure camp"},
-            {"start": "19:00", "end": "22:00", "task": "Rest, reflect, and plan for tomorrow"},
-            {"start": "22:00", "end": "06:00", "task": "Sleep and rest"}
-        ]
+        print(f"[Enhanced Plan] All parsing attempts failed for {agent_name}")
+        raise RuntimeError(f"Failed to generate or parse schedule for {agent_name} after multiple attempts")
     
     return schedule
 
