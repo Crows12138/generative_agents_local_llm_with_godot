@@ -114,7 +114,6 @@ codex.tar.gz
 llms/
 nul
 .flake8
-/scripts/
 memory_cache/
 
 # Debug and session files
