@@ -12,9 +12,112 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import json
 import logging
 from typing import Dict, Any
+import random
+import os
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+class OptionalCognitiveModel:
+    """Optional 4B model for deep thinking - disabled by default"""
+    
+    def __init__(self):
+        self.model_4b = None
+        self.tokenizer_4b = None
+        self.enabled = False  # DISABLED by default - won't affect current system
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+        
+    def load_if_needed(self):
+        """Load 4B model only if explicitly enabled"""
+        if self.enabled and not self.model_4b:
+            try:
+                logger.info("[COGNITIVE] Loading Qwen3-4B for deep thinking...")
+                start = time.time()
+                
+                # Load tokenizer
+                self.tokenizer_4b = AutoTokenizer.from_pretrained(
+                    "Qwen/Qwen2.5-3B-Instruct",  # Using 3B as 4B might not exist
+                    trust_remote_code=True
+                )
+                
+                # Load model
+                self.model_4b = AutoModelForCausalLM.from_pretrained(
+                    "Qwen/Qwen2.5-3B-Instruct",
+                    torch_dtype=self.dtype,
+                    device_map="auto" if torch.cuda.is_available() else None,
+                    trust_remote_code=True
+                )
+                
+                if self.device == "cuda":
+                    self.model_4b = self.model_4b.to(self.device)
+                
+                elapsed = time.time() - start
+                logger.info(f"[COGNITIVE] 4B model loaded in {elapsed:.1f}s")
+                return True
+                
+            except Exception as e:
+                logger.error(f"[COGNITIVE] Failed to load 4B model: {e}")
+                self.enabled = False
+                return False
+        return False
+    
+    def think(self, context: str, max_length: int = 100):
+        """Generate deep thought using 4B model"""
+        if not self.enabled or not self.model_4b:
+            return None
+            
+        try:
+            # Simple prompt for deep thinking
+            prompt = f"[Deep Thought] {context}\nResponse:"
+            
+            inputs = self.tokenizer_4b(prompt, return_tensors="pt")
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            
+            with torch.no_grad():
+                outputs = self.model_4b.generate(
+                    **inputs,
+                    max_new_tokens=max_length,
+                    temperature=0.7,
+                    do_sample=True,
+                    top_p=0.9
+                )
+            
+            response = self.tokenizer_4b.decode(outputs[0], skip_special_tokens=True)
+            # Extract only the generated part
+            response = response.split("Response:")[-1].strip()
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"[COGNITIVE] Think failed: {e}")
+            return None
+    
+    def unload(self):
+        """Unload 4B model to free memory"""
+        if self.model_4b:
+            del self.model_4b
+            self.model_4b = None
+            
+        if self.tokenizer_4b:
+            del self.tokenizer_4b
+            self.tokenizer_4b = None
+            
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            
+        logger.info("[COGNITIVE] 4B model unloaded")
+        self.enabled = False
+    
+    def check_gpu_memory(self):
+        """Check if enough GPU memory is available"""
+        if torch.cuda.is_available():
+            free_memory = torch.cuda.mem_get_info()[0] / 1024**3  # GB
+            if free_memory < 2.0:  # Less than 2GB free
+                logger.warning(f"[COGNITIVE] Low GPU memory: {free_memory:.1f}GB")
+                return False
+        return True
 
 
 class OptimizedCozyBarServer:
@@ -24,6 +127,55 @@ class OptimizedCozyBarServer:
         self.model = None
         self.tokenizer = None
         # NO CACHE, NO HISTORY - Every response is fresh!
+        
+        # Load configuration
+        self.load_config()
+        
+        # Optional cognitive model for deep thinking (DISABLED by default)
+        self.cognitive_model = OptionalCognitiveModel()
+        
+        # Apply configuration
+        if self.config.get("enable_4b", False):
+            logger.info("[CONFIG] 4B model enabled in configuration")
+            self.cognitive_model.enabled = True
+            self.cognitive_model.load_if_needed()
+    
+    def load_config(self):
+        """Load configuration from cognitive_config.json"""
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "cognitive_config.json")
+        
+        try:
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    self.config = json.load(f)
+                logger.info(f"[CONFIG] Loaded configuration from {config_path}")
+                
+                # Apply configuration values
+                self.bob_deep_think_probability = self.config.get("bob_deep_think_probability", 0.1)
+                
+                # Log configuration
+                logger.info(f"[CONFIG] enable_4b: {self.config.get('enable_4b', False)}")
+                logger.info(f"[CONFIG] bob_deep_think_probability: {self.bob_deep_think_probability}")
+                logger.info(f"[CONFIG] min_gpu_memory_gb: {self.config.get('min_gpu_memory_gb', 2.0)}")
+            else:
+                # Default configuration
+                self.config = {
+                    "enable_4b": False,
+                    "bob_deep_think_probability": 0.1,
+                    "min_gpu_memory_gb": 2.0
+                }
+                self.bob_deep_think_probability = 0.1
+                logger.info("[CONFIG] Using default configuration (4B disabled)")
+                
+        except Exception as e:
+            logger.error(f"[CONFIG] Failed to load configuration: {e}")
+            # Fallback to defaults
+            self.config = {
+                "enable_4b": False,
+                "bob_deep_think_probability": 0.1,
+                "min_gpu_memory_gb": 2.0
+            }
+            self.bob_deep_think_probability = 0.1
         
     def load_model(self):
         """Load Qwen3-1.7B with optimized settings"""
@@ -141,7 +293,28 @@ class OptimizedCozyBarServer:
         
         personality = npc_personalities.get(npc_name, f"You are {npc_name}, a bartender. Keep responses brief.")
         
-        # Build clear prompt with proper separation
+        # Bob's deep thinking feature (10% chance, only if cognitive model is enabled)
+        if (npc_name == "Bob" and 
+            self.cognitive_model.enabled and 
+            random.random() < self.bob_deep_think_probability):
+            
+            # Check GPU memory before attempting deep thought
+            if self.cognitive_model.check_gpu_memory():
+                logger.info("[COGNITIVE] Bob is thinking deeply...")
+                deep_thought = self.cognitive_model.think(player_message)
+                
+                if deep_thought:
+                    # Return deep thought with special formatting
+                    elapsed = time.time() - start
+                    return f"*thinks deeply* {deep_thought}", elapsed
+                else:
+                    logger.info("[COGNITIVE] Deep thought failed, using normal response")
+            else:
+                # Low memory - disable cognitive model
+                logger.warning("[COGNITIVE] Disabling due to low memory")
+                self.cognitive_model.unload()
+        
+        # Build clear prompt with proper separation (normal response)
         prompt = f"[Character]: {personality}\n\nPlayer: {player_message}\n{npc_name}:"
         
         # DEBUG: Print the actual prompt being used
