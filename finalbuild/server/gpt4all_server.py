@@ -116,7 +116,7 @@ class GPT4AllNPCServer:
                 "You are Bob, a friendly bartender in a cozy bar. "
                 "You are warm, welcoming, and enjoy chatting with customers. "
                 "Keep responses conversational and natural. "
-                "Remember details from our conversation."
+                "Remember details from our conversation. "
             )
         else:
             return f"You are {npc_name}, a helpful assistant."
@@ -206,24 +206,46 @@ class GPT4AllNPCServer:
         start_time = time.time()
         
         try:
-            # Get or create session
-            npc_data = self.get_or_create_session(npc_name)
-            session = npc_data["session"]
+            # Debug: Log exact NPC name received
+            logger.info(f"generate_response called with npc_name='{npc_name}' (lower='{npc_name.lower()}')")
             
-            # Generate response with streaming
-            response_tokens = []
-            
-            for token in self.model.generate(
-                user_input,
-                max_tokens=self.config["max_tokens"],
-                temp=self.config["temperature"],
-                top_k=self.config["top_k"],
-                top_p=self.config["top_p"],
-                repeat_penalty=self.config["repeat_penalty"],
-                repeat_last_n=self.config["repeat_last_n"],
-                streaming=True
-            ):
-                response_tokens.append(token)
+            # For Bob, always use system prompt context
+            if npc_name.lower() == "bob":
+                # Build conversation with strong Bob identity
+                conversation = [
+                    "System: You are Bob, a friendly bartender. Your name is Bob. You work at a bar serving drinks.",
+                    f"Customer: {user_input}",
+                    "Bob:"
+                ]
+                
+                full_prompt = "\n".join(conversation)
+                
+                response_tokens = []
+                for token in self.model.generate(
+                    full_prompt,
+                    max_tokens=self.config["max_tokens"],
+                    temp=self.config["temperature"],
+                    top_k=self.config["top_k"],
+                    top_p=self.config["top_p"],
+                    repeat_penalty=self.config["repeat_penalty"],
+                    repeat_last_n=self.config["repeat_last_n"],
+                    streaming=True
+                ):
+                    response_tokens.append(token)
+            else:
+                # For other NPCs, use normal generation
+                response_tokens = []
+                for token in self.model.generate(
+                    user_input,
+                    max_tokens=self.config["max_tokens"],
+                    temp=self.config["temperature"],
+                    top_k=self.config["top_k"],
+                    top_p=self.config["top_p"],
+                    repeat_penalty=self.config["repeat_penalty"],
+                    repeat_last_n=self.config["repeat_last_n"],
+                    streaming=True
+                ):
+                    response_tokens.append(token)
             
             response = ''.join(response_tokens).strip()
             
@@ -235,11 +257,12 @@ class GPT4AllNPCServer:
             # Save conversation
             self.save_conversation(npc_name, user_input, response, elapsed_time)
             
-            # Update session history
-            npc_data["history"].append({
-                "user": user_input,
-                "assistant": response
-            })
+            # Update session history if using sessions
+            if npc_name in self.npc_sessions:
+                self.npc_sessions[npc_name]["history"].append({
+                    "user": user_input,
+                    "assistant": response
+                })
             
             logger.info(f"[{npc_name}] Generated response in {elapsed_time:.2f}s")
             

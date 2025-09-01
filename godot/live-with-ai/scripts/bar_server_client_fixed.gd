@@ -10,6 +10,7 @@ var current_npc_for_input = ""
 
 # Memory viewer UI elements
 var memory_button = null
+var clear_memory_button = null
 var memory_panel = null
 var memory_text = null
 var speech_bubbles = {}  # Store speech bubbles for each NPC
@@ -262,12 +263,13 @@ func show_response(npc_name: String, text: String):
 		show_speech_bubble(npc, text, npc_name)
 
 func create_memory_button():
-	"""Create button to view Bob's memories"""
+	"""Create buttons for memory management"""
 	# Create a CanvasLayer for UI elements to ensure they're on top
 	var ui_layer = CanvasLayer.new()
 	ui_layer.name = "UILayer"
 	add_child(ui_layer)
 	
+	# View memories button
 	memory_button = Button.new()
 	memory_button.text = "View Bob's Memories"
 	memory_button.position = Vector2(10, 10)
@@ -275,7 +277,18 @@ func create_memory_button():
 	memory_button.add_theme_font_size_override("font_size", 12)
 	memory_button.pressed.connect(_on_memory_button_pressed)
 	ui_layer.add_child(memory_button)
-	print("Memory viewer button created on UI layer")
+	
+	# Clear memories button
+	clear_memory_button = Button.new()
+	clear_memory_button.text = "Clear Memories"
+	clear_memory_button.position = Vector2(170, 10)  # Right of view button
+	clear_memory_button.size = Vector2(120, 30)
+	clear_memory_button.add_theme_font_size_override("font_size", 12)
+	clear_memory_button.modulate = Color(1, 0.8, 0.8)  # Slightly red to indicate danger
+	clear_memory_button.pressed.connect(_on_clear_memory_button_pressed)
+	ui_layer.add_child(clear_memory_button)
+	
+	print("Memory management buttons created on UI layer")
 
 func _on_memory_button_pressed():
 	"""Handle memory button press"""
@@ -286,6 +299,56 @@ func _on_memory_button_pressed():
 	else:
 		# Create panel first time
 		create_memory_panel()
+		load_bob_memories()
+
+func _on_clear_memory_button_pressed():
+	"""Handle clear memory button press"""
+	print("Clear memory button pressed")
+	
+	# Show confirmation dialog
+	var confirm_dialog = ConfirmationDialog.new()
+	confirm_dialog.dialog_text = "Are you sure you want to clear Bob's memories?\nThis cannot be undone!"
+	confirm_dialog.title = "Confirm Clear Memories"
+	confirm_dialog.size = Vector2(400, 150)
+	
+	# Connect confirmation signal
+	confirm_dialog.confirmed.connect(_on_clear_memory_confirmed)
+	
+	# Add to scene and show
+	add_child(confirm_dialog)
+	confirm_dialog.popup_centered()
+
+func _on_clear_memory_confirmed():
+	"""Actually clear the memories after confirmation"""
+	print("Clearing Bob's memories...")
+	
+	# Clear both memory files directly
+	var mem_file1 = project_root + "finalbuild/npc_memories/Bob.json"
+	var mem_file2 = project_root + "finalbuild/server/npc_gpt4all_conversations/Bob.json"
+	
+	# Clear standard memory file
+	var file1 = FileAccess.open(mem_file1, FileAccess.WRITE)
+	if file1:
+		file1.store_string("[]")  # Empty array
+		file1.close()
+		print("Cleared standard memory file")
+	
+	# Clear GPT4All conversation file
+	var file2 = FileAccess.open(mem_file2, FileAccess.WRITE)
+	if file2:
+		file2.store_string('{"npc": "Bob", "conversation": []}')  # Empty conversation
+		file2.close()
+		print("Cleared GPT4All conversation file")
+	
+	# Show success message
+	var success_dialog = AcceptDialog.new()
+	success_dialog.dialog_text = "Bob's memories have been cleared.\nRestart the server for a fresh start."
+	success_dialog.title = "Memories Cleared"
+	add_child(success_dialog)
+	success_dialog.popup_centered()
+	
+	# Update memory viewer if open
+	if memory_panel and memory_panel.visible:
 		load_bob_memories()
 
 func create_memory_panel():
