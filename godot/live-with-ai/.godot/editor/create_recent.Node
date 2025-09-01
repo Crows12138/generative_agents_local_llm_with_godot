@@ -1,0 +1,6 @@
+Node
+Label
+ColorRect
+Sprite2D
+CollisionShape2D
+CharacterBody2D
