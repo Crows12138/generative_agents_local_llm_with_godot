@@ -38,7 +38,10 @@ def print_memory_entry(entry, index):
 
 def view_memories(npc_name, last_n=None, show_stats=False, export_file=None):
     """View memories for a specific NPC"""
-    manager = NPCMemoryManager()
+    # Get the correct memory directory path
+    script_dir = Path(__file__).parent
+    memory_dir = script_dir.parent / "npc_memories"
+    manager = NPCMemoryManager(memory_dir=str(memory_dir))
     
     # Get memories
     memories = manager.get_memories(npc_name, limit=last_n if last_n else -1)

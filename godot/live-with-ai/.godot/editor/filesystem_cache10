@@ -1,5 +1,5 @@
 ea4bc82a6ad023ab7ee23ee620429895
-::res://::1756696312
+::res://::1756735522
 COZY_BAR_TILEMAP_MANUAL_GUIDE.md::TextFile/TextFile::-1::1755996535::0::1::::<><><>0<>0<><>::
 icon.svg::CompressedTexture2D/CompressedTexture2D::706801799455751420::1755217276::1755997143::1::::<><><>0<>0<>ab3dff3293806e4c9f56fc52a033b61e<>res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex::
 INTEGRATION_TEST.md::TextFile/TextFile::-1::1755537869::0::1::::<><><>0<>0<><>::
@@ -187,20 +187,20 @@ tileset-grassland-grass.png::CompressedTexture2D/CompressedTexture2D::2992291962
 tileset-grassland-paths.png::CompressedTexture2D/CompressedTexture2D::6789627014336346655::1691737641::1755997143::1::::<><><>0<>0<>a7f712369bde814060e0554cab82e88d<>res://.godot/imported/tileset-grassland-paths.png-b1b0394f7688e2a12a5a35eb026acdb0.ctex::
 tileset-grassland-props.png::CompressedTexture2D/CompressedTexture2D::2543018821144907486::1691737641::1755997143::1::::<><><>0<>0<>86a8edc9d32e631fd230a9c5bf191984<>res://.godot/imported/tileset-grassland-props.png-bc532193c47fed2b098e7d1bf5a20452.ctex::
 tileset-grassland-water.png::CompressedTexture2D/CompressedTexture2D::4118971772509610078::1691737641::1755997143::1::::<><><>0<>0<>5a18cf926ff0febcbfcb9b2802ae6c93<>res://.godot/imported/tileset-grassland-water.png-8a0949d77c632291e07603230b9abb62.ctex::
-::res://scenes/::1756696207
+::res://scenes/::1756696315
 ai_character.tscn::PackedScene/PackedScene::386508119787877259::1755997579::0::1::::<><><>0<>0<><>::
 character.tscn::PackedScene/PackedScene::2602577065001153077::1755227478::0::1::::<><><>0<>0<><>::
-cozy_bar.tscn::PackedScene::3805698554169447289::1756696207::0::1::::<><><>0<>0<><>::uid://bv4ms0g8ykqne::::res://tilesets/cozy_bar_tileset.tres<>uid://bkqyobvd7k247::::res://scripts/bar_server_client_fixed.gd<>uid://cc7su1hbnuxe3::::res://scripts/camera_fix.gd
+cozy_bar.tscn::PackedScene::3805698554169447289::1756696315::0::1::::<><><>0<>0<><>::uid://bv4ms0g8ykqne::::res://tilesets/cozy_bar_tileset.tres<>uid://bkqyobvd7k247::::res://scripts/bar_server_client_fixed.gd<>uid://cc7su1hbnuxe3::::res://scripts/camera_fix.gd
 cozy_bar_complex_small.tscn::PackedScene/PackedScene::3822209365286926767::1756428303::0::1::::<><><>0<>0<><>::uid://bkqyobvd7k247::::res://scripts/bar_server_client_fixed.gd<>uid://cc7su1hbnuxe3::::res://scripts/camera_fix.gd<>uid://bv4ms0g8ykqne::::res://tilesets/cozy_bar_tileset.tres
 dialogue_ui.tscn::PackedScene/PackedScene::4723536502669923174::1755537695::0::1::::<><><>0<>0<><>::res://scripts/dialogue_system.gd
-main.tscn::PackedScene::2733740918629454099::1756696207::0::1::::<><><>0<>0<><>::uid://bgc71mak7c8i8::::res://scripts/game_manager.gd
+main.tscn::PackedScene::2733740918629454099::1756696315::0::1::::<><><>0<>0<><>::uid://bgc71mak7c8i8::::res://scripts/game_manager.gd
 ::res://scenes/ui/::1755537740
 choice_button.tscn::PackedScene/PackedScene::8051044479456681454::1755537740::0::1::::<><><>0<>0<><>::
-::res://scripts/::1756693445
+::res://scripts/::1756735375
 ai_manager.gd::GDScript/GDScript::7331029406415696661::1756068265::0::1::::<>Node<><>0<>0<><>::
 bar_scene_fixed.gd::GDScript/GDScript::1096881639458293599::1756059753::0::1::::<>Node2D<><>0<>0<><>::
 bar_server_client.gd::GDScript/GDScript::830686594066285345::1756102826::0::1::::<>Node2D<><>0<>0<><>::
-bar_server_client_fixed.gd::GDScript/GDScript::3122821458223182166::1756693445::0::1::::<>Node2D<><>0<>0<><>::
+bar_server_client_fixed.gd::GDScript::3122821458223182166::1756735375::0::1::::<>Node2D<><>0<>0<><>::
 bar_server_client_json.gd::GDScript/GDScript::2352683112574158968::1756607071::0::1::::<>Node<><>0<>0<><>::
 bar_server_client_simple.gd::GDScript/GDScript::4674012042698564841::1756103313::0::1::::<>Node2D<><>0<>0<><>::
 bar_updater.gd::GDScript/GDScript::3469576720991831221::1756004029::0::1::::<>Node2D<><>0<>0<><>::
@@ -225,5 +225,5 @@ test_direct_llm.gd::GDScript/GDScript::6935723407948954538::1756095642::0::1::::
 tilemap_layer_manager.gd::GDScript/GDScript::3803874001645737468::1755561759::0::1::::TileMapLayerManager<>Node<><>0<>0<><>::
 tile_collision_shapes.gd::GDScript/GDScript::2642876456717860005::1755561731::0::1::::TileCollisionShapes<>Resource<><>0<>0<><>::
 ultra_simple_llm.gd::GDScript/GDScript::2607997822997314201::1756091952::0::1::::<>Node<><>0<>0<><>::
-::res://tilesets/::1756696207
-cozy_bar_tileset.tres::TileSet::3921015427047433454::1756696207::0::1::::<><><>0<>0<><>::uid://cl3dddu4dnpci::::res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/tilesets/CuteRPG_Dark_Castle_B.png
+::res://tilesets/::1756696315
+cozy_bar_tileset.tres::TileSet::3921015427047433454::1756696315::0::1::::<><><>0<>0<><>::uid://cl3dddu4dnpci::::res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/tilesets/CuteRPG_Dark_Castle_B.png

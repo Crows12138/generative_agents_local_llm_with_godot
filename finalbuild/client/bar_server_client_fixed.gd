@@ -1,4 +1,4 @@
-# bar_server_client_fixed.gd - 修复版本，正确处理点击
+# bar_server_client_fixed.gd
 extends Node2D
 
 var npcs = {}
@@ -249,19 +249,14 @@ func show_response(npc_name: String, text: String):
 
 func create_memory_button():
 	"""Create button to view Bob's memories"""
-	# Create a CanvasLayer for UI elements to ensure they're on top
-	var ui_layer = CanvasLayer.new()
-	ui_layer.name = "UILayer"
-	add_child(ui_layer)
-	
 	memory_button = Button.new()
 	memory_button.text = "View Bob's Memories"
 	memory_button.position = Vector2(10, 10)
 	memory_button.size = Vector2(150, 30)
 	memory_button.add_theme_font_size_override("font_size", 12)
 	memory_button.pressed.connect(_on_memory_button_pressed)
-	ui_layer.add_child(memory_button)
-	print("Memory viewer button created on UI layer")
+	add_child(memory_button)
+	print("Memory viewer button created")
 
 func _on_memory_button_pressed():
 	"""Handle memory button press"""
@@ -276,13 +271,6 @@ func _on_memory_button_pressed():
 
 func create_memory_panel():
 	"""Create panel to display memories"""
-	# Get or reuse the UI layer
-	var ui_layer = get_node_or_null("UILayer")
-	if not ui_layer:
-		ui_layer = CanvasLayer.new()
-		ui_layer.name = "UILayer"
-		add_child(ui_layer)
-	
 	# Create background panel
 	memory_panel = Panel.new()
 	memory_panel.position = Vector2(10, 50)
@@ -296,10 +284,9 @@ func create_memory_panel():
 	
 	# Create rich text label for formatted text
 	memory_text = RichTextLabel.new()
-	memory_text.custom_minimum_size = Vector2(380, 1000)  # Tall for scrolling
-	memory_text.bbcode_enabled = false  # Disable BBCode, use plain text
+	memory_text.size = Vector2(380, 1000)  # Tall for scrolling
+	memory_text.bbcode_enabled = true
 	memory_text.fit_content = true
-	memory_text.scroll_active = true
 	scroll.add_child(memory_text)
 	
 	# Add close button
@@ -310,42 +297,44 @@ func create_memory_panel():
 	close_btn.pressed.connect(func(): memory_panel.visible = false)
 	memory_panel.add_child(close_btn)
 	
-	ui_layer.add_child(memory_panel)
-	print("Memory panel created on UI layer")
+	add_child(memory_panel)
+	print("Memory panel created")
 
 func load_bob_memories():
 	"""Load Bob's memories using Python tool"""
 	memory_text.clear()
-	memory_text.append_text("=== Bob's Conversation History ===\n\n")
+	memory_text.append_text("[b][color=yellow]Bob's Conversation History[/color][/b]\n\n")
 	
-	# Call Python memory viewer - use absolute path
+	# Call Python memory viewer
 	var output = []
-	var memory_script = project_root + "finalbuild/tools/view_memories.py"
-	print("Loading memories from: ", memory_script)
-	print("Using Python: ", python_path)
-	
-	var args = [memory_script, "Bob"]
+	var args = [project_root + "finalbuild/tools/view_memories.py", "Bob"]
 	var exit_code = OS.execute(python_path, args, output, true, false)
-	
-	print("Memory load exit code: ", exit_code)
-	print("Output size: ", output.size())
-	if output.size() > 0:
-		print("First 200 chars of output: ", output[0].substr(0, 200))
 	
 	if exit_code == 0 and output.size() > 0:
 		# Parse and format memories
 		var memories_text = output[0]
 		var lines = memories_text.split("\n")
 		
-		print("Processing ", lines.size(), " lines of memory data")
-		
-		# Simple plain text display
 		for line in lines:
-			memory_text.append_text(line + "\n")
-		
-		print("Memory text content length: ", memory_text.get_parsed_text().length())
+			if line.begins_with("#") and line.contains(" - "):
+				# Memory entry header
+				memory_text.append_text("[color=white][b]" + line + "[/b][/color]\n")
+			elif line.contains("User:"):
+				memory_text.append_text("[color=cyan]" + line + "[/color]\n")
+			elif line.contains("NPC:"):
+				memory_text.append_text("[color=lime]" + line + "[/color]\n")
+			elif line.contains("Importance:"):
+				memory_text.append_text("[color=yellow]" + line + "[/color]\n")
+			elif line.contains("Response time:"):
+				memory_text.append_text("[color=gray]" + line + "[/color]\n")
+			elif line.contains("----"):
+				memory_text.append_text("[color=gray]" + line + "[/color]\n")
+			elif line.contains("Summary:") or line.contains("Deep thinking:") or line.contains("Average importance:"):
+				memory_text.append_text("[color=aqua][i]" + line + "[/i][/color]\n")
+			else:
+				memory_text.append_text(line + "\n")
 	else:
-		memory_text.append_text("Failed to load memories\n")
+		memory_text.append_text("[color=red]Failed to load memories[/color]\n")
 		if output.size() > 0:
 			memory_text.append_text(output[0])
 	
