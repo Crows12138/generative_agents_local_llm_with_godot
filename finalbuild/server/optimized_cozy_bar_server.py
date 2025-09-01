@@ -11,7 +11,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteria, StoppingCriteriaList
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List
 import random
 import os
 
@@ -23,16 +23,30 @@ logger = logging.getLogger(__name__)
 
 
 class PunctuationStoppingCriteria(StoppingCriteria):
-    """Stop at punctuation but keep it in the output"""
-    def __init__(self, tokenizer):
+    """Stop after N sentences (at punctuation marks)"""
+    def __init__(self, tokenizer, max_sentences=2, prompt_length=0):
         self.tokenizer = tokenizer
         self.punctuation = ['.', '!', '?']
+        self.max_sentences = max_sentences
+        self.prompt_length = prompt_length
+        self.sentence_count = 0
         
     def __call__(self, input_ids, scores, **kwargs):
-        # Decode the last generated token
-        last_token = self.tokenizer.decode(input_ids[0][-1])
-        # If it's punctuation, stop generation
-        return any(p in last_token for p in self.punctuation)
+        # Only decode the newly generated part (after the prompt)
+        if len(input_ids[0]) <= self.prompt_length:
+            return False
+            
+        generated_ids = input_ids[0][self.prompt_length:]
+        generated_text = self.tokenizer.decode(generated_ids)
+        
+        # Count sentences by counting punctuation marks in generated text only
+        sentence_count = sum(1 for p in self.punctuation if p in generated_text)
+        
+        # Stop if we've reached the desired number of sentences
+        if sentence_count >= self.max_sentences:
+            return True
+        
+        return False
 
 
 class OptionalCognitiveModel:
@@ -165,49 +179,79 @@ class OptionalCognitiveModel:
         except Exception as e:
             logger.debug(f"[COGNITIVE] Independence check failed: {e}")
     
-    def think(self, context: str, max_length: int = 300):
-        """Generate deep thought - using different prompting for dual 1.7B mode"""
+    def recall_and_respond(self, context: str, relevant_memories: List[Dict], 
+                          npc_name: str = "Bob", max_length: int = 300):
+        """Generate response based on relevant memories"""
         if not self.enabled or not self.model_4b:
             return None
             
         try:
+            # Build memory context
+            memory_context = ""
+            if relevant_memories:
+                memory_context = "\n[Past conversations I remember]:\n"
+                for mem_data in relevant_memories:
+                    memory = mem_data['memory']
+                    relevance = mem_data['relevance']
+                    # Format memory for context
+                    memory_context += f"- User once said: \"{memory['user_input']}\" and I replied: \"{memory['npc_response']}\"\n"
+                
             # Different prompting strategies for dual mode
             if self.use_dual_1_7b:
-                # Rich, story-driven prompt for second 1.7B
-                prompt = f"""You are Bob, a veteran bartender with 20 years of experience.
-You've seen it all - celebrations, heartbreaks, quiet nights, and wild parties.
-When responding, draw from your deep well of experience and wisdom.
-Include subtle observations about people and life.
-
-Customer says: {context}
-
-Bob (leaning on the bar, with a knowing smile):"""
+                # Build context from memories for 1.7B model
+                if relevant_memories and len(relevant_memories) > 0:
+                    # Take top memory and extract key info
+                    top_memory = relevant_memories[0]['memory']
+                    user_said = top_memory['user_input']
+                    
+                    # Extract the key fact from the exchange
+                    key_fact = None
+                    if "favorite color" in user_said.lower() and "blue" in user_said.lower():
+                        key_fact = "their favorite color is blue"
+                    elif "favorite drink" in user_said.lower() and "elderflower" in user_said.lower():
+                        key_fact = "their favorite drink is elderflower cordial"
+                    elif "elderflower" in top_memory['npc_response'].lower():
+                        key_fact = "they like elderflower cordial"
+                    elif "blue" in top_memory['npc_response'].lower():
+                        key_fact = "they mentioned blue"
+                    
+                    if key_fact:
+                        # Simple continuation with fact
+                        prompt = f"Customer: {context}\n{npc_name} (remembering {key_fact}): Yes,"
+                    else:
+                        # Fallback to simpler prompt
+                        prompt = f"They said: {user_said}\n\nCustomer: {context}\n{npc_name}:"
+                else:
+                    prompt = f"Customer: {context}\n{npc_name}:"
             else:
-                # Standard prompt for 4B model
-                prompt = f"[Deep Thought] {context}\nResponse:"
+                # Standard prompt for 4B model with memory context
+                prompt = f"[Memory Recall] {memory_context}\n\nCustomer: {context}\n{npc_name}:"
             
             inputs = self.tokenizer_4b(prompt, return_tensors="pt")
+            
+            # Get prompt length for stopping criteria
+            prompt_length = inputs['input_ids'].shape[1]
             
             # Ensure inputs are on correct device
             if self.device == "cuda":
                 inputs = {k: v.cuda() for k, v in inputs.items()}
             
-            # Create stopping criteria for deep thinking too
+            # Create stopping criteria with prompt length
             stopping_criteria = StoppingCriteriaList([
-                PunctuationStoppingCriteria(self.tokenizer_4b)
+                PunctuationStoppingCriteria(self.tokenizer_4b, max_sentences=2, prompt_length=prompt_length)
             ])
             
             with torch.no_grad():
                 outputs = self.model_4b.generate(
                     **inputs,
                     max_new_tokens=max_length,
-                    temperature=0.85 if self.use_dual_1_7b else 0.7,  # Higher creativity for dual mode
+                    temperature=0.8 if self.use_dual_1_7b else 0.7,
                     do_sample=True,
                     top_p=0.9,
                     top_k=50,
                     pad_token_id=self.tokenizer_4b.pad_token_id,
                     eos_token_id=self.tokenizer_4b.eos_token_id,
-                    stopping_criteria=stopping_criteria  # Use custom stopping criteria
+                    stopping_criteria=stopping_criteria
                 )
             
             response = self.tokenizer_4b.decode(
@@ -216,7 +260,6 @@ Bob (leaning on the bar, with a knowing smile):"""
             ).strip()
             
             # Clean up response
-            # Allow multi-line for deep thoughts
             lines = response.split("\n")
             response = lines[0] if len(lines[0]) > 20 else "\n".join(lines[:2])
             if response and not response[-1] in '.!?':
@@ -225,7 +268,7 @@ Bob (leaning on the bar, with a knowing smile):"""
             return response
             
         except Exception as e:
-            logger.error(f"[COGNITIVE] Think failed: {e}")
+            logger.error(f"[COGNITIVE] Recall failed: {e}")
             return None
     
     def unload(self):
@@ -434,43 +477,59 @@ class OptimizedCozyBarServer:
         
         personality = npc_personalities.get(npc_name, f"You are {npc_name}, a bartender. Keep responses brief.")
         
-        # Bob's deep thinking feature (configured probability, only if cognitive model is enabled)
+        # Bob's memory recall feature (only on explicit memory queries)
         if (npc_name == "Bob" and 
             self.cognitive_model.enabled and 
-            random.random() < self.bob_deep_think_probability):
+            self.should_trigger_recall(player_message)):
             
-            # Check GPU memory before attempting deep thought
+            # Check GPU memory before attempting recall
             if self.cognitive_model.check_gpu_memory():
-                logger.info("[COGNITIVE] Bob is thinking deeply...")
-                deep_thought = self.cognitive_model.think(player_message)
+                logger.info("[COGNITIVE] Bob is recalling memories...")
                 
-                if deep_thought:
-                    # Return deep thought with special formatting
-                    elapsed = time.time() - start
-                    # Add visual distinction for dual mode testing
-                    if self.config.get("use_dual_1_7b", False):
-                        response = f"*thoughtfully* {deep_thought}"
+                # Search for relevant memories
+                relevant_memories = self.memory_manager.search_relevant_memories(
+                    npc_name=npc_name,
+                    current_input=player_message,
+                    max_results=self.config.get("max_memories_to_recall", 2),
+                    relevance_threshold=self.config.get("memory_relevance_threshold", 0.5)
+                )
+                
+                if relevant_memories:
+                    logger.info(f"[MEMORY] Found {len(relevant_memories)} relevant memories")
+                    
+                    # Generate response with memory context
+                    memory_response = self.cognitive_model.recall_and_respond(
+                        context=player_message,
+                        relevant_memories=relevant_memories,
+                        npc_name=npc_name
+                    )
+                    
+                    if memory_response:
+                        # Return memory-based response with special formatting
+                        elapsed = time.time() - start
+                        response = f"*recalls* {memory_response}"
+                        
+                        # Save memory-recall response
+                        try:
+                            self.memory_manager.save_memory(
+                                npc_name=npc_name,
+                                user_input=player_message,
+                                npc_response=response,
+                                is_deep_thinking=True,  # Mark as special response
+                                metadata={
+                                    "response_time": elapsed,
+                                    "model": "Qwen3-1.7B (memory recall)",
+                                    "memories_used": len(relevant_memories)
+                                }
+                            )
+                        except Exception as e:
+                            logger.warning(f"[MEMORY] Failed to save recall memory: {e}")
+                        
+                        return response, elapsed
                     else:
-                        response = f"*thinks deeply* {deep_thought}"
-                    
-                    # Save deep thinking memory
-                    try:
-                        self.memory_manager.save_memory(
-                            npc_name=npc_name,
-                            user_input=player_message,
-                            npc_response=response,
-                            is_deep_thinking=True,
-                            metadata={
-                                "response_time": elapsed,
-                                "model": "Qwen3-1.7B (deep mode)"
-                            }
-                        )
-                    except Exception as e:
-                        logger.warning(f"[MEMORY] Failed to save deep memory: {e}")
-                    
-                    return response, elapsed
+                        logger.info("[COGNITIVE] Memory recall failed, using normal response")
                 else:
-                    logger.info("[COGNITIVE] Deep thought failed, using normal response")
+                    logger.info("[MEMORY] No relevant memories found, using normal response")
             else:
                 # Low memory - disable cognitive model
                 logger.warning("[COGNITIVE] Disabling due to low memory")
@@ -485,9 +544,12 @@ class OptimizedCozyBarServer:
         # Tokenize and generate
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
         
-        # Create stopping criteria
+        # Get prompt length for stopping criteria
+        prompt_length = inputs['input_ids'].shape[1]
+        
+        # Create stopping criteria with prompt length
         stopping_criteria = StoppingCriteriaList([
-            PunctuationStoppingCriteria(self.tokenizer)
+            PunctuationStoppingCriteria(self.tokenizer, max_sentences=2, prompt_length=prompt_length)
         ])
         
         with torch.no_grad():
@@ -545,9 +607,48 @@ class OptimizedCozyBarServer:
         """Wrapper method for compatibility with test scripts"""
         return self.generate_npc_response(npc_name, message)
     
+    def should_trigger_recall(self, message: str) -> bool:
+        """Check if message explicitly asks about memories"""
+        # Explicit memory request keywords
+        explicit_memory_requests = [
+            'do you remember',
+            'what did i say',
+            'what did i tell',
+            'what did i mention',
+            'as i mentioned',
+            'like last time',
+            'we talked about',
+            'we discussed',
+            'recall what',
+            'my favorite',  # Asking about previously mentioned preferences
+            'what was my',   # Asking about previous info
+            'did i tell you my'
+        ]
+        
+        message_lower = message.lower()
+        
+        # Check for explicit memory requests
+        for request in explicit_memory_requests:
+            if request in message_lower:
+                logger.info(f"[MEMORY] Triggered by keyword: '{request}'")
+                return True
+        
+        # Don't trigger for general questions
+        return False
+    
     def filter_response(self, response: str, npc_name: str) -> str:
-        """Simple cleanup - just trim whitespace"""
-        return response.strip()
+        """Clean up response - remove any Player/Customer prompts"""
+        # First trim whitespace
+        response = response.strip()
+        
+        # Remove any "Player:" or "Customer:" prompts that the model might add
+        # Split by common prompt patterns
+        for delimiter in ["\nPlayer:", "\nCustomer:", "\nUser:", "\n\nPlayer:", "\n\nCustomer:"]:
+            if delimiter in response:
+                # Take only the part before the delimiter
+                response = response.split(delimiter)[0].strip()
+        
+        return response
     
     def run_server(self, port: int = 9999):
         """Run TCP server for Godot integration

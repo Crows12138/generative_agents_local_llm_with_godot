@@ -97,18 +97,21 @@ class NPCMemoryManager:
         if npc_name not in self.memories:
             self.memories[npc_name] = []
         
+        # Clean response to remove recall markers before storing
+        clean_response = npc_response.replace("*recalls*", "").replace("*thoughtfully*", "").strip()
+        
         # Calculate importance
         importance = self.calculate_importance(
-            f"{user_input} {npc_response}", 
+            f"{user_input} {clean_response}", 
             is_deep_thinking
         )
         
-        # Create memory entry
+        # Create memory entry with cleaned response
         memory_entry = {
             "timestamp": time.time(),
             "datetime": datetime.now().isoformat(),
             "user_input": user_input,
-            "npc_response": npc_response,
+            "npc_response": clean_response,  # Store cleaned version
             "is_deep_thinking": is_deep_thinking,
             "importance": importance,
             "metadata": metadata or {}
@@ -151,6 +154,79 @@ class NPCMemoryManager:
             return memories[-limit:]
         
         return memories
+    
+    def search_relevant_memories(self, 
+                                npc_name: str, 
+                                current_input: str, 
+                                max_results: int = 2,
+                                relevance_threshold: float = 0.5) -> List[Dict]:
+        """
+        Search for relevant memories based on current input
+        
+        Args:
+            npc_name: Name of the NPC
+            current_input: Current user input to find relevant memories for
+            max_results: Maximum number of memories to return
+            relevance_threshold: Minimum relevance score (0-1)
+            
+        Returns:
+            List of relevant memory entries with relevance scores
+        """
+        memories = self.memories.get(npc_name, [])
+        
+        if not memories:
+            return []
+        
+        # Keywords from current input (filter out common words)
+        stop_words = {'the', 'a', 'an', 'is', 'was', 'are', 'were', 'i', 'you', 'he', 'she', 'it', 
+                     'we', 'they', 'what', 'when', 'where', 'who', 'why', 'how', 'do', 'did'}
+        current_words = set([w.lower() for w in current_input.split() if w.lower() not in stop_words and len(w) > 2])
+        
+        if not current_words:  # If no meaningful words, use all words
+            current_words = set(current_input.lower().split())
+        
+        # Score each memory for relevance
+        scored_memories = []
+        for i, memory in enumerate(memories):
+            # Skip the most recent memory (it's likely the current conversation)
+            if i == len(memories) - 1 and len(memories) > 1:
+                continue
+                
+            # Calculate relevance score
+            user_words = set([w.lower() for w in memory['user_input'].split() if w.lower() not in stop_words])
+            response_words = set([w.lower() for w in memory['npc_response'].split() if w.lower() not in stop_words])
+            
+            # Word overlap score (focus on meaningful words)
+            user_overlap = len(current_words & user_words) / max(len(current_words), 1)
+            response_overlap = len(current_words & response_words) / max(len(current_words), 1)
+            
+            # Time decay factor (recent memories are slightly more relevant)
+            time_position = i / max(len(memories), 1)  # 0 for oldest, 1 for newest
+            time_weight = 0.5 + (time_position * 0.5)  # Range: 0.5 to 1.0
+            
+            # Importance weight
+            importance_weight = memory.get('importance', 2.0) / 10.0
+            
+            # Combined relevance score with time decay
+            relevance = (user_overlap * 0.4 + response_overlap * 0.3 + importance_weight * 0.2) * time_weight
+            
+            # Special keywords that increase relevance
+            special_keywords = ['remember', 'before', 'last time', 'earlier', 'again', 
+                              'favorite', 'always', 'usually', 'never']
+            for keyword in special_keywords:
+                if keyword in current_input.lower():
+                    relevance += 0.2
+                    break
+            
+            if relevance >= relevance_threshold:
+                scored_memories.append({
+                    'memory': memory,
+                    'relevance': min(relevance, 1.0)
+                })
+        
+        # Sort by relevance and return top results
+        scored_memories.sort(key=lambda x: x['relevance'], reverse=True)
+        return scored_memories[:max_results]
     
     def get_memory_stats(self, npc_name: str) -> Dict[str, Any]:
         """Get statistics about an NPC's memories"""

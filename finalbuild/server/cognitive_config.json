@@ -1,9 +1,13 @@
 {
     "enable_4b": true,
-    "bob_deep_think_probability": 0.2,
+    "bob_deep_think_probability": 0.0,
+    "bob_recall_probability": 0.0,
+    "max_memories_to_recall": 2,
+    "memory_relevance_threshold": 0.5,
     "min_gpu_memory_gb": 3.5,
     "model_name": "Qwen/Qwen3-1.7B",
     "use_dual_1_7b": true,
     "force_independent_models": true,
-    "comment": "Dual 1.7B test mode - Using two independent 1.7B models with different prompting strategies"
+    "use_memory_recall": true,
+    "comment": "Conservative memory recall - Only triggers on explicit memory queries"
 }

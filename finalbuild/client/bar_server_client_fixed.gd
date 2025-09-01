@@ -16,40 +16,40 @@ var memory_text = null
 func _ready():
 	print("Bar scene - Server-Client mode (Fixed)!")
 	
-	# 设置路径
+	# Setup paths
 	var exe_path = OS.get_executable_path()
 	var exe_dir = exe_path.get_base_dir()
 	
 	if OS.get_name() == "Windows":
-		# Godot编辑器中运行
+		# Running in Godot editor
 		if exe_dir.contains("Godot"):
 			project_root = ProjectSettings.globalize_path("res://").replace("godot/live-with-ai/", "")
 			python_path = project_root + ".venv/Scripts/python.exe"
 		else:
-			# 导出后运行
+			# Running after export
 			project_root = exe_dir + "/../.."
 			python_path = project_root + "/.venv/Scripts/python.exe"
 	
 	print("Python path: ", python_path)
 	print("Project root: ", project_root)
 	
-	# 获取 NPC 节点
+	# Get NPC nodes
 	setup_npcs()
 	
-	# 检查服务器
+	# Check server
 	check_server()
 	
 	# Create memory viewer button
 	create_memory_button()
 
 func setup_npcs():
-	"""设置 NPC 节点和点击检测"""
-	# 查找 ColorRect 类型的 NPC
+	"""Setup NPC nodes and click detection"""
+	# Find ColorRect type NPCs
 	var bob = $Bob if has_node("Bob") else null
 	var alice = $Alice if has_node("Alice") else null
 	var sam = $Sam if has_node("Sam") else null
 	
-	# 设置点击检测
+	# Setup click detection
 	if bob and bob is ColorRect:
 		npcs["Bob"] = bob
 		make_clickable(bob, "Bob")
@@ -65,18 +65,18 @@ func setup_npcs():
 	print("NPCs setup complete: ", npcs.keys())
 
 func make_clickable(color_rect: ColorRect, npc_name: String):
-	"""让 ColorRect 可点击"""
-	# 连接 gui_input 信号
+	"""Make ColorRect clickable"""
+	# Connect gui_input signal
 	if not color_rect.gui_input.is_connected(_on_npc_gui_input):
 		color_rect.gui_input.connect(_on_npc_gui_input.bind(npc_name))
 	
-	# 设置鼠标过滤
+	# Set mouse filter
 	color_rect.mouse_filter = Control.MOUSE_FILTER_PASS
 	
 	print(npc_name, " is now clickable")
 
 func _on_npc_gui_input(event: InputEvent, npc_name: String):
-	"""处理 NPC 点击事件"""
+	"""Handle NPC click events"""
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			print("\nLeft-clicked on ", npc_name, "!")
@@ -86,7 +86,7 @@ func _on_npc_gui_input(event: InputEvent, npc_name: String):
 			show_custom_input_dialog(npc_name)
 
 func check_server():
-	"""检查服务器状态"""
+	"""Check server status"""
 	var output = []
 	var args = [project_root + "llm_client_cognitive.py", "ping"]
 	var exit_code = OS.execute(python_path, args, output, true, false)
@@ -101,10 +101,10 @@ func check_server():
 	print("   Or start: python server_client/optimized_cozy_bar_server.py 9999")
 
 func show_custom_input_dialog(npc_name: String):
-	"""显示自定义消息输入对话框"""
+	"""Show custom message input dialog"""
 	current_npc_for_input = npc_name
 	
-	# 创建输入对话框
+	# Create input dialog
 	if input_dialog:
 		input_dialog.queue_free()
 	
@@ -113,7 +113,7 @@ func show_custom_input_dialog(npc_name: String):
 	input_dialog.dialog_text = ""  # Remove duplicate text
 	input_dialog.size = Vector2(400, 150)
 	
-	# 创建输入框
+	# Create input field
 	var vbox = VBoxContainer.new()
 	var line_edit = LineEdit.new()
 	line_edit.placeholder_text = "Type your message here..."
@@ -124,15 +124,15 @@ func show_custom_input_dialog(npc_name: String):
 	
 	input_dialog.add_child(vbox)
 	
-	# 连接确认信号
+	# Connect confirmation signals
 	input_dialog.confirmed.connect(_on_custom_input_confirmed)
 	input_dialog.canceled.connect(_on_custom_input_canceled)
 	
-	# 添加到场景并显示
+	# Add to scene and show
 	get_tree().root.add_child(input_dialog)
 	input_dialog.popup_centered()
 	
-	# 聚焦到输入框
+	# Focus on input field
 	line_edit.grab_focus()
 
 func _on_line_edit_text_submitted(text: String):
@@ -141,7 +141,7 @@ func _on_line_edit_text_submitted(text: String):
 		_on_custom_input_confirmed()
 
 func _on_custom_input_confirmed():
-	"""处理自定义输入确认"""
+	"""Handle custom input confirmation"""
 	if input_dialog and current_npc_for_input:
 		var line_edit = input_dialog.find_child("CustomInput", true, false)
 		if line_edit and line_edit is LineEdit:
@@ -157,7 +157,7 @@ func _on_custom_input_confirmed():
 		current_npc_for_input = ""
 
 func _on_custom_input_canceled():
-	"""处理自定义输入取消"""
+	"""Handle custom input cancellation"""
 	if input_dialog:
 		input_dialog.queue_free()
 		input_dialog = null
@@ -165,14 +165,14 @@ func _on_custom_input_canceled():
 	print("Custom input canceled")
 
 func interact_with_npc(npc_name: String, custom_message: String = ""):
-	"""与 NPC 交互"""
+	"""Interact with NPC"""
 	if is_processing:
 		print("Still processing previous request...")
 		return
 	
 	is_processing = true
 	
-	# 显示思考状态
+	# Show thinking state
 	show_thinking(npc_name)
 	
 	# CLEAN PROTOCOL: Use simple format NPC_NAME|MESSAGE
@@ -186,12 +186,12 @@ func interact_with_npc(npc_name: String, custom_message: String = ""):
 		message = npc_name + "|Hello!"
 		print("Using clean protocol (preset): ", message)
 	
-	# 在线程中调用 LLM
+	# Call LLM in thread
 	var thread = Thread.new()
 	thread.start(_llm_thread.bind(npc_name, message))
 
 func _llm_thread(npc_name: String, message: String):
-	"""在线程中调用 LLM"""
+	"""Call LLM in thread"""
 	var output = []
 	# Call Python client with the message
 	var args = [project_root + "llm_client_cognitive.py", "dialogue", npc_name, message]
@@ -206,7 +206,7 @@ func _llm_thread(npc_name: String, message: String):
 	if exit_code == 0 and output.size() > 0:
 		response = output[0].strip_edges()
 		
-		# 清理响应
+		# Clean response
 		if response.contains("Server not running"):
 			response = "Server offline"
 		elif response.length() > 60:
@@ -218,30 +218,30 @@ func _llm_thread(npc_name: String, message: String):
 	call_deferred("_on_response", npc_name, response, elapsed)
 
 func _on_response(npc_name: String, response: String, time_taken: float):
-	"""处理响应"""
+	"""Handle response"""
 	is_processing = false
 	show_response(npc_name, response)
 	print("[%s] Response (%.2fs): %s" % [npc_name, time_taken, response])
 
 func show_thinking(npc_name: String):
-	"""显示思考状态"""
+	"""Show thinking state"""
 	var npc = npcs.get(npc_name)
-	if npc and npc.has_node(npc_name):  # Label 子节点
+	if npc and npc.has_node(npc_name):  # Label child node
 		var label = npc.get_node(npc_name)
 		if label is Label:
 			label.text = npc_name + "\n💭..."
 			label.modulate = Color(0.8, 0.8, 1.0)
 
 func show_response(npc_name: String, text: String):
-	"""显示响应"""
+	"""Show response"""
 	var npc = npcs.get(npc_name)
-	if npc and npc.has_node(npc_name):  # Label 子节点
+	if npc and npc.has_node(npc_name):  # Label child node
 		var label = npc.get_node(npc_name)
 		if label is Label:
 			label.text = npc_name + "\n💬 " + text
 			label.modulate = Color.WHITE
 			
-			# 创建淡出动画
+			# Create fade out animation
 			var tween = create_tween()
 			tween.tween_interval(5.0)
 			tween.tween_property(label, "modulate:a", 0.5, 1.0)
