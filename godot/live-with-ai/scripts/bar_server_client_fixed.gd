@@ -219,8 +219,8 @@ func _llm_thread(npc_name: String, message: String):
 		# Clean response
 		if response.contains("Server not running"):
 			response = "Server offline"
-		elif response.length() > 500:
-			response = response.substr(0, 497) + "..."
+		elif response.length() > 1000:
+			response = response.substr(0, 997) + "..."
 	else:
 		response = "No response"
 		print("LLM call failed. Exit code: ", exit_code)
@@ -232,6 +232,15 @@ func _on_response(npc_name: String, response: String, time_taken: float):
 	is_processing = false
 	show_response(npc_name, response)
 	print("[%s] Response (%.2fs): %s" % [npc_name, time_taken, response])
+	
+	# Auto-refresh memory display if panel is open for this NPC
+	if memory_panel and memory_panel.visible and memory_text:
+		# Check if we're viewing this NPC's memories
+		var current_title = memory_text.get_parsed_text()
+		if current_title.contains(npc_name + "'s Conversation History"):
+			# Wait a bit for file to be written, then reload
+			await get_tree().create_timer(0.5).timeout
+			load_npc_memories(npc_name)
 
 func show_thinking(npc_name: String):
 	"""Show thinking indicator as a bubble"""
@@ -269,62 +278,71 @@ func create_memory_button():
 	ui_layer.name = "UILayer"
 	add_child(ui_layer)
 	
-	# View memories button
-	memory_button = Button.new()
-	memory_button.text = "View Bob's Memories"
-	memory_button.position = Vector2(10, 10)
-	memory_button.size = Vector2(150, 30)
-	memory_button.add_theme_font_size_override("font_size", 12)
-	memory_button.pressed.connect(_on_memory_button_pressed)
-	ui_layer.add_child(memory_button)
+	# Create memory buttons for each NPC
+	var npc_list = ["Bob", "Alice", "Sam"]
+	var button_y = 10
 	
-	# Clear memories button
-	clear_memory_button = Button.new()
-	clear_memory_button.text = "Clear Memories"
-	clear_memory_button.position = Vector2(170, 10)  # Right of view button
-	clear_memory_button.size = Vector2(120, 30)
-	clear_memory_button.add_theme_font_size_override("font_size", 12)
-	clear_memory_button.modulate = Color(1, 0.8, 0.8)  # Slightly red to indicate danger
-	clear_memory_button.pressed.connect(_on_clear_memory_button_pressed)
-	ui_layer.add_child(clear_memory_button)
+	for npc_name in npc_list:
+		# View memories button
+		var view_button = Button.new()
+		view_button.text = "View " + npc_name + "'s Memories"
+		view_button.position = Vector2(10, button_y)
+		view_button.size = Vector2(150, 30)
+		view_button.add_theme_font_size_override("font_size", 12)
+		view_button.pressed.connect(_on_memory_button_pressed.bind(npc_name))
+		ui_layer.add_child(view_button)
+		
+		# Clear memories button
+		var clear_button = Button.new()
+		clear_button.text = "Clear " + npc_name
+		clear_button.position = Vector2(170, button_y)  # Right of view button
+		clear_button.size = Vector2(100, 30)
+		clear_button.add_theme_font_size_override("font_size", 12)
+		clear_button.modulate = Color(1, 0.8, 0.8)  # Slightly red to indicate danger
+		clear_button.pressed.connect(_on_clear_memory_button_pressed.bind(npc_name))
+		ui_layer.add_child(clear_button)
+		
+		button_y += 35  # Move down for next NPC's buttons
 	
 	print("Memory management buttons created on UI layer")
 
-func _on_memory_button_pressed():
-	"""Handle memory button press"""
-	print("Memory button pressed")
+func _on_memory_button_pressed(npc_name: String = "Bob"):
+	"""Handle memory button press for specific NPC"""
+	print("Memory button pressed for ", npc_name)
 	if memory_panel:
 		# Toggle visibility
 		memory_panel.visible = !memory_panel.visible
+		if memory_panel.visible:
+			load_npc_memories(npc_name)
 	else:
 		# Create panel first time
 		create_memory_panel()
-		load_bob_memories()
+		load_npc_memories(npc_name)
 
-func _on_clear_memory_button_pressed():
-	"""Handle clear memory button press"""
-	print("Clear memory button pressed")
+func _on_clear_memory_button_pressed(npc_name: String = "Bob"):
+	"""Handle clear memory button press for specific NPC"""
+	print("Clear memory button pressed for ", npc_name)
 	
 	# Show confirmation dialog
 	var confirm_dialog = ConfirmationDialog.new()
-	confirm_dialog.dialog_text = "Are you sure you want to clear Bob's memories?\nThis cannot be undone!"
+	confirm_dialog.dialog_text = "Are you sure you want to clear " + npc_name + "'s memories?\nThis cannot be undone!"
 	confirm_dialog.title = "Confirm Clear Memories"
 	confirm_dialog.size = Vector2(400, 150)
 	
-	# Connect confirmation signal
-	confirm_dialog.confirmed.connect(_on_clear_memory_confirmed)
+	# Connect confirmation signal with NPC name
+	confirm_dialog.confirmed.connect(_on_clear_memory_confirmed.bind(npc_name))
 	
 	# Add to scene and show
 	add_child(confirm_dialog)
 	confirm_dialog.popup_centered()
 
-func _on_clear_memory_confirmed():
+func _on_clear_memory_confirmed(npc_name: String = "Bob"):
 	"""Actually clear the memories after confirmation"""
-	print("Clearing Bob's memories...")
+	print("Clearing ", npc_name, "'s memories...")
 	
-	# Clear both memory files directly
-	var mem_file1 = project_root + "finalbuild/npc_memories/Bob.json"
-	var mem_file2 = project_root + "finalbuild/server/npc_gpt4all_conversations/Bob.json"
+	# Clear both memory files directly for the specific NPC
+	var mem_file1 = project_root + "finalbuild/npc_memories/" + npc_name + ".json"
+	var mem_file2 = project_root + "finalbuild/server/npc_gpt4all_conversations/" + npc_name + ".json"
 	
 	# Clear standard memory file
 	var file1 = FileAccess.open(mem_file1, FileAccess.WRITE)
@@ -336,20 +354,16 @@ func _on_clear_memory_confirmed():
 	# Clear GPT4All conversation file
 	var file2 = FileAccess.open(mem_file2, FileAccess.WRITE)
 	if file2:
-		file2.store_string('{"npc": "Bob", "conversation": []}')  # Empty conversation
+		file2.store_string('{"npc": "' + npc_name + '", "conversation": []}')  # Empty conversation
 		file2.close()
-		print("Cleared GPT4All conversation file")
+		print("Cleared GPT4All conversation file for ", npc_name)
 	
-	# Show success message
-	var success_dialog = AcceptDialog.new()
-	success_dialog.dialog_text = "Bob's memories have been cleared.\nRestart the server for a fresh start."
-	success_dialog.title = "Memories Cleared"
-	add_child(success_dialog)
-	success_dialog.popup_centered()
+	# Silent success - no dialog needed
+	print(npc_name + "'s memories have been cleared successfully")
 	
 	# Update memory viewer if open
 	if memory_panel and memory_panel.visible:
-		load_bob_memories()
+		load_npc_memories(npc_name)
 
 func create_memory_panel():
 	"""Create panel to display memories"""
@@ -390,18 +404,18 @@ func create_memory_panel():
 	ui_layer.add_child(memory_panel)
 	print("Memory panel created on UI layer")
 
-func load_bob_memories():
-	"""Load Bob's memories using Python tool"""
+func load_npc_memories(npc_name: String = "Bob"):
+	"""Load NPC's memories using Python tool"""
 	memory_text.clear()
-	memory_text.append_text("=== Bob's Conversation History ===\n\n")
+	memory_text.append_text("=== " + npc_name + "'s Conversation History ===\n\n")
 	
 	# Call Python memory viewer - use absolute path
 	var output = []
 	var memory_script = project_root + "finalbuild/tools/view_memories.py"
-	print("Loading memories from: ", memory_script)
+	print("Loading memories for ", npc_name, " from: ", memory_script)
 	print("Using Python: ", python_path)
 	
-	var args = [memory_script, "Bob"]
+	var args = [memory_script, npc_name]
 	var exit_code = OS.execute(python_path, args, output, true, false)
 	
 	print("Memory load exit code: ", exit_code)
@@ -552,16 +566,26 @@ func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
 	style_box.border_color = Color(0.2, 0.2, 0.2, 0.8)
 	bubble_panel.add_theme_stylebox_override("panel", style_box)
 	
-	# Create text label
+	# Create ScrollContainer for scrollable text
+	var scroll_container = ScrollContainer.new()
+	scroll_container.position = Vector2(10, 10)
+	scroll_container.size = Vector2(380, 180)  # Match panel interior size
+	scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	
+	# Create text label inside scroll container
 	var bubble_text = RichTextLabel.new()
 	if bubble_text:
 		bubble_text.bbcode_enabled = true
-		bubble_text.position = Vector2(10, 10)
-		bubble_text.size = Vector2(380, 180)  # Increased to match new panel size
+		bubble_text.custom_minimum_size = Vector2(370, 0)  # Width slightly less than scroll container
+		bubble_text.fit_content = true  # Auto-adjust height based on content
 		bubble_text.add_theme_font_size_override("normal_font_size", 13)  # Good size for readability
 		bubble_text.add_theme_color_override("default_color", Color(0, 0, 0, 1))  # Pure black for better contrast
 		bubble_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		bubble_text.append_text(text)  # Use append_text instead of text property
+		
+	# Add text to scroll container
+	scroll_container.add_child(bubble_text)
 	
 	# Add tail/pointer to bubble pointing toward NPC
 	var tail = Polygon2D.new()
@@ -586,7 +610,7 @@ func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
 	tail.position = Vector2(200, 0)  # Center horizontally on bubble (200 = half of 400px width)
 	
 	# Assemble the bubble
-	bubble_panel.add_child(bubble_text)
+	bubble_panel.add_child(scroll_container)
 	bubble_container.add_child(bubble_panel)
 	bubble_container.add_child(tail)
 	

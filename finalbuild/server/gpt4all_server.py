@@ -191,7 +191,7 @@ class GPT4AllNPCServer:
             "importance": 3.0,
             "metadata": {
                 "response_time": elapsed_time,
-                "model": "Llama-3.2-3B (GPT4All)"
+                "model": f"{self.config['model_file']} (GPT4All)"
             }
         }
         
@@ -209,43 +209,50 @@ class GPT4AllNPCServer:
             # Debug: Log exact NPC name received
             logger.info(f"generate_response called with npc_name='{npc_name}' (lower='{npc_name.lower()}')")
             
-            # For Bob, always use system prompt context
+            # Character-specific prompts with strong constraints
             if npc_name.lower() == "bob":
-                # Build conversation with strong Bob identity
+                # Bob - friendly bartender
                 conversation = [
-                    "System: You are Bob, a friendly bartender. Your name is Bob. You work at a bar serving drinks.",
+                    "System: You are Bob, a friendly bartender. Reply with ONE short response as Bob only.",
                     f"Customer: {user_input}",
                     "Bob:"
                 ]
-                
                 full_prompt = "\n".join(conversation)
                 
-                response_tokens = []
-                for token in self.model.generate(
-                    full_prompt,
-                    max_tokens=self.config["max_tokens"],
-                    temp=self.config["temperature"],
-                    top_k=self.config["top_k"],
-                    top_p=self.config["top_p"],
-                    repeat_penalty=self.config["repeat_penalty"],
-                    repeat_last_n=self.config["repeat_last_n"],
-                    streaming=True
-                ):
-                    response_tokens.append(token)
+            elif npc_name.lower() == "alice":
+                # Alice - thoughtful regular customer
+                conversation = [
+                    "System: You are Alice, a thoughtful bar regular. Reply with ONE short response as Alice only.",
+                    f"Customer: {user_input}",
+                    "Alice:"
+                ]
+                full_prompt = "\n".join(conversation)
+                
+            elif npc_name.lower() == "sam":
+                # Sam - cool musician
+                conversation = [
+                    "System: You are Sam, a cool musician. Reply with ONE short response as Sam only.",
+                    f"Customer: {user_input}",
+                    "Sam:"
+                ]
+                full_prompt = "\n".join(conversation)
             else:
-                # For other NPCs, use normal generation
-                response_tokens = []
-                for token in self.model.generate(
-                    user_input,
-                    max_tokens=self.config["max_tokens"],
-                    temp=self.config["temperature"],
-                    top_k=self.config["top_k"],
-                    top_p=self.config["top_p"],
-                    repeat_penalty=self.config["repeat_penalty"],
-                    repeat_last_n=self.config["repeat_last_n"],
-                    streaming=True
-                ):
-                    response_tokens.append(token)
+                # Default for unknown NPCs
+                full_prompt = f"{user_input}"
+            
+            # Generate response for all NPCs
+            response_tokens = []
+            for token in self.model.generate(
+                full_prompt,
+                max_tokens=self.config["max_tokens"],
+                temp=self.config["temperature"],
+                top_k=self.config["top_k"],
+                top_p=self.config["top_p"],
+                repeat_penalty=self.config["repeat_penalty"],
+                repeat_last_n=self.config["repeat_last_n"],
+                streaming=True
+            ):
+                response_tokens.append(token)
             
             response = ''.join(response_tokens).strip()
             
