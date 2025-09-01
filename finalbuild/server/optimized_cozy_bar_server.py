@@ -8,85 +8,219 @@ import socket
 import time
 import sys
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteria, StoppingCriteriaList
 import json
 import logging
 from typing import Dict, Any
 import random
 import os
 
+# Import memory integration from same directory
+from memory_integration import NPCMemoryManager
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
+class PunctuationStoppingCriteria(StoppingCriteria):
+    """Stop at punctuation but keep it in the output"""
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+        self.punctuation = ['.', '!', '?']
+        
+    def __call__(self, input_ids, scores, **kwargs):
+        # Decode the last generated token
+        last_token = self.tokenizer.decode(input_ids[0][-1])
+        # If it's punctuation, stop generation
+        return any(p in last_token for p in self.punctuation)
+
+
 class OptionalCognitiveModel:
-    """Optional 4B model for deep thinking - disabled by default"""
+    """Dual 1.7B model test - Using second 1.7B for deep thinking"""
     
     def __init__(self):
-        self.model_4b = None
+        self.model_4b = None  # Will be second 1.7B in dual mode
         self.tokenizer_4b = None
         self.enabled = False  # DISABLED by default - won't affect current system
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+        self.use_dual_1_7b = False  # Flag for dual 1.7B mode
+        self.config = {}  # Will be loaded from parent
         
-    def load_if_needed(self):
-        """Load 4B model only if explicitly enabled"""
+    def load_if_needed(self, parent_config=None):
+        """Load second 1.7B model - ensuring independence from main model"""
+        if parent_config:
+            self.config = parent_config
+            self.use_dual_1_7b = parent_config.get("use_dual_1_7b", False)
+            
         if self.enabled and not self.model_4b:
             try:
-                logger.info("[COGNITIVE] Loading Qwen3-4B for deep thinking...")
+                # Determine which model to load
+                if self.use_dual_1_7b:
+                    logger.info("[COGNITIVE] Loading second Qwen3-1.7B (dual mode)...")
+                    model_name = "Qwen/Qwen3-1.7B"
+                else:
+                    logger.info("[COGNITIVE] Loading Qwen3-4B for deep thinking...")
+                    model_name = self.config.get("model_name", "Qwen/Qwen2.5-3B-Instruct")
+                
                 start = time.time()
                 
                 # Load tokenizer
                 self.tokenizer_4b = AutoTokenizer.from_pretrained(
-                    "Qwen/Qwen2.5-3B-Instruct",  # Using 3B as 4B might not exist
+                    model_name,
                     trust_remote_code=True
                 )
                 
-                # Load model
+                # Ensure pad_token is set
+                if self.tokenizer_4b.pad_token is None:
+                    self.tokenizer_4b.pad_token = self.tokenizer_4b.eos_token
+                
+                # Load model - avoid device_map="auto" to prevent meta tensor issues
                 self.model_4b = AutoModelForCausalLM.from_pretrained(
-                    "Qwen/Qwen2.5-3B-Instruct",
+                    model_name,
                     torch_dtype=self.dtype,
-                    device_map="auto" if torch.cuda.is_available() else None,
-                    trust_remote_code=True
+                    device_map=self.device,  # Use explicit device, not "auto"
+                    trust_remote_code=True,
+                    low_cpu_mem_usage=True
                 )
                 
+                # Set to evaluation mode
+                self.model_4b.eval()
+                
+                # Force independence if configured
+                if self.config.get("force_independent_models", False) and self.use_dual_1_7b:
+                    logger.info("[COGNITIVE] Ensuring model independence...")
+                    with torch.no_grad():
+                        for param in self.model_4b.parameters():
+                            param.data = param.data.clone()
+                
+                # Monitor memory usage
                 if self.device == "cuda":
-                    self.model_4b = self.model_4b.to(self.device)
+                    torch.cuda.synchronize()
+                    allocated_gb = torch.cuda.memory_allocated() / 1024**3
+                    logger.info(f"[COGNITIVE] GPU memory after loading: {allocated_gb:.2f}GB")
+                
+                # Warmup the model
+                self._warmup_cognitive_model()
                 
                 elapsed = time.time() - start
-                logger.info(f"[COGNITIVE] 4B model loaded in {elapsed:.1f}s")
+                logger.info(f"[COGNITIVE] Second model loaded in {elapsed:.1f}s")
+                
+                # Verify independence in dual mode
+                if self.use_dual_1_7b:
+                    self._verify_independence()
+                
                 return True
                 
             except Exception as e:
-                logger.error(f"[COGNITIVE] Failed to load 4B model: {e}")
+                logger.error(f"[COGNITIVE] Failed to load model: {e}")
                 self.enabled = False
                 return False
         return False
     
-    def think(self, context: str, max_length: int = 100):
-        """Generate deep thought using 4B model"""
+    def _warmup_cognitive_model(self):
+        """Warmup cognitive model to avoid first inference delay"""
+        test_prompt = "Hello, I need a drink"
+        
+        # Use different warmup prompts for dual mode
+        if self.use_dual_1_7b:
+            text = f"Customer: {test_prompt}\nBob (thinking deeply):"
+        else:
+            text = f"User: {test_prompt}\nAssistant:"
+            
+        inputs = self.tokenizer_4b(text, return_tensors="pt")
+        
+        # Ensure inputs are on correct device
+        if self.device == "cuda":
+            inputs = {k: v.cuda() for k, v in inputs.items()}
+        
+        with torch.no_grad():
+            _ = self.model_4b.generate(
+                **inputs,
+                max_new_tokens=10,
+                temperature=0.7,
+                do_sample=True,
+                pad_token_id=self.tokenizer_4b.pad_token_id
+            )
+        
+        if self.device == "cuda":
+            torch.cuda.synchronize()
+        
+        logger.info("[COGNITIVE] Warmup completed")
+    
+    def _verify_independence(self):
+        """Verify two models are independent (for debugging)"""
+        try:
+            if self.device == "cuda":
+                allocated = torch.cuda.memory_allocated() / 1024**3
+                logger.info(f"[COGNITIVE] Independence check - Memory: {allocated:.2f}GB")
+                
+                # Expected: ~7GB for two independent 1.7B models
+                if allocated > 6.0:
+                    logger.info("[COGNITIVE] ✓ Models appear to be independent")
+                elif allocated > 4.0:
+                    logger.info("[COGNITIVE] ⚠ Possible memory sharing detected")
+                else:
+                    logger.warning("[COGNITIVE] ⚠ Memory usage lower than expected")
+        except Exception as e:
+            logger.debug(f"[COGNITIVE] Independence check failed: {e}")
+    
+    def think(self, context: str, max_length: int = 300):
+        """Generate deep thought - using different prompting for dual 1.7B mode"""
         if not self.enabled or not self.model_4b:
             return None
             
         try:
-            # Simple prompt for deep thinking
-            prompt = f"[Deep Thought] {context}\nResponse:"
+            # Different prompting strategies for dual mode
+            if self.use_dual_1_7b:
+                # Rich, story-driven prompt for second 1.7B
+                prompt = f"""You are Bob, a veteran bartender with 20 years of experience.
+You've seen it all - celebrations, heartbreaks, quiet nights, and wild parties.
+When responding, draw from your deep well of experience and wisdom.
+Include subtle observations about people and life.
+
+Customer says: {context}
+
+Bob (leaning on the bar, with a knowing smile):"""
+            else:
+                # Standard prompt for 4B model
+                prompt = f"[Deep Thought] {context}\nResponse:"
             
             inputs = self.tokenizer_4b(prompt, return_tensors="pt")
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            
+            # Ensure inputs are on correct device
+            if self.device == "cuda":
+                inputs = {k: v.cuda() for k, v in inputs.items()}
+            
+            # Create stopping criteria for deep thinking too
+            stopping_criteria = StoppingCriteriaList([
+                PunctuationStoppingCriteria(self.tokenizer_4b)
+            ])
             
             with torch.no_grad():
                 outputs = self.model_4b.generate(
                     **inputs,
                     max_new_tokens=max_length,
-                    temperature=0.7,
+                    temperature=0.85 if self.use_dual_1_7b else 0.7,  # Higher creativity for dual mode
                     do_sample=True,
-                    top_p=0.9
+                    top_p=0.9,
+                    top_k=50,
+                    pad_token_id=self.tokenizer_4b.pad_token_id,
+                    eos_token_id=self.tokenizer_4b.eos_token_id,
+                    stopping_criteria=stopping_criteria  # Use custom stopping criteria
                 )
             
-            response = self.tokenizer_4b.decode(outputs[0], skip_special_tokens=True)
-            # Extract only the generated part
-            response = response.split("Response:")[-1].strip()
+            response = self.tokenizer_4b.decode(
+                outputs[0][len(inputs['input_ids'][0]):],
+                skip_special_tokens=True
+            ).strip()
+            
+            # Clean up response
+            # Allow multi-line for deep thoughts
+            lines = response.split("\n")
+            response = lines[0] if len(lines[0]) > 20 else "\n".join(lines[:2])
+            if response and not response[-1] in '.!?':
+                response += '.'
             
             return response
             
@@ -128,6 +262,10 @@ class OptimizedCozyBarServer:
         self.tokenizer = None
         # NO CACHE, NO HISTORY - Every response is fresh!
         
+        # Initialize memory manager for persistence
+        self.memory_manager = NPCMemoryManager()
+        logger.info("[MEMORY] Memory manager initialized")
+        
         # Load configuration
         self.load_config()
         
@@ -136,13 +274,16 @@ class OptimizedCozyBarServer:
         
         # Apply configuration
         if self.config.get("enable_4b", False):
-            logger.info("[CONFIG] 4B model enabled in configuration")
+            if self.config.get("use_dual_1_7b", False):
+                logger.info("[CONFIG] Dual 1.7B mode enabled")
+            else:
+                logger.info("[CONFIG] 4B model enabled in configuration")
             self.cognitive_model.enabled = True
-            self.cognitive_model.load_if_needed()
+            self.cognitive_model.load_if_needed(self.config)
     
     def load_config(self):
         """Load configuration from cognitive_config.json"""
-        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "cognitive_config.json")
+        config_path = os.path.join(os.path.dirname(__file__), "cognitive_config.json")
         
         try:
             if os.path.exists(config_path):
@@ -293,7 +434,7 @@ class OptimizedCozyBarServer:
         
         personality = npc_personalities.get(npc_name, f"You are {npc_name}, a bartender. Keep responses brief.")
         
-        # Bob's deep thinking feature (10% chance, only if cognitive model is enabled)
+        # Bob's deep thinking feature (configured probability, only if cognitive model is enabled)
         if (npc_name == "Bob" and 
             self.cognitive_model.enabled and 
             random.random() < self.bob_deep_think_probability):
@@ -306,7 +447,28 @@ class OptimizedCozyBarServer:
                 if deep_thought:
                     # Return deep thought with special formatting
                     elapsed = time.time() - start
-                    return f"*thinks deeply* {deep_thought}", elapsed
+                    # Add visual distinction for dual mode testing
+                    if self.config.get("use_dual_1_7b", False):
+                        response = f"*thoughtfully* {deep_thought}"
+                    else:
+                        response = f"*thinks deeply* {deep_thought}"
+                    
+                    # Save deep thinking memory
+                    try:
+                        self.memory_manager.save_memory(
+                            npc_name=npc_name,
+                            user_input=player_message,
+                            npc_response=response,
+                            is_deep_thinking=True,
+                            metadata={
+                                "response_time": elapsed,
+                                "model": "Qwen3-1.7B (deep mode)"
+                            }
+                        )
+                    except Exception as e:
+                        logger.warning(f"[MEMORY] Failed to save deep memory: {e}")
+                    
+                    return response, elapsed
                 else:
                     logger.info("[COGNITIVE] Deep thought failed, using normal response")
             else:
@@ -323,16 +485,20 @@ class OptimizedCozyBarServer:
         # Tokenize and generate
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
         
+        # Create stopping criteria
+        stopping_criteria = StoppingCriteriaList([
+            PunctuationStoppingCriteria(self.tokenizer)
+        ])
+        
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
-                max_new_tokens=60,      # Longer responses allowed
+                max_new_tokens=150,      # Much longer responses allowed
                 temperature=0.8,        # Natural variation
                 do_sample=True,
                 pad_token_id=self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                stop_strings=[".", "!", "?", "\n"],  # Stop at sentence end
-                tokenizer=self.tokenizer  # Needed for stop_strings
+                stopping_criteria=stopping_criteria  # Use custom stopping criteria
             )
         
         # Decode response properly - using token positions, not string positions
@@ -352,15 +518,36 @@ class OptimizedCozyBarServer:
         
         elapsed = time.time() - start
         
+        # Save memory after generating response
+        # Check if this was a deep thinking response
+        is_deep = False
+        if "*thoughtfully*" in response or "*thinks deeply*" in response:
+            is_deep = True
+        
+        # Save the conversation to memory
+        try:
+            self.memory_manager.save_memory(
+                npc_name=npc_name,
+                user_input=player_message,
+                npc_response=response,
+                is_deep_thinking=is_deep,
+                metadata={
+                    "response_time": elapsed,
+                    "model": "Qwen3-1.7B"
+                }
+            )
+        except Exception as e:
+            logger.warning(f"[MEMORY] Failed to save memory: {e}")
+        
         return response, elapsed
     
+    def generate_response(self, npc_name: str, message: str) -> tuple[str, float]:
+        """Wrapper method for compatibility with test scripts"""
+        return self.generate_npc_response(npc_name, message)
+    
     def filter_response(self, response: str, npc_name: str) -> str:
-        """Simple cleanup - ensure proper ending"""
-        response = response.strip()
-        # Add period if missing (due to stop_strings)
-        if response and not response[-1] in '.!?':
-            response += '.'
-        return response
+        """Simple cleanup - just trim whitespace"""
+        return response.strip()
     
     def run_server(self, port: int = 9999):
         """Run TCP server for Godot integration
@@ -451,6 +638,17 @@ class OptimizedCozyBarServer:
                 print("="*60)
                 print(f"Total requests: {request_count}")
                 print(f"Average response time: {total_time/request_count:.2f}s")
+                
+                # Print memory statistics
+                print("\n" + "="*60)
+                print("MEMORY STATISTICS")
+                print("="*60)
+                for npc_name in ["Bob", "Alice", "Sam"]:
+                    stats = self.memory_manager.get_memory_stats(npc_name)
+                    if stats["total"] > 0:
+                        print(f"{npc_name}: {stats['total']} memories")
+                        print(f"  Deep thinking: {stats['deep_thinking_count']} ({stats['deep_thinking_percentage']:.1f}%)")
+                        print(f"  Avg importance: {stats['average_importance']:.1f}")
                 print("="*60)
 
 

@@ -1,0 +1,9 @@
+{
+    "enable_4b": true,
+    "bob_deep_think_probability": 0.2,
+    "min_gpu_memory_gb": 3.5,
+    "model_name": "Qwen/Qwen3-1.7B",
+    "use_dual_1_7b": true,
+    "force_independent_models": true,
+    "comment": "Dual 1.7B test mode - Using two independent 1.7B models with different prompting strategies"
+}

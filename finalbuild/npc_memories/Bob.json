@@ -1,0 +1,49 @@
+[
+  {
+    "timestamp": 1756696049.9951267,
+    "datetime": "2025-09-01T04:07:29.995126",
+    "user_input": "Test question",
+    "npc_response": "Test response",
+    "is_deep_thinking": false,
+    "importance": 2.0,
+    "metadata": {
+      "test": true
+    }
+  },
+  {
+    "timestamp": 1756696257.6646986,
+    "datetime": "2025-09-01T04:10:57.664698",
+    "user_input": "hi",
+    "npc_response": "Hello!",
+    "is_deep_thinking": false,
+    "importance": 2.0,
+    "metadata": {
+      "response_time": 0.30060744285583496,
+      "model": "Qwen3-1.7B"
+    }
+  },
+  {
+    "timestamp": 1756696320.5733452,
+    "datetime": "2025-09-01T04:12:00.573345",
+    "user_input": "Hello!",
+    "npc_response": "Hi there!",
+    "is_deep_thinking": false,
+    "importance": 2.0,
+    "metadata": {
+      "response_time": 0.5268528461456299,
+      "model": "Qwen3-1.7B"
+    }
+  },
+  {
+    "timestamp": 1756696336.461565,
+    "datetime": "2025-09-01T04:12:16.461564",
+    "user_input": "what's your name",
+    "npc_response": "I'm Bob, I'm a friendly bartender.",
+    "is_deep_thinking": false,
+    "importance": 2.0,
+    "metadata": {
+      "response_time": 0.5091354846954346,
+      "model": "Qwen3-1.7B"
+    }
+  }
+]

@@ -102,7 +102,7 @@ func show_custom_input_dialog(npc_name: String):
 	
 	input_dialog = AcceptDialog.new()
 	input_dialog.title = "Send Custom Message to " + npc_name
-	input_dialog.dialog_text = "Enter your message:"
+	input_dialog.dialog_text = ""  # Remove duplicate text
 	input_dialog.size = Vector2(400, 150)
 	
 	# 创建输入框
@@ -110,6 +110,8 @@ func show_custom_input_dialog(npc_name: String):
 	var line_edit = LineEdit.new()
 	line_edit.placeholder_text = "Type your message here..."
 	line_edit.name = "CustomInput"
+	# Connect Enter key to confirm
+	line_edit.text_submitted.connect(_on_line_edit_text_submitted)
 	vbox.add_child(line_edit)
 	
 	input_dialog.add_child(vbox)
@@ -124,6 +126,11 @@ func show_custom_input_dialog(npc_name: String):
 	
 	# 聚焦到输入框
 	line_edit.grab_focus()
+
+func _on_line_edit_text_submitted(text: String):
+	"""Handle Enter key press in input field"""
+	if text.strip_edges() != "":
+		_on_custom_input_confirmed()
 
 func _on_custom_input_confirmed():
 	"""处理自定义输入确认"""

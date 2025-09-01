@@ -1,7 +1,0 @@
-{
-    "enable_4b": false,
-    "bob_deep_think_probability": 0.1,
-    "min_gpu_memory_gb": 2.0,
-    "model_name": "Qwen/Qwen2.5-3B-Instruct",
-    "comment": "Set enable_4b to true to activate Bob's deep thinking feature (requires ~3GB additional GPU memory)"
-}
