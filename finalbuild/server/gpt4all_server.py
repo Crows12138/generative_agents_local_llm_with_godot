@@ -83,29 +83,44 @@ class GPT4AllNPCServer:
     def get_or_create_session(self, npc_name: str):
         """Get or create a chat session for an NPC"""
         if npc_name not in self.npc_sessions:
-            # Create system prompt for NPC
-            system_prompt = self.create_system_prompt(npc_name)
+            # Get appropriate system prompt
+            if npc_name.lower() == "bob":
+                system_prompt = "You are Bob, a friendly bartender. Reply with ONE short response as Bob only."
+            elif npc_name.lower() == "alice":
+                system_prompt = "You are Alice, a thoughtful bar regular. Reply with ONE short response as Alice only."
+            elif npc_name.lower() == "sam":
+                system_prompt = "You are Sam, a cool musician. Reply with ONE short response as Sam only."
+            else:
+                system_prompt = f"You are {npc_name}."
             
             # Load conversation history
             history = self.load_conversation_history(npc_name)
             
-            # Create new chat session
-            session = self.model.chat_session(system_prompt=system_prompt)
-            session.__enter__()  # Start the session
+            # Create new chat session as context manager
+            session_context = self.model.chat_session(system_prompt=system_prompt)
             
-            # Restore conversation history
-            if history:
-                for entry in history[-self.config["max_conversation_entries"]:]:
-                    # Add to model's internal history
-                    # Note: GPT4All manages history internally
-                    pass
+            # Enter the context and get the actual session
+            session = session_context.__enter__()
             
+            # Store session data
             self.npc_sessions[npc_name] = {
-                "session": session,
+                "session": session,  # This is the actual session object
+                "session_context": session_context,  # Keep the context manager for cleanup
+                "system_prompt": system_prompt,
                 "history": history
             }
             
-            logger.info(f"Created new session for {npc_name}")
+            # If we have history, feed it to the session
+            if history:
+                for entry in history[-self.config.get("max_conversation_entries", 10):]:
+                    try:
+                        # Feed history to establish context
+                        # We generate with the historical prompt but don't use the response
+                        list(session.generate(entry["user"], max_tokens=1, streaming=False))
+                    except:
+                        pass
+            
+            logger.info(f"Created new session for {npc_name} with system prompt")
         
         return self.npc_sessions[npc_name]
     
@@ -202,48 +217,21 @@ class GPT4AllNPCServer:
             json.dump(memories, f, indent=2, ensure_ascii=False)
     
     def generate_response(self, npc_name: str, user_input: str) -> tuple:
-        """Generate response using GPT4All"""
+        """Generate response using GPT4All with chat session"""
         start_time = time.time()
         
         try:
             # Debug: Log exact NPC name received
             logger.info(f"generate_response called with npc_name='{npc_name}' (lower='{npc_name.lower()}')")
             
-            # Character-specific prompts with strong constraints
-            if npc_name.lower() == "bob":
-                # Bob - friendly bartender
-                conversation = [
-                    "System: You are Bob, a friendly bartender. Reply with ONE short response as Bob only.",
-                    f"Customer: {user_input}",
-                    "Bob:"
-                ]
-                full_prompt = "\n".join(conversation)
-                
-            elif npc_name.lower() == "alice":
-                # Alice - thoughtful regular customer
-                conversation = [
-                    "System: You are Alice, a thoughtful bar regular. Reply with ONE short response as Alice only.",
-                    f"Customer: {user_input}",
-                    "Alice:"
-                ]
-                full_prompt = "\n".join(conversation)
-                
-            elif npc_name.lower() == "sam":
-                # Sam - cool musician
-                conversation = [
-                    "System: You are Sam, a cool musician. Reply with ONE short response as Sam only.",
-                    f"Customer: {user_input}",
-                    "Sam:"
-                ]
-                full_prompt = "\n".join(conversation)
-            else:
-                # Default for unknown NPCs
-                full_prompt = f"{user_input}"
+            # Get or create session for this NPC
+            npc_data = self.get_or_create_session(npc_name)
+            session = npc_data["session"]
             
-            # Generate response for all NPCs
+            # Generate response using the session (maintains context)
             response_tokens = []
-            for token in self.model.generate(
-                full_prompt,
+            for token in session.generate(
+                user_input,  # Just the user input, session handles context
                 max_tokens=self.config["max_tokens"],
                 temp=self.config["temperature"],
                 top_k=self.config["top_k"],
@@ -263,13 +251,6 @@ class GPT4AllNPCServer:
             
             # Save conversation
             self.save_conversation(npc_name, user_input, response, elapsed_time)
-            
-            # Update session history if using sessions
-            if npc_name in self.npc_sessions:
-                self.npc_sessions[npc_name]["history"].append({
-                    "user": user_input,
-                    "assistant": response
-                })
             
             logger.info(f"[{npc_name}] Generated response in {elapsed_time:.2f}s")
             
@@ -336,11 +317,13 @@ class GPT4AllNPCServer:
         # Close all chat sessions
         for npc_name, npc_data in self.npc_sessions.items():
             try:
-                session = npc_data["session"]
-                session.__exit__(None, None, None)
+                session_context = npc_data.get("session_context")
+                # Properly exit the context manager
+                if session_context:
+                    session_context.__exit__(None, None, None)
                 logger.info(f"Closed session for {npc_name}")
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"Error closing session for {npc_name}: {e}")
     
     def run_server(self, port: int = 9999):
         """Run the server"""
