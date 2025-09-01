@@ -1,4 +1,3 @@
 res://scenes/main.tscn
 res://tilesets/cozy_bar_tileset.tres
 res://scenes/cozy_bar.tscn
-res://scripts/bar_server_client_fixed.gd

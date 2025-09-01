@@ -12,6 +12,7 @@ var current_npc_for_input = ""
 var memory_button = null
 var memory_panel = null
 var memory_text = null
+var speech_bubbles = {}  # Store speech bubbles for each NPC
 
 func _ready():
 	print("Bar scene - Server-Client mode (Fixed)!")
@@ -172,6 +173,14 @@ func interact_with_npc(npc_name: String, custom_message: String = ""):
 	
 	is_processing = true
 	
+	# Add click feedback - flash the NPC
+	var npc = npcs.get(npc_name)
+	if npc:
+		var original_modulate = npc.modulate
+		var tween = create_tween()
+		tween.tween_property(npc, "modulate", Color(1.2, 1.2, 1.2), 0.1)
+		tween.tween_property(npc, "modulate", original_modulate, 0.1)
+	
 	# Show thinking state
 	show_thinking(npc_name)
 	
@@ -209,8 +218,8 @@ func _llm_thread(npc_name: String, message: String):
 		# Clean response
 		if response.contains("Server not running"):
 			response = "Server offline"
-		elif response.length() > 60:
-			response = response.substr(0, 57) + "..."
+		elif response.length() > 500:
+			response = response.substr(0, 497) + "..."
 	else:
 		response = "No response"
 		print("LLM call failed. Exit code: ", exit_code)
@@ -224,28 +233,33 @@ func _on_response(npc_name: String, response: String, time_taken: float):
 	print("[%s] Response (%.2fs): %s" % [npc_name, time_taken, response])
 
 func show_thinking(npc_name: String):
-	"""Show thinking state"""
+	"""Show thinking indicator as a bubble"""
+	# Keep NPC label
 	var npc = npcs.get(npc_name)
 	if npc and npc.has_node(npc_name):  # Label child node
 		var label = npc.get_node(npc_name)
 		if label is Label:
-			label.text = npc_name + "\n💭..."
-			label.modulate = Color(0.8, 0.8, 1.0)
+			label.text = npc_name
+			label.modulate = Color(0.9, 0.9, 1.0)  # Slightly blue tint
+	
+	# Show thinking bubble
+	if npc:
+		show_thinking_bubble(npc, npc_name)
 
 func show_response(npc_name: String, text: String):
-	"""Show response"""
+	"""Show response as speech bubble above NPC"""
+	# Keep NPC label showing only name
 	var npc = npcs.get(npc_name)
 	if npc and npc.has_node(npc_name):  # Label child node
 		var label = npc.get_node(npc_name)
 		if label is Label:
-			label.text = npc_name + "\n💬 " + text
+			# Keep showing only the NPC name
+			label.text = npc_name
 			label.modulate = Color.WHITE
-			
-			# Create fade out animation
-			var tween = create_tween()
-			tween.tween_interval(5.0)
-			tween.tween_property(label, "modulate:a", 0.5, 1.0)
-			tween.tween_callback(func(): label.text = npc_name)
+	
+	# Show speech bubble above NPC
+	if npc:
+		show_speech_bubble(npc, text, npc_name)
 
 func create_memory_button():
 	"""Create button to view Bob's memories"""
@@ -348,5 +362,186 @@ func load_bob_memories():
 		memory_text.append_text("Failed to load memories\n")
 		if output.size() > 0:
 			memory_text.append_text(output[0])
+
+func show_thinking_bubble(npc_node: Node, npc_name: String):
+	"""Create and show a thinking bubble (simpler, smaller)"""
+	# Remove existing bubble if any
+	if npc_name in speech_bubbles:
+		speech_bubbles[npc_name].queue_free()
+		speech_bubbles.erase(npc_name)
 	
-	print("Memories loaded")
+	# Get or create UI layer
+	var ui_layer = get_node_or_null("UILayer")
+	if not ui_layer:
+		ui_layer = CanvasLayer.new()
+		ui_layer.name = "UILayer"
+		add_child(ui_layer)
+	
+	# Create bubble container
+	var bubble_container = Control.new()
+	bubble_container.name = "ThinkingBubble_" + npc_name
+	
+	# Position bubble in center-ish area
+	var viewport_size = get_viewport().size
+	var bubble_x = viewport_size.x * 0.5 - 50  # Smaller bubble, so less offset
+	var bubble_y = viewport_size.y * 0.35
+	
+	# Adjust position based on which NPC
+	if npc_name == "Bob":
+		bubble_x = viewport_size.x * 0.4 - 50
+	elif npc_name == "Alice":
+		bubble_x = viewport_size.x * 0.6 - 50
+	
+	bubble_container.position = Vector2(bubble_x, bubble_y)
+	
+	# Create smaller bubble panel
+	var bubble_panel = Panel.new()
+	bubble_panel.size = Vector2(100, 50)
+	bubble_panel.position = Vector2(0, 0)
+	
+	# Create bubble style
+	var style_box = StyleBoxFlat.new()
+	style_box.bg_color = Color(0.9, 0.9, 1.0, 0.9)  # Light blue background
+	style_box.corner_radius_top_left = 10
+	style_box.corner_radius_top_right = 10
+	style_box.corner_radius_bottom_left = 10
+	style_box.corner_radius_bottom_right = 10
+	style_box.border_width_left = 2
+	style_box.border_width_right = 2
+	style_box.border_width_top = 2
+	style_box.border_width_bottom = 2
+	style_box.border_color = Color(0.7, 0.7, 0.9, 0.8)
+	bubble_panel.add_theme_stylebox_override("panel", style_box)
+	
+	# Create animated dots label
+	var thinking_text = Label.new()
+	thinking_text.position = Vector2(25, 10)
+	thinking_text.size = Vector2(50, 30)
+	thinking_text.add_theme_font_size_override("font_size", 20)
+	thinking_text.add_theme_color_override("font_color", Color(0.3, 0.3, 0.5))
+	thinking_text.text = "..."
+	
+	# Assemble the bubble
+	bubble_panel.add_child(thinking_text)
+	bubble_container.add_child(bubble_panel)
+	
+	# Add to UI layer
+	ui_layer.add_child(bubble_container)
+	
+	# Store reference
+	speech_bubbles[npc_name] = bubble_container
+	
+	# Animate the dots - simple animation without complex callbacks
+	var tween = create_tween()
+	tween.set_loops()  # Loop animation
+	tween.tween_property(thinking_text, "modulate:a", 0.5, 0.3)
+	tween.tween_property(thinking_text, "modulate:a", 1.0, 0.3)
+	tween.tween_property(thinking_text, "modulate:a", 0.5, 0.3)
+	tween.tween_property(thinking_text, "modulate:a", 1.0, 0.3)
+
+func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
+	"""Create and show a speech bubble above the NPC"""
+	# Remove existing bubble if any
+	if npc_name in speech_bubbles:
+		speech_bubbles[npc_name].queue_free()
+		speech_bubbles.erase(npc_name)
+	
+	# Get or create UI layer
+	var ui_layer = get_node_or_null("UILayer")
+	if not ui_layer:
+		ui_layer = CanvasLayer.new()
+		ui_layer.name = "UILayer"
+		add_child(ui_layer)
+	
+	# Create bubble container
+	var bubble_container = Control.new()
+	bubble_container.name = "SpeechBubble_" + npc_name
+	
+	# Position bubble in center-ish area but calculate tail direction
+	var viewport_size = get_viewport().size
+	var bubble_x = viewport_size.x * 0.5 - 200  # Center horizontally (minus half of 400px width)
+	var bubble_y = viewport_size.y * 0.3  # Upper-middle of screen
+	
+	# Adjust position based on which NPC (left/right bias)
+	if npc_name == "Bob":
+		bubble_x = viewport_size.x * 0.4 - 200  # Slightly left
+	elif npc_name == "Alice":
+		bubble_x = viewport_size.x * 0.6 - 200  # Slightly right
+	
+	bubble_container.position = Vector2(bubble_x, bubble_y)
+	
+	# Create the bubble panel (larger size)
+	var bubble_panel = Panel.new()
+	bubble_panel.size = Vector2(400, 200)  # Increased width and height
+	bubble_panel.position = Vector2(0, 0)
+	
+	# Create bubble style with rounded corners
+	var style_box = StyleBoxFlat.new()
+	style_box.bg_color = Color(1, 1, 1, 0.95)  # White background, slightly transparent
+	style_box.corner_radius_top_left = 15
+	style_box.corner_radius_top_right = 15
+	style_box.corner_radius_bottom_left = 15
+	style_box.corner_radius_bottom_right = 15
+	style_box.border_width_left = 2
+	style_box.border_width_right = 2
+	style_box.border_width_top = 2
+	style_box.border_width_bottom = 2
+	style_box.border_color = Color(0.2, 0.2, 0.2, 0.8)
+	bubble_panel.add_theme_stylebox_override("panel", style_box)
+	
+	# Create text label
+	var bubble_text = RichTextLabel.new()
+	if bubble_text:
+		bubble_text.bbcode_enabled = true
+		bubble_text.position = Vector2(10, 10)
+		bubble_text.size = Vector2(380, 180)  # Increased to match new panel size
+		bubble_text.add_theme_font_size_override("normal_font_size", 13)  # Good size for readability
+		bubble_text.add_theme_color_override("default_color", Color(0, 0, 0, 1))  # Pure black for better contrast
+		bubble_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		bubble_text.append_text(text)  # Use append_text instead of text property
+	
+	# Add tail/pointer to bubble pointing toward NPC
+	var tail = Polygon2D.new()
+	var tail_offset_x = 0
+	
+	# Adjust tail position based on NPC
+	if npc_name == "Bob":
+		tail_offset_x = -50  # Point left toward Bob
+	elif npc_name == "Alice":
+		tail_offset_x = 50  # Point right toward Alice
+	elif npc_name == "Sam":
+		tail_offset_x = 0  # Center for Sam
+	
+	# Create tail shape pointing down and slightly to the side
+	var points = PackedVector2Array([
+		Vector2(-10, 200),  # Left corner at bottom of bubble (200 = panel height)
+		Vector2(10, 200),   # Right corner at bottom of bubble
+		Vector2(tail_offset_x, 230)  # Point toward NPC
+	])
+	tail.polygon = points
+	tail.color = Color(1, 1, 1, 0.95)
+	tail.position = Vector2(200, 0)  # Center horizontally on bubble (200 = half of 400px width)
+	
+	# Assemble the bubble
+	bubble_panel.add_child(bubble_text)
+	bubble_container.add_child(bubble_panel)
+	bubble_container.add_child(tail)
+	
+	# Add to UI layer for proper display
+	ui_layer.add_child(bubble_container)
+	
+	# Store reference
+	speech_bubbles[npc_name] = bubble_container
+	
+	# Animate appearance
+	bubble_container.modulate.a = 0
+	var tween = create_tween()
+	tween.tween_property(bubble_container, "modulate:a", 1.0, 0.3)
+	tween.tween_interval(8.0)  # Display for 8 seconds
+	tween.tween_property(bubble_container, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(func(): 
+		if is_instance_valid(bubble_container):
+			bubble_container.queue_free()
+		if npc_name in speech_bubbles:
+			speech_bubbles.erase(npc_name)
+	)
