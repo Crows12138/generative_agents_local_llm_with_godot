@@ -536,20 +536,20 @@ func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
 	
 	# Position bubble in center-ish area but calculate tail direction
 	var viewport_size = get_viewport().size
-	var bubble_x = viewport_size.x * 0.5 - 200  # Center horizontally (minus half of 400px width)
+	var bubble_x = viewport_size.x * 0.5 - 150  # Center horizontally (minus half of 300px width)
 	var bubble_y = viewport_size.y * 0.3  # Upper-middle of screen
 	
 	# Adjust position based on which NPC (left/right bias)
 	if npc_name == "Bob":
-		bubble_x = viewport_size.x * 0.4 - 200  # Slightly left
+		bubble_x = viewport_size.x * 0.4 - 150  # Slightly left
 	elif npc_name == "Alice":
-		bubble_x = viewport_size.x * 0.6 - 200  # Slightly right
+		bubble_x = viewport_size.x * 0.6 - 150  # Slightly right
 	
 	bubble_container.position = Vector2(bubble_x, bubble_y)
 	
-	# Create the bubble panel (larger size)
+	# Create the bubble panel (smaller size for shorter responses)
 	var bubble_panel = Panel.new()
-	bubble_panel.size = Vector2(400, 200)  # Increased width and height
+	bubble_panel.size = Vector2(300, 120)  # Reduced size for shorter responses
 	bubble_panel.position = Vector2(0, 0)
 	
 	# Create bubble style with rounded corners
@@ -569,7 +569,7 @@ func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
 	# Create ScrollContainer for scrollable text
 	var scroll_container = ScrollContainer.new()
 	scroll_container.position = Vector2(10, 10)
-	scroll_container.size = Vector2(380, 180)  # Match panel interior size
+	scroll_container.size = Vector2(280, 100)  # Match smaller panel interior size
 	scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	
@@ -577,7 +577,7 @@ func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
 	var bubble_text = RichTextLabel.new()
 	if bubble_text:
 		bubble_text.bbcode_enabled = true
-		bubble_text.custom_minimum_size = Vector2(370, 0)  # Width slightly less than scroll container
+		bubble_text.custom_minimum_size = Vector2(270, 0)  # Width slightly less than scroll container
 		bubble_text.fit_content = true  # Auto-adjust height based on content
 		bubble_text.add_theme_font_size_override("normal_font_size", 13)  # Good size for readability
 		bubble_text.add_theme_color_override("default_color", Color(0, 0, 0, 1))  # Pure black for better contrast
@@ -601,13 +601,13 @@ func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
 	
 	# Create tail shape pointing down and slightly to the side
 	var points = PackedVector2Array([
-		Vector2(-10, 200),  # Left corner at bottom of bubble (200 = panel height)
-		Vector2(10, 200),   # Right corner at bottom of bubble
-		Vector2(tail_offset_x, 230)  # Point toward NPC
+		Vector2(-10, 120),  # Left corner at bottom of bubble (120 = new panel height)
+		Vector2(10, 120),   # Right corner at bottom of bubble
+		Vector2(tail_offset_x, 150)  # Point toward NPC
 	])
 	tail.polygon = points
 	tail.color = Color(1, 1, 1, 0.95)
-	tail.position = Vector2(200, 0)  # Center horizontally on bubble (200 = half of 400px width)
+	tail.position = Vector2(150, 0)  # Center horizontally on bubble (150 = half of 300px width)
 	
 	# Assemble the bubble
 	bubble_panel.add_child(scroll_container)
