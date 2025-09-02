@@ -2,12 +2,16 @@
 """
 GPT4All NPC Server using Llama 3.2 model
 Supports continuous conversation with chat sessions
+Now with WebSocket support for streaming
 """
 
 import socket
 import time
 import json
 import logging
+import asyncio
+import websockets
+import threading
 from pathlib import Path
 from typing import Dict, Optional
 from gpt4all import GPT4All
@@ -334,38 +338,93 @@ class GPT4AllNPCServer:
         
         return response.strip()
     
-    def handle_client(self, client_socket):
-        """Handle client connection"""
+    
+    async def handle_websocket(self, websocket):
+        """Handle WebSocket client connection for streaming"""
+        logger.info(f"WebSocket client connected")
+        
         try:
-            # Receive message
-            data = client_socket.recv(4096).decode('utf-8')
-            
-            if not data:
-                return
-            
-            # Parse message (format: "NPC_NAME|MESSAGE")
-            parts = data.split('|', 1)
-            if len(parts) != 2:
-                client_socket.send(b"Error: Invalid format")
-                return
-            
-            npc_name, message = parts
-            
-            logger.info(f"[{npc_name}] Received: {message}")
-            
-            # Generate response
-            response, elapsed_time = self.generate_response(npc_name, message)
-            
-            logger.info(f"[{npc_name}] Response: {response}")
-            
-            # Send response
-            client_socket.send(response.encode('utf-8'))
-            
+            async for message in websocket:
+                try:
+                    # Parse JSON message
+                    data = json.loads(message)
+                    npc_name = data.get("npc", "")
+                    user_message = data.get("message", "")
+                    
+                    # Extract actual message if in NPC|MESSAGE format
+                    if '|' in user_message:
+                        parts = user_message.split('|', 1)
+                        npc_name = parts[0]
+                        user_message = parts[1]
+                    
+                    logger.info(f"[WS][{npc_name}] Received: {user_message}")
+                    
+                    # Get or create session
+                    npc_data = self.get_or_create_session(npc_name)
+                    session = npc_data["session"]
+                    
+                    # Start timing
+                    start_time = time.time()
+                    full_response = ""
+                    
+                    # Stream tokens
+                    for token in session.generate(
+                        user_message,
+                        max_tokens=self.config["max_tokens"],
+                        temp=self.config["temperature"],
+                        top_k=self.config["top_k"],
+                        top_p=self.config["top_p"],
+                        repeat_penalty=self.config["repeat_penalty"],
+                        repeat_last_n=self.config["repeat_last_n"],
+                        streaming=True
+                    ):
+                        # Send each token with small delay for Godot to process
+                        await websocket.send(json.dumps({
+                            "type": "token",
+                            "content": token,
+                            "npc": npc_name
+                        }))
+                        full_response += token
+                        # Small delay to ensure Godot can process each update
+                        await asyncio.sleep(0.02)  # 20ms delay between tokens
+                    
+                    # Send completion signal
+                    await websocket.send(json.dumps({
+                        "type": "complete",
+                        "content": full_response.strip(),
+                        "npc": npc_name
+                    }))
+                    
+                    # Save conversation
+                    elapsed_time = time.time() - start_time
+                    self.save_conversation(npc_name, user_message, full_response.strip(), elapsed_time)
+                    
+                    logger.info(f"[WS][{npc_name}] Streamed response in {elapsed_time:.2f}s")
+                    
+                except json.JSONDecodeError as e:
+                    logger.error(f"Invalid JSON: {e}")
+                    await websocket.send(json.dumps({
+                        "type": "error",
+                        "content": "Invalid JSON format"
+                    }))
+                except Exception as e:
+                    logger.error(f"Error processing WebSocket message: {e}")
+                    await websocket.send(json.dumps({
+                        "type": "error",
+                        "content": str(e)
+                    }))
+        
+        except websockets.exceptions.ConnectionClosed:
+            logger.info(f"WebSocket client disconnected")
         except Exception as e:
-            logger.error(f"Error handling client: {e}")
-            client_socket.send(f"Error: {str(e)}".encode('utf-8'))
-        finally:
-            client_socket.close()
+            logger.error(f"WebSocket connection error: {e}")
+    
+    async def start_websocket_server(self, host="127.0.0.1", port=9999):
+        """Start WebSocket server for streaming"""
+        logger.info(f"Starting WebSocket server on ws://{host}:{port}")
+        async with websockets.serve(self.handle_websocket, host, port):
+            await asyncio.Future()  # Run forever
+    
     
     def cleanup(self):
         """Clean up resources"""
@@ -385,30 +444,23 @@ class GPT4AllNPCServer:
                 logger.error(f"Error closing session for {npc_name}: {e}")
     
     def run_server(self, port: int = 9999):
-        """Run the server"""
+        """Run WebSocket server only"""
         if not self.load_model():
             return
         
+        print("\n" + "="*60)
+        print("GPT4ALL WEBSOCKET SERVER")
+        print("="*60)
+        print(f"Model: {self.config['model_file']}")
+        print(f"Device: {self.config['device'].upper()}")
+        print(f"Max Tokens: {self.config['max_tokens']}")
+        print("="*60)
+        print(f"WebSocket Port: {port}")
+        print("Waiting for connections...\n")
+        
+        # Run WebSocket server directly
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            sock.bind(('127.0.0.1', port))
-            sock.listen(5)
-            
-            print("\n" + "="*60)
-            print("GPT4ALL NPC SERVER")
-            print("="*60)
-            print(f"Model: {self.config['model_file']}")
-            print(f"Device: {self.config['device'].upper()}")
-            print(f"Max Tokens: {self.config['max_tokens']}")
-            print("="*60)
-            print(f"Listening on port {port}...")
-            print("Waiting for connections...\n")
-            
-            while True:
-                client, addr = sock.accept()
-                logger.info(f"Connection from {addr}")
-                self.handle_client(client)
+            asyncio.run(self.start_websocket_server(port=port))
                 
         except KeyboardInterrupt:
             print("\nShutting down...")
@@ -416,7 +468,6 @@ class GPT4AllNPCServer:
             logger.error(f"Server error: {e}")
         finally:
             self.cleanup()
-            sock.close()
 
 
 if __name__ == "__main__":
