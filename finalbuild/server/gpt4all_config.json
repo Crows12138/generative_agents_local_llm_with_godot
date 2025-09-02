@@ -8,5 +8,6 @@
   "top_p": 0.9,
   "repeat_penalty": 1.18,
   "repeat_last_n": 64,
-  "max_conversation_entries": 20
+  "max_conversation_entries": 20,
+  "active_context_size": 7
 }
