@@ -170,18 +170,30 @@ func _process_websocket_message(data: String):
 	if msg_type == "token":
 		# Append token to response
 		current_streaming_response += content
-		print("[TOKEN] Received: '", content, "' for ", npc, " (Total: ", current_streaming_response.length(), " chars)")
 		emit_signal("token_received", npc, content)
 		# Direct update without deferral for better streaming
 		update_streaming_bubble(npc, current_streaming_response)
 		
 	elif msg_type == "complete":
 		# Response complete
-		print("[COMPLETE] Final response for ", npc, ": ", content.substr(0, 50), "...")
 		emit_signal("response_completed", npc, content)
-		# Force final update without throttling
-		last_update_time = 0  # Reset throttle to ensure final update shows
-		show_response(npc, content)
+		
+		# Just update the existing streaming bubble with final text, don't create new one
+		update_streaming_bubble(npc, content)
+		
+		# Add auto-fade timer for the streaming bubble
+		if npc in speech_bubbles and is_instance_valid(speech_bubbles[npc]):
+			var bubble = speech_bubbles[npc]
+			var tween = create_tween()
+			tween.tween_interval(8.0)  # Display for 8 seconds
+			tween.tween_property(bubble, "modulate:a", 0.0, 0.5).set_ease(Tween.EASE_IN_OUT)
+			tween.tween_callback(func():
+				if is_instance_valid(bubble):
+					bubble.queue_free()
+				if npc in speech_bubbles:
+					speech_bubbles.erase(npc)
+			)
+		
 		current_streaming_response = ""
 		current_streaming_npc = ""
 		is_processing = false
@@ -192,8 +204,6 @@ func _process_websocket_message(data: String):
 
 func update_streaming_bubble(npc_name: String, partial_text: String):
 	"""Update speech bubble with streaming text"""
-	# Remove throttling to ensure every token is displayed
-	print("[UPDATE] Streaming bubble for ", npc_name, " - ", partial_text.length(), " chars")
 	
 	# Keep NPC label  
 	var npc_node = npcs.get(npc_name)
@@ -207,7 +217,6 @@ func update_streaming_bubble(npc_name: String, partial_text: String):
 	var ui_layer = get_node_or_null("UILayer")
 	
 	if not ui_layer:
-		print("  No UILayer, creating bubble")
 		if npc_node:
 			create_streaming_bubble(npc_node, partial_text, npc_name)
 		return
@@ -215,19 +224,14 @@ func update_streaming_bubble(npc_name: String, partial_text: String):
 	# Find bubble directly by name
 	var bubble = ui_layer.get_node_or_null(bubble_name)
 	if bubble and is_instance_valid(bubble):
-		print("  Found bubble by name")
 		var text_label = find_rich_text_label(bubble)
 		if text_label:
 			# Direct update without any deferral
-			text_label.text = partial_text
-			# Force immediate refresh
-			text_label.notification(NOTIFICATION_DRAW)
-			print("  Updated text to: ", partial_text.substr(0, 30), "...")
+			# Only update if text is different to avoid flicker
+			if text_label.text != partial_text:
+				text_label.text = partial_text
 			return
-		else:
-			print("  ERROR: Could not find RichTextLabel in bubble!")
 	else:
-		print("  No bubble found, creating new one")
 		if npc_node:
 			create_streaming_bubble(npc_node, partial_text, npc_name)
 
@@ -418,6 +422,16 @@ func interact_with_npc(npc_name: String, custom_message: String = ""):
 		return
 	
 	is_processing = true
+	
+	# Clear existing bubble for this NPC when starting new conversation
+	if npc_name in speech_bubbles and is_instance_valid(speech_bubbles[npc_name]):
+		var old_bubble = speech_bubbles[npc_name]
+		speech_bubbles.erase(npc_name)
+		
+		# Fade out animation before removing
+		var tween = create_tween()
+		tween.tween_property(old_bubble, "modulate:a", 0.0, 0.3).set_ease(Tween.EASE_IN_OUT)
+		tween.tween_callback(old_bubble.queue_free)
 	
 	# Add click feedback - flash the NPC
 	var npc = npcs.get(npc_name)
@@ -779,10 +793,15 @@ func show_thinking_bubble(npc_node: Node, npc_name: String):
 
 func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
 	"""Create and show a speech bubble above the NPC"""
-	# Remove existing bubble if any
-	if npc_name in speech_bubbles:
-		speech_bubbles[npc_name].queue_free()
+	# Remove existing bubble if any with fade animation
+	if npc_name in speech_bubbles and is_instance_valid(speech_bubbles[npc_name]):
+		var old_bubble = speech_bubbles[npc_name]
 		speech_bubbles.erase(npc_name)
+		
+		# Quick fade out before creating new bubble
+		var fade_tween = create_tween()
+		fade_tween.tween_property(old_bubble, "modulate:a", 0.0, 0.2).set_ease(Tween.EASE_IN)
+		fade_tween.tween_callback(old_bubble.queue_free)
 	
 	# Get or create UI layer
 	var ui_layer = get_node_or_null("UILayer")
@@ -837,13 +856,13 @@ func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
 	# Create text label inside scroll container
 	var bubble_text = RichTextLabel.new()
 	if bubble_text:
-		bubble_text.bbcode_enabled = true
+		bubble_text.bbcode_enabled = false  # Disable BBCode to avoid formatting issues
 		bubble_text.custom_minimum_size = Vector2(270, 0)  # Width slightly less than scroll container
 		bubble_text.fit_content = true  # Auto-adjust height based on content
 		bubble_text.add_theme_font_size_override("normal_font_size", 13)  # Good size for readability
 		bubble_text.add_theme_color_override("default_color", Color(0, 0, 0, 1))  # Pure black for better contrast
 		bubble_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		bubble_text.append_text(text)  # Use append_text instead of text property
+		bubble_text.text = text  # Use text property for plain text
 		
 	# Add text to scroll container
 	scroll_container.add_child(bubble_text)
