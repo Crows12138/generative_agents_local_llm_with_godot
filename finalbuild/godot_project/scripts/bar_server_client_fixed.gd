@@ -38,7 +38,7 @@ func _ready():
 	if OS.get_name() == "Windows":
 		# Running in Godot editor
 		if exe_dir.contains("Godot"):
-			project_root = ProjectSettings.globalize_path("res://").replace("godot/live-with-ai/", "")
+			project_root = ProjectSettings.globalize_path("res://").replace("finalbuild/godot_project/", "")
 			python_path = project_root + ".venv/Scripts/python.exe"
 		else:
 			# Running after export
@@ -617,7 +617,7 @@ func _on_clear_memory_confirmed(npc_name: String = "Bob"):
 	
 	# Clear both memory files directly for the specific NPC
 	var mem_file1 = project_root + "finalbuild/npc_memories/" + npc_name + ".json"
-	var mem_file2 = project_root + "finalbuild/server/npc_gpt4all_conversations/" + npc_name + ".json"
+	var mem_file2 = project_root + "finalbuild/server/npc_gpt4all_memories/" + npc_name + ".json"
 	
 	# Clear standard memory file
 	var file1 = FileAccess.open(mem_file1, FileAccess.WRITE)
