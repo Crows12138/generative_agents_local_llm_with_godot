@@ -1,6 +1,10 @@
 # bar_server_client_fixed.gd - Fixed version, properly handles clicks
 extends Node2D
 
+# Signals for streaming
+signal token_received(npc_name: String, token: String)
+signal response_completed(npc_name: String, full_response: String)
+
 var npcs = {}
 var python_path = ""
 var project_root = ""
@@ -14,6 +18,15 @@ var clear_memory_button = null
 var memory_panel = null
 var memory_text = null
 var speech_bubbles = {}  # Store speech bubbles for each NPC
+
+# WebSocket streaming support
+var websocket = WebSocketPeer.new()
+var is_websocket_connected = false
+var current_streaming_npc = ""
+var current_streaming_response = ""
+var use_websocket = true  # Enable WebSocket streaming by default
+var last_update_time = 0.0
+var update_interval = 0.05  # Update every 50ms for smooth streaming
 
 func _ready():
 	print("Bar scene - Server-Client mode (Fixed)!")
@@ -40,6 +53,10 @@ func _ready():
 	
 	# Check server
 	check_server()
+	
+	# Connect to WebSocket for streaming
+	if use_websocket:
+		connect_websocket()
 	
 	# Create memory viewer button
 	create_memory_button()
@@ -89,18 +106,250 @@ func _on_npc_gui_input(event: InputEvent, npc_name: String):
 
 func check_server():
 	"""Check server status"""
-	var output = []
-	var args = [project_root + "llm_client_cognitive.py", "ping"]
-	var exit_code = OS.execute(python_path, args, output, true, false)
+	# For WebSocket, we'll just try to connect
+	print("WebSocket server should be running on port 9999")
+	print("Start with: python finalbuild/server/gpt4all_server.py")
+
+func connect_websocket():
+	"""Connect to WebSocket server for streaming"""
+	var url = "ws://127.0.0.1:9999"
+	var err = websocket.connect_to_url(url)
+	if err == OK:
+		set_process(true)  # Enable _process for WebSocket updates
+		print("✅ Connecting to WebSocket server...")
+	else:
+		print("❌ Failed to initiate WebSocket connection")
+		use_websocket = false
+
+func _process(_delta):
+	"""Process WebSocket connection and data"""
+	if not use_websocket:
+		return
 	
-	if exit_code == 0 and output.size() > 0:
-		var response = output[0].strip_edges()
-		if response.contains("Server is running"):
-			print("✅ Optimized Cozy Bar Server is ready on port 9999!")
+	# Poll WebSocket
+	websocket.poll()
+	
+	# Check connection state
+	var state = websocket.get_ready_state()
+	
+	if state == WebSocketPeer.STATE_OPEN:
+		if not is_websocket_connected:
+			is_websocket_connected = true
+			print("✅ WebSocket connected!")
+		
+		# Process incoming packets
+		while websocket.get_available_packet_count() > 0:
+			var packet = websocket.get_packet()
+			var text = packet.get_string_from_utf8()
+			_process_websocket_message(text)
+			
+	elif state == WebSocketPeer.STATE_CLOSING:
+		print("WebSocket closing...")
+	elif state == WebSocketPeer.STATE_CLOSED:
+		if is_websocket_connected:
+			is_websocket_connected = false
+			print("❌ WebSocket disconnected")
+			var code = websocket.get_close_code()
+			var reason = websocket.get_close_reason()
+			print("Close code: ", code, " Reason: ", reason)
+
+func _process_websocket_message(data: String):
+	"""Process WebSocket message"""
+	var json = JSON.new()
+	var parse_result = json.parse(data)
+	
+	if parse_result != OK:
+		print("Failed to parse WebSocket message: ", data)
+		return
+	
+	var message = json.data
+	var msg_type = message.get("type", "")
+	var content = message.get("content", "")
+	var npc = message.get("npc", current_streaming_npc)
+	
+	if msg_type == "token":
+		# Append token to response
+		current_streaming_response += content
+		emit_signal("token_received", npc, content)
+		# Direct update without deferral for better streaming
+		update_streaming_bubble(npc, current_streaming_response)
+		
+	elif msg_type == "complete":
+		# Response complete
+		emit_signal("response_completed", npc, content)
+		
+		# Just update the existing streaming bubble with final text, don't create new one
+		update_streaming_bubble(npc, content)
+		
+		# Add auto-fade timer for the streaming bubble
+		if npc in speech_bubbles and is_instance_valid(speech_bubbles[npc]):
+			var bubble = speech_bubbles[npc]
+			var tween = create_tween()
+			tween.tween_interval(8.0)  # Display for 8 seconds
+			tween.tween_property(bubble, "modulate:a", 0.0, 0.5).set_ease(Tween.EASE_IN_OUT)
+			tween.tween_callback(func():
+				if is_instance_valid(bubble):
+					bubble.queue_free()
+				if npc in speech_bubbles:
+					speech_bubbles.erase(npc)
+			)
+		
+		current_streaming_response = ""
+		current_streaming_npc = ""
+		is_processing = false
+		
+	elif msg_type == "error":
+		print("WebSocket error: ", content)
+		is_processing = false
+
+func update_streaming_bubble(npc_name: String, partial_text: String):
+	"""Update speech bubble with streaming text"""
+	
+	# Keep NPC label  
+	var npc_node = npcs.get(npc_name)
+	if npc_node and npc_node.has_node(npc_name):
+		var label = npc_node.get_node(npc_name)
+		if label is Label:
+			label.text = npc_name
+	
+	# Always look up bubble by name directly from UILayer
+	var bubble_name = "SpeechBubble_" + npc_name
+	var ui_layer = get_node_or_null("UILayer")
+	
+	if not ui_layer:
+		if npc_node:
+			create_streaming_bubble(npc_node, partial_text, npc_name)
+		return
+	
+	# Find bubble directly by name
+	var bubble = ui_layer.get_node_or_null(bubble_name)
+	if bubble and is_instance_valid(bubble):
+		var text_label = find_rich_text_label(bubble)
+		if text_label:
+			# Direct update without any deferral
+			# Only update if text is different to avoid flicker
+			if text_label.text != partial_text:
+				text_label.text = partial_text
 			return
+	else:
+		if npc_node:
+			create_streaming_bubble(npc_node, partial_text, npc_name)
+
+func _update_label_text(label: RichTextLabel, text: String):
+	"""Deferred update of label text to ensure UI refresh"""
+	if label and is_instance_valid(label):
+		label.text = text
+		label.queue_redraw()
+
+func find_rich_text_label(node: Node) -> RichTextLabel:
+	"""Recursively find RichTextLabel in node tree"""
+	if node is RichTextLabel:
+		return node
 	
-	print("❌ Server not running. Please run: START_OPTIMIZED_COZY_BAR.bat")
-	print("   Or start: python server_client/optimized_cozy_bar_server.py 9999")
+	for child in node.get_children():
+		var result = find_rich_text_label(child)
+		if result:
+			return result
+	
+	return null
+
+func create_streaming_bubble(npc_node: Node, text: String, npc_name: String):
+	"""Create a speech bubble specifically for streaming (no auto-fade)"""
+	# Remove existing bubble if any
+	if npc_name in speech_bubbles:
+		speech_bubbles[npc_name].queue_free()
+		speech_bubbles.erase(npc_name)
+	
+	# Get or create UI layer
+	var ui_layer = get_node_or_null("UILayer")
+	if not ui_layer:
+		ui_layer = CanvasLayer.new()
+		ui_layer.name = "UILayer"
+		add_child(ui_layer)
+	
+	# Create bubble container
+	var bubble_container = Control.new()
+	bubble_container.name = "SpeechBubble_" + npc_name
+	
+	# Position bubble
+	var viewport_size = get_viewport().size
+	var bubble_x = viewport_size.x * 0.5 - 150
+	var bubble_y = viewport_size.y * 0.3
+	
+	if npc_name == "Bob":
+		bubble_x = viewport_size.x * 0.4 - 150
+	elif npc_name == "Alice":
+		bubble_x = viewport_size.x * 0.6 - 150
+	
+	bubble_container.position = Vector2(bubble_x, bubble_y)
+	
+	# Create the bubble panel
+	var bubble_panel = Panel.new()
+	bubble_panel.size = Vector2(300, 120)
+	bubble_panel.position = Vector2(0, 0)
+	
+	# Style
+	var style_box = StyleBoxFlat.new()
+	style_box.bg_color = Color(1, 1, 1, 0.95)
+	style_box.corner_radius_top_left = 15
+	style_box.corner_radius_top_right = 15
+	style_box.corner_radius_bottom_left = 15
+	style_box.corner_radius_bottom_right = 15
+	style_box.border_width_left = 2
+	style_box.border_width_right = 2
+	style_box.border_width_top = 2
+	style_box.border_width_bottom = 2
+	style_box.border_color = Color(0.2, 0.2, 0.2, 0.8)
+	bubble_panel.add_theme_stylebox_override("panel", style_box)
+	
+	# Create ScrollContainer
+	var scroll_container = ScrollContainer.new()
+	scroll_container.position = Vector2(10, 10)
+	scroll_container.size = Vector2(280, 100)
+	scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	
+	# Create text label
+	var bubble_text = RichTextLabel.new()
+	bubble_text.bbcode_enabled = false  # Disable bbcode for simpler text handling
+	bubble_text.custom_minimum_size = Vector2(270, 0)
+	bubble_text.fit_content = true
+	bubble_text.add_theme_font_size_override("normal_font_size", 13)
+	bubble_text.add_theme_color_override("default_color", Color(0, 0, 0, 1))
+	bubble_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	bubble_text.text = text  # Use text property instead of append_text
+	
+	scroll_container.add_child(bubble_text)
+	bubble_panel.add_child(scroll_container)
+	bubble_container.add_child(bubble_panel)
+	
+	# Add tail
+	var tail = Polygon2D.new()
+	var tail_offset_x = 0
+	if npc_name == "Bob":
+		tail_offset_x = -50
+	elif npc_name == "Alice":
+		tail_offset_x = 50
+	
+	var points = PackedVector2Array([
+		Vector2(-10, 120),
+		Vector2(10, 120),
+		Vector2(tail_offset_x, 150)
+	])
+	tail.polygon = points
+	tail.color = Color(1, 1, 1, 0.95)
+	tail.position = Vector2(150, 0)
+	
+	bubble_container.add_child(tail)
+	ui_layer.add_child(bubble_container)
+	
+	# Store reference
+	speech_bubbles[npc_name] = bubble_container
+	
+	# Simple fade in, NO auto fade out for streaming
+	bubble_container.modulate.a = 0
+	var tween = create_tween()
+	tween.tween_property(bubble_container, "modulate:a", 1.0, 0.3)
 
 func show_custom_input_dialog(npc_name: String):
 	"""Show custom message input dialog"""
@@ -174,6 +423,16 @@ func interact_with_npc(npc_name: String, custom_message: String = ""):
 	
 	is_processing = true
 	
+	# Clear existing bubble for this NPC when starting new conversation
+	if npc_name in speech_bubbles and is_instance_valid(speech_bubbles[npc_name]):
+		var old_bubble = speech_bubbles[npc_name]
+		speech_bubbles.erase(npc_name)
+		
+		# Fade out animation before removing
+		var tween = create_tween()
+		tween.tween_property(old_bubble, "modulate:a", 0.0, 0.3).set_ease(Tween.EASE_IN_OUT)
+		tween.tween_callback(old_bubble.queue_free)
+	
 	# Add click feedback - flash the NPC
 	var npc = npcs.get(npc_name)
 	if npc:
@@ -182,8 +441,8 @@ func interact_with_npc(npc_name: String, custom_message: String = ""):
 		tween.tween_property(npc, "modulate", Color(1.2, 1.2, 1.2), 0.1)
 		tween.tween_property(npc, "modulate", original_modulate, 0.1)
 	
-	# Show thinking state
-	show_thinking(npc_name)
+	# Skip thinking state for WebSocket streaming (it's fast enough)
+	# show_thinking(npc_name)
 	
 	# CLEAN PROTOCOL: Use simple format NPC_NAME|MESSAGE
 	var message = ""
@@ -196,9 +455,25 @@ func interact_with_npc(npc_name: String, custom_message: String = ""):
 		message = npc_name + "|Hello!"
 		print("Using clean protocol (preset): ", message)
 	
-	# Call LLM in thread
-	var thread = Thread.new()
-	thread.start(_llm_thread.bind(npc_name, message))
+	# Choose WebSocket or traditional mode
+	if use_websocket and is_websocket_connected:
+		# Send via WebSocket for streaming
+		current_streaming_npc = npc_name
+		current_streaming_response = ""
+		
+		var data = {
+			"npc": npc_name,
+			"message": message
+		}
+		
+		var json = JSON.new()
+		var json_str = JSON.stringify(data)
+		websocket.send_text(json_str)
+		print("Sent WebSocket request for ", npc_name)
+	else:
+		# Traditional mode - Call LLM in thread
+		var thread = Thread.new()
+		thread.start(_llm_thread.bind(npc_name, message))
 
 func _llm_thread(npc_name: String, message: String):
 	"""Call LLM in thread"""
@@ -518,10 +793,15 @@ func show_thinking_bubble(npc_node: Node, npc_name: String):
 
 func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
 	"""Create and show a speech bubble above the NPC"""
-	# Remove existing bubble if any
-	if npc_name in speech_bubbles:
-		speech_bubbles[npc_name].queue_free()
+	# Remove existing bubble if any with fade animation
+	if npc_name in speech_bubbles and is_instance_valid(speech_bubbles[npc_name]):
+		var old_bubble = speech_bubbles[npc_name]
 		speech_bubbles.erase(npc_name)
+		
+		# Quick fade out before creating new bubble
+		var fade_tween = create_tween()
+		fade_tween.tween_property(old_bubble, "modulate:a", 0.0, 0.2).set_ease(Tween.EASE_IN)
+		fade_tween.tween_callback(old_bubble.queue_free)
 	
 	# Get or create UI layer
 	var ui_layer = get_node_or_null("UILayer")
@@ -536,20 +816,20 @@ func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
 	
 	# Position bubble in center-ish area but calculate tail direction
 	var viewport_size = get_viewport().size
-	var bubble_x = viewport_size.x * 0.5 - 200  # Center horizontally (minus half of 400px width)
+	var bubble_x = viewport_size.x * 0.5 - 150  # Center horizontally (minus half of 300px width)
 	var bubble_y = viewport_size.y * 0.3  # Upper-middle of screen
 	
 	# Adjust position based on which NPC (left/right bias)
 	if npc_name == "Bob":
-		bubble_x = viewport_size.x * 0.4 - 200  # Slightly left
+		bubble_x = viewport_size.x * 0.4 - 150  # Slightly left
 	elif npc_name == "Alice":
-		bubble_x = viewport_size.x * 0.6 - 200  # Slightly right
+		bubble_x = viewport_size.x * 0.6 - 150  # Slightly right
 	
 	bubble_container.position = Vector2(bubble_x, bubble_y)
 	
-	# Create the bubble panel (larger size)
+	# Create the bubble panel (smaller size for shorter responses)
 	var bubble_panel = Panel.new()
-	bubble_panel.size = Vector2(400, 200)  # Increased width and height
+	bubble_panel.size = Vector2(300, 120)  # Reduced size for shorter responses
 	bubble_panel.position = Vector2(0, 0)
 	
 	# Create bubble style with rounded corners
@@ -569,20 +849,20 @@ func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
 	# Create ScrollContainer for scrollable text
 	var scroll_container = ScrollContainer.new()
 	scroll_container.position = Vector2(10, 10)
-	scroll_container.size = Vector2(380, 180)  # Match panel interior size
+	scroll_container.size = Vector2(280, 100)  # Match smaller panel interior size
 	scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	
 	# Create text label inside scroll container
 	var bubble_text = RichTextLabel.new()
 	if bubble_text:
-		bubble_text.bbcode_enabled = true
-		bubble_text.custom_minimum_size = Vector2(370, 0)  # Width slightly less than scroll container
+		bubble_text.bbcode_enabled = false  # Disable BBCode to avoid formatting issues
+		bubble_text.custom_minimum_size = Vector2(270, 0)  # Width slightly less than scroll container
 		bubble_text.fit_content = true  # Auto-adjust height based on content
 		bubble_text.add_theme_font_size_override("normal_font_size", 13)  # Good size for readability
 		bubble_text.add_theme_color_override("default_color", Color(0, 0, 0, 1))  # Pure black for better contrast
 		bubble_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		bubble_text.append_text(text)  # Use append_text instead of text property
+		bubble_text.text = text  # Use text property for plain text
 		
 	# Add text to scroll container
 	scroll_container.add_child(bubble_text)
@@ -601,13 +881,13 @@ func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
 	
 	# Create tail shape pointing down and slightly to the side
 	var points = PackedVector2Array([
-		Vector2(-10, 200),  # Left corner at bottom of bubble (200 = panel height)
-		Vector2(10, 200),   # Right corner at bottom of bubble
-		Vector2(tail_offset_x, 230)  # Point toward NPC
+		Vector2(-10, 120),  # Left corner at bottom of bubble (120 = new panel height)
+		Vector2(10, 120),   # Right corner at bottom of bubble
+		Vector2(tail_offset_x, 150)  # Point toward NPC
 	])
 	tail.polygon = points
 	tail.color = Color(1, 1, 1, 0.95)
-	tail.position = Vector2(200, 0)  # Center horizontally on bubble (200 = half of 400px width)
+	tail.position = Vector2(150, 0)  # Center horizontally on bubble (150 = half of 300px width)
 	
 	# Assemble the bubble
 	bubble_panel.add_child(scroll_container)
