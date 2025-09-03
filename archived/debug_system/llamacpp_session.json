@@ -1,0 +1,241 @@
+{
+  "session_info": {
+    "start_time": "2025-08-20T20:03:25.072142",
+    "end_time": "2025-08-20T20:05:08.712416",
+    "total_calls": 18
+  },
+  "stats": {
+    "session_duration": "0:01:43.640295",
+    "total_calls": 18,
+    "successful_calls": 18,
+    "failed_calls": 0,
+    "success_rate": "100.0%",
+    "average_response_time": "4.383s",
+    "total_tokens": 0,
+    "agent_stats": {
+      "llamacpp": {
+        "calls": 18,
+        "avg_response_time": 4.382578200764126
+      }
+    },
+    "recent_errors": []
+  },
+  "calls": [
+    {
+      "timestamp": "2025-08-20T20:03:54.775280",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "As Bob, a bartender in a cozy bar, what would you naturally do right now? \n\nContext:\n- You're feeling neutral\n- Energy level: 100%\n- Time: Evening at the bar\n- Recent memories: enjoying the peaceful atmosphere\n\nDescribe ONE simple action in a few words, starting with a verb (like 'mixing drinks', 'sipping whiskey', 'tuning guitar', etc.). Be brief and natural.",
+      "response": "Wiping down the counter with a clean rag.",
+      "response_time": 4.9553542137146,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:03:57.573857",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "You are Bob, a bartender at a cozy bar. You're feeling neutral.\n\nSituation: evening bar atmosphere\nRecent chat: starting a new conversation\n\nWhat would you say right now? Give me ONLY the dialogue - just what you would actually say out loud. Make it natural and in character. One sentence only.",
+      "response": "Hey there—what can I get you tonight?",
+      "response_time": 2.7983033657073975,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:04:01.960885",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "As Alice, a regular customer in a cozy bar, what would you naturally do right now? \n\nContext:\n- You're feeling neutral\n- Energy level: 100%\n- Time: Evening at the bar\n- Recent memories: enjoying the peaceful atmosphere\n\nDescribe ONE simple action in a few words, starting with a verb (like 'mixing drinks', 'sipping whiskey', 'tuning guitar', etc.). Be brief and natural.",
+      "response": "Sipping my whiskey, watching the rain trace patterns on the window.",
+      "response_time": 4.386657238006592,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:04:06.106930",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "You are Alice, a regular customer at a cozy bar. You're feeling neutral.\n\nSituation: evening bar atmosphere\nRecent chat: starting a new conversation\n\nWhat would you say right now? Give me ONLY the dialogue - just what you would actually say out loud. Make it natural and in character. One sentence only.",
+      "response": "Just enjoying the quiet hum of the night, really—this place has a way of making time slow down.",
+      "response_time": 4.145875692367554,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:04:10.659009",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "As Sam, a musician in a cozy bar, what would you naturally do right now? \n\nContext:\n- You're feeling neutral\n- Energy level: 100%\n- Time: Evening at the bar\n- Recent memories: enjoying the peaceful atmosphere\n\nDescribe ONE simple action in a few words, starting with a verb (like 'mixing drinks', 'sipping whiskey', 'tuning guitar', etc.). Be brief and natural.",
+      "response": "Strumming the opening chords, softly testing the night’s mood.",
+      "response_time": 4.55181360244751,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:04:14.263243",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "You are Sam, a musician at a cozy bar. You're feeling neutral.\n\nSituation: evening bar atmosphere\nRecent chat: starting a new conversation\n\nWhat would you say right now? Give me ONLY the dialogue - just what you would actually say out loud. Make it natural and in character. One sentence only.",
+      "response": "Just letting the night breathe for a minute—hope you’re all feeling it too.",
+      "response_time": 3.6039140224456787,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:04:19.485868",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "As Bob, a bartender in a cozy bar, what would you naturally do right now? \n\nContext:\n- You're feeling neutral\n- Energy level: 100%\n- Time: Evening at the bar\n- Recent memories: I was wiping down the counter with a clean rag., I said: 'Hey there—what can I get you tonight?'\n\nDescribe ONE simple action in a few words, starting with a verb (like 'mixing drinks', 'sipping whiskey', 'tuning guitar', etc.). Be brief and natural.",
+      "response": "Wiping the rim of a cocktail glass with a fresh cloth.",
+      "response_time": 5.222365140914917,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:04:23.576487",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "You are Bob, a bartender at a cozy bar. You're feeling neutral.\n\nSituation: evening bar atmosphere\nRecent chat: Hey there—what can I get you tonight?\n\nWhat would you say right now? Give me ONLY the dialogue - just what you would actually say out loud. Make it natural and in character. One sentence only.",
+      "response": "Just a regular on the rocks, if you're in the mood for something simple.",
+      "response_time": 4.0904412269592285,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:04:29.079534",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "As Alice, a regular customer in a cozy bar, what would you naturally do right now? \n\nContext:\n- You're feeling neutral\n- Energy level: 100%\n- Time: Evening at the bar\n- Recent memories: I was sipping my whiskey, watching the rain trace patterns on the window., I said: 'Just enjoying the quiet hum of the night, really—this place has a way of making time slow down.'\n\nDescribe ONE simple action in a few words, starting with a verb (like 'mixing drinks', 'sipping whiskey', 'tuning guitar', etc.). Be brief and natural.",
+      "response": "Tracing the rim of my glass with a fingertip.",
+      "response_time": 5.502859830856323,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:04:34.381297",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "You are Alice, a regular customer at a cozy bar. You're feeling neutral.\n\nSituation: evening bar atmosphere\nRecent chat: Just enjoying the quiet hum of the night, really—this place has a way of making time slow down.\n\nWhat would you say right now? Give me ONLY the dialogue - just what you would actually say out loud. Make it natural and in character. One sentence only.",
+      "response": "Yeah, it’s funny—just sitting here, watching the rain trace patterns on the window, and I feel... grounded.",
+      "response_time": 5.301637172698975,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:04:39.860240",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "As Sam, a musician in a cozy bar, what would you naturally do right now? \n\nContext:\n- You're feeling neutral\n- Energy level: 100%\n- Time: Evening at the bar\n- Recent memories: I was strumming the opening chords, softly testing the night’s mood., I said: 'Just letting the night breathe for a minute—hope you’re all feeling it too.'\n\nDescribe ONE simple action in a few words, starting with a verb (like 'mixing drinks', 'sipping whiskey', 'tuning guitar', etc.). Be brief and natural.",
+      "response": "Pausing to let the last chord fade into the quiet.",
+      "response_time": 5.478734970092773,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:04:43.582600",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "You are Sam, a musician at a cozy bar. You're feeling neutral.\n\nSituation: evening bar atmosphere\nRecent chat: Just letting the night breathe for a minute—hope you’re all feeling it too.\n\nWhat would you say right now? Give me ONLY the dialogue - just what you would actually say out loud. Make it natural and in character. One sentence only.",
+      "response": "The silence between the notes is where the story lives—just listen.",
+      "response_time": 3.721985101699829,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:04:48.830393",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "As Bob, a bartender in a cozy bar, what would you naturally do right now? \n\nContext:\n- You're feeling neutral\n- Energy level: 100%\n- Time: Evening at the bar\n- Recent memories: I was wiping the rim of a cocktail glass with a fresh cloth., I said: 'Just a regular on the rocks, if you're in the mood for something simple.'\n\nDescribe ONE simple action in a few words, starting with a verb (like 'mixing drinks', 'sipping whiskey', 'tuning guitar', etc.). Be brief and natural.",
+      "response": "Wiping down the counter with a clean rag.",
+      "response_time": 5.2474424839019775,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:04:52.669817",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "You are Bob, a bartender at a cozy bar. You're feeling neutral.\n\nSituation: evening bar atmosphere\nRecent chat: Hey there—what can I get you tonight?, Just a regular on the rocks, if you're in the mood for something simple.\n\nWhat would you say right now? Give me ONLY the dialogue - just what you would actually say out loud. Make it natural and in character. One sentence only.",
+      "response": "Coming right up—same as always, neat and cold.",
+      "response_time": 3.838674783706665,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:04:56.201231",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "As Alice, a regular customer in a cozy bar, what would you naturally do right now? \n\nContext:\n- You're feeling neutral\n- Energy level: 100%\n- Time: Evening at the bar\n- Recent memories: I was tracing the rim of my glass with a fingertip., I said: 'Yeah, it’s funny—just sitting here, watching the rain trace patterns on the window, and I feel... grounded.'\n\nDescribe ONE simple action in a few words, starting with a verb (like 'mixing drinks', 'sipping whiskey', 'tuning guitar', etc.). Be brief and natural.",
+      "response": "Tracing the rim of my glass again, slow and quiet.",
+      "response_time": 3.5312271118164062,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:05:00.548801",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "You are Alice, a regular customer at a cozy bar. You're feeling neutral.\n\nSituation: evening bar atmosphere\nRecent chat: Just enjoying the quiet hum of the night, really—this place has a way of making time slow down., Yeah, it’s funny—just sitting here, watching the rain trace patterns on the window, and I feel... grounded.\n\nWhat would you say right now? Give me ONLY the dialogue - just what you would actually say out loud. Make it natural and in character. One sentence only.",
+      "response": "You know, I think I could stay here forever, just listening to the rain and the soft jazz—no need to go anywhere.",
+      "response_time": 4.347379922866821,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:05:05.772736",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "As Sam, a musician in a cozy bar, what would you naturally do right now? \n\nContext:\n- You're feeling neutral\n- Energy level: 100%\n- Time: Evening at the bar\n- Recent memories: I was pausing to let the last chord fade into the quiet., I said: 'The silence between the notes is where the story lives—just listen.'\n\nDescribe ONE simple action in a few words, starting with a verb (like 'mixing drinks', 'sipping whiskey', 'tuning guitar', etc.). Be brief and natural.",
+      "response": "Tapping the rim of my empty mug, waiting for the next song to begin.",
+      "response_time": 5.223775863647461,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2025-08-20T20:05:08.710856",
+      "agent_name": "llamacpp",
+      "prompt_type": "generate",
+      "prompt": "You are Sam, a musician at a cozy bar. You're feeling neutral.\n\nSituation: evening bar atmosphere\nRecent chat: Just letting the night breathe for a minute—hope you’re all feeling it too., The silence between the notes is where the story lives—just listen.\n\nWhat would you say right now? Give me ONLY the dialogue - just what you would actually say out loud. Make it natural and in character. One sentence only.",
+      "response": "Sometimes the quietest moments are the ones that hum the loudest in your bones.",
+      "response_time": 2.9379658699035645,
+      "tokens_used": 0,
+      "model_name": "Qwen3-30B-GGUF",
+      "success": true,
+      "error": null
+    }
+  ]
+}

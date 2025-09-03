@@ -1,0 +1,56 @@
+[gd_scene load_steps=3 format=3 uid="uid://buhrkf3qrgfxx"]
+
+[ext_resource type="Script" uid="uid://ds88w13lmor3f" path="res://scripts/bar_server_client_fixed.gd" id="1_6ieo7"]
+[ext_resource type="Script" uid="uid://qfjrktybjd21" path="res://scripts/camera_fix.gd" id="2_6ieo7"]
+
+[node name="CozyBar" type="Node2D"]
+script = ExtResource("1_6ieo7")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(320, 240)
+zoom = Vector2(1.5, 1.5)
+script = ExtResource("2_6ieo7")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 640.0
+offset_bottom = 480.0
+color = Color(0.235294, 0.141176, 0.0823529, 1)
+
+[node name="Bob" type="ColorRect" parent="."]
+offset_left = 300.0
+offset_top = 100.0
+offset_right = 332.0
+offset_bottom = 132.0
+color = Color(0.0150572, 0.276995, 1, 1)
+
+[node name="Bob" type="Label" parent="Bob"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Bob"
+
+[node name="Alice" type="ColorRect" parent="."]
+offset_left = 100.0
+offset_top = 300.0
+offset_right = 132.0
+offset_bottom = 332.0
+color = Color(0.671991, 0.153109, 0.189287, 1)
+
+[node name="Alice" type="Label" parent="Alice"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Alice"
+
+[node name="Sam" type="ColorRect" parent="."]
+offset_left = 500.0
+offset_top = 300.0
+offset_right = 532.0
+offset_bottom = 332.0
+color = Color(0.0778771, 0.411561, 0.365471, 1)
+
+[node name="Sam" type="Label" parent="Sam"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Sam"

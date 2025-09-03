@@ -13,7 +13,7 @@ import asyncio
 import websockets
 import threading
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 from gpt4all import GPT4All
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
@@ -28,12 +28,10 @@ class GPT4AllNPCServer:
         self.config = self.load_config(config_path)
         self.model = None
         self.npc_sessions = {}  # Store chat sessions for each NPC
-        self.conversation_dir = Path("npc_gpt4all_conversations")
-        self.conversation_dir.mkdir(exist_ok=True)
         
-        # Also save to standard Bob.json for compatibility
-        self.standard_memory_dir = Path("../npc_memories")
-        self.standard_memory_dir.mkdir(exist_ok=True)
+        # Single memory directory - unified storage
+        self.memory_dir = Path("../npc_memories")
+        self.memory_dir.mkdir(exist_ok=True)
         
         # Memory cache for faster access
         self.memory_cache = {}  # Cache all NPC memories in RAM
@@ -72,72 +70,74 @@ class GPT4AllNPCServer:
         npc_names = ["Bob", "Alice", "Sam"]
         
         for npc_name in npc_names:
-            # Load GPT4All conversation format
-            conv_file = self.conversation_dir / f"{npc_name}.json"
-            if conv_file.exists():
+            # Load unified memory format (detailed format as primary)
+            memory_file = self.memory_dir / f"{npc_name}.json"
+            if memory_file.exists():
                 try:
-                    with open(conv_file, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                        self.memory_cache[f"{npc_name}_conv"] = data
-                        logger.info(f"Loaded {len(data.get('conversation', []))} conversations for {npc_name}")
-                except Exception as e:
-                    logger.error(f"Failed to load conversations for {npc_name}: {e}")
-                    self.memory_cache[f"{npc_name}_conv"] = {"npc": npc_name, "conversation": []}
-            else:
-                self.memory_cache[f"{npc_name}_conv"] = {"npc": npc_name, "conversation": []}
-            
-            # Load standard memory format  
-            std_file = self.standard_memory_dir / f"{npc_name}.json"
-            if std_file.exists():
-                try:
-                    with open(std_file, 'r', encoding='utf-8') as f:
+                    with open(memory_file, 'r', encoding='utf-8') as f:
                         memories = json.load(f)
-                        self.memory_cache[f"{npc_name}_std"] = memories
-                        logger.info(f"Loaded {len(memories)} standard memories for {npc_name}")
+                        self.memory_cache[npc_name] = memories
+                        logger.info(f"Loaded {len(memories)} memories for {npc_name}")
                 except Exception as e:
-                    logger.error(f"Failed to load standard memories for {npc_name}: {e}")
-                    self.memory_cache[f"{npc_name}_std"] = []
+                    logger.error(f"Failed to load memories for {npc_name}: {e}")
+                    self.memory_cache[npc_name] = []
             else:
-                self.memory_cache[f"{npc_name}_std"] = []
+                self.memory_cache[npc_name] = []
             
             self.cache_dirty[npc_name] = False
         
         logger.info("Memory cache loaded successfully")
     
     def get_cached_conversation(self, npc_name: str) -> list:
-        """Get conversation from cache (fast)"""
-        cache_key = f"{npc_name}_conv"
-        if cache_key in self.memory_cache:
-            return self.memory_cache[cache_key].get("conversation", [])
+        """Get conversation from cache in GPT4All format"""
+        if npc_name in self.memory_cache:
+            # Convert detailed format to GPT4All conversation format
+            return self.convert_to_gpt4all_format(self.memory_cache[npc_name])
         return []
+    
+    def convert_to_gpt4all_format(self, detailed_memories: list) -> list:
+        """Convert detailed memory format to GPT4All conversation format"""
+        conversation = []
+        for entry in detailed_memories:
+            conversation.append({
+                "user": entry.get("user_input", ""),
+                "assistant": entry.get("npc_response", ""),
+                "timestamp": entry.get("timestamp", time.time()),
+                "response_time": entry.get("metadata", {}).get("response_time", 0)
+            })
+        return conversation
+    
+    def get_memories(self, npc_name: str, format_type: str = "detailed") -> Any:
+        """Get memories in specified format
+        
+        Args:
+            npc_name: Name of the NPC
+            format_type: "detailed" (default) or "gpt4all"
+        
+        Returns:
+            Memories in requested format
+        """
+        if npc_name not in self.memory_cache:
+            return [] if format_type == "detailed" else {"npc": npc_name, "conversation": []}
+        
+        if format_type == "detailed":
+            return self.memory_cache[npc_name]
+        elif format_type == "gpt4all":
+            return {
+                "npc": npc_name,
+                "conversation": self.convert_to_gpt4all_format(self.memory_cache[npc_name])
+            }
+        else:
+            logger.warning(f"Unknown format type: {format_type}")
+            return self.memory_cache[npc_name]
     
     def update_cache_and_save_async(self, npc_name: str, user_input: str, response: str, elapsed_time: float):
         """Update cache immediately and mark for saving"""
-        # Update conversation cache
-        cache_key_conv = f"{npc_name}_conv"
-        if cache_key_conv not in self.memory_cache:
-            self.memory_cache[cache_key_conv] = {"npc": npc_name, "conversation": []}
-        
-        entry = {
-            "timestamp": time.time(),
-            "user": user_input,
-            "assistant": response,
-            "response_time": elapsed_time
-        }
-        
-        self.memory_cache[cache_key_conv]["conversation"].append(entry)
-        
-        # Keep only recent conversations in cache
-        max_entries = self.config.get("max_conversation_entries", 20) * 2
-        if len(self.memory_cache[cache_key_conv]["conversation"]) > max_entries:
-            self.memory_cache[cache_key_conv]["conversation"] = \
-                self.memory_cache[cache_key_conv]["conversation"][-max_entries:]
-        
-        # Update standard memory cache
         from datetime import datetime
-        cache_key_std = f"{npc_name}_std"
-        if cache_key_std not in self.memory_cache:
-            self.memory_cache[cache_key_std] = []
+        
+        # Create unified memory entry (detailed format)
+        if npc_name not in self.memory_cache:
+            self.memory_cache[npc_name] = []
         
         memory_entry = {
             "timestamp": time.time(),
@@ -152,7 +152,12 @@ class GPT4AllNPCServer:
             }
         }
         
-        self.memory_cache[cache_key_std].append(memory_entry)
+        self.memory_cache[npc_name].append(memory_entry)
+        
+        # Keep only recent memories in cache
+        max_entries = self.config.get("max_conversation_entries", 20)
+        if len(self.memory_cache[npc_name]) > max_entries:
+            self.memory_cache[npc_name] = self.memory_cache[npc_name][-max_entries:]
         
         # Mark cache as dirty (needs saving)
         self.cache_dirty[npc_name] = True
@@ -165,19 +170,11 @@ class GPT4AllNPCServer:
         for npc_name, is_dirty in self.cache_dirty.items():
             if is_dirty:
                 try:
-                    # Save conversation format
-                    conv_file = self.conversation_dir / f"{npc_name}.json"
-                    cache_key_conv = f"{npc_name}_conv"
-                    if cache_key_conv in self.memory_cache:
-                        with open(conv_file, 'w', encoding='utf-8') as f:
-                            json.dump(self.memory_cache[cache_key_conv], f, indent=2, ensure_ascii=False)
-                    
-                    # Save standard format
-                    std_file = self.standard_memory_dir / f"{npc_name}.json"
-                    cache_key_std = f"{npc_name}_std"
-                    if cache_key_std in self.memory_cache:
-                        with open(std_file, 'w', encoding='utf-8') as f:
-                            json.dump(self.memory_cache[cache_key_std], f, indent=2, ensure_ascii=False)
+                    # Save unified format (detailed format only)
+                    memory_file = self.memory_dir / f"{npc_name}.json"
+                    if npc_name in self.memory_cache:
+                        with open(memory_file, 'w', encoding='utf-8') as f:
+                            json.dump(self.memory_cache[npc_name], f, indent=2, ensure_ascii=False)
                     
                     self.cache_dirty[npc_name] = False
                     logger.debug(f"Saved memories for {npc_name}")
