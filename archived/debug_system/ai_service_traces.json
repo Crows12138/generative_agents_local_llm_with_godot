@@ -1,0 +1,833 @@
+{
+  "session_info": {
+    "start_time": "2025-08-20T21:26:31.237430",
+    "end_time": "2025-08-20T21:27:57.093247",
+    "total_traces": 36
+  },
+  "summary": {
+    "session_summary": {
+      "duration": "0:01:25.855834",
+      "total_actions": 36,
+      "unique_agents": 3,
+      "overall_success_rate": "100.0%"
+    },
+    "action_breakdown": {
+      "ai_service_action_generation": 9,
+      "action_execution": 9,
+      "ai_service_dialogue_generation": 9,
+      "dialogue_spoken": 9
+    },
+    "agent_activity": [
+      [
+        "Bob",
+        12
+      ],
+      [
+        "Alice",
+        12
+      ],
+      [
+        "Sam",
+        12
+      ]
+    ],
+    "interaction_analysis": {
+      "direct_interactions": {
+        "Bob -> Sam": 1
+      },
+      "agent_mention_patterns": {
+        "Bob": {
+          "Sam": 1
+        }
+      },
+      "most_interactive_agents": [
+        [
+          "Bob",
+          {
+            "Sam": 1
+          }
+        ]
+      ]
+    }
+  },
+  "traces": [
+    {
+      "timestamp": "2025-08-20T21:26:52.240954",
+      "agent_name": "Bob",
+      "action_type": "ai_service_action_generation",
+      "action": "requesting AI Service action",
+      "context": {
+        "role": "bartender",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {
+        "prompt_length": 362
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:26:56.423179",
+      "agent_name": "Bob",
+      "action_type": "action_execution",
+      "action": "wiping down the counter with a clean rag.",
+      "context": {
+        "role": "bartender",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "completed"
+    },
+    {
+      "timestamp": "2025-08-20T21:26:56.423223",
+      "agent_name": "Bob",
+      "action_type": "ai_service_dialogue_generation",
+      "action": "requesting AI Service dialogue",
+      "context": {
+        "role": "bartender",
+        "mood": "neutral",
+        "name": "Bob",
+        "setting": "cozy bar",
+        "conversation_history": []
+      },
+      "decision_factors": {
+        "prompt_length": 294
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:26:58.866537",
+      "agent_name": "Bob",
+      "action_type": "dialogue_spoken",
+      "action": "Hey there—what can I get you tonight?",
+      "context": {
+        "role": "bartender",
+        "mood": "neutral",
+        "name": "Bob",
+        "setting": "cozy bar",
+        "conversation_history": []
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "dialogue_generated"
+    },
+    {
+      "timestamp": "2025-08-20T21:26:58.866619",
+      "agent_name": "Alice",
+      "action_type": "ai_service_action_generation",
+      "action": "requesting AI Service action",
+      "context": {
+        "role": "regular customer",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {
+        "prompt_length": 371
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:02.612047",
+      "agent_name": "Alice",
+      "action_type": "action_execution",
+      "action": "sipping my whiskey, watching the rain trace patterns on the window.",
+      "context": {
+        "role": "regular customer",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "completed"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:02.612148",
+      "agent_name": "Alice",
+      "action_type": "ai_service_dialogue_generation",
+      "action": "requesting AI Service dialogue",
+      "context": {
+        "role": "regular customer",
+        "mood": "neutral",
+        "name": "Alice",
+        "setting": "cozy bar",
+        "conversation_history": []
+      },
+      "decision_factors": {
+        "prompt_length": 303
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:05.990190",
+      "agent_name": "Alice",
+      "action_type": "dialogue_spoken",
+      "action": "Just enjoying the quiet hum of the night, really—this place has a way of making time slow down.",
+      "context": {
+        "role": "regular customer",
+        "mood": "neutral",
+        "name": "Alice",
+        "setting": "cozy bar",
+        "conversation_history": []
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "dialogue_generated"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:05.990300",
+      "agent_name": "Sam",
+      "action_type": "ai_service_action_generation",
+      "action": "requesting AI Service action",
+      "context": {
+        "role": "musician",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {
+        "prompt_length": 361
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:10.805585",
+      "agent_name": "Sam",
+      "action_type": "action_execution",
+      "action": "strumming the opening chords, softly testing the night’s mood.",
+      "context": {
+        "role": "musician",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "completed"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:10.805646",
+      "agent_name": "Sam",
+      "action_type": "ai_service_dialogue_generation",
+      "action": "requesting AI Service dialogue",
+      "context": {
+        "role": "musician",
+        "mood": "neutral",
+        "name": "Sam",
+        "setting": "cozy bar",
+        "conversation_history": []
+      },
+      "decision_factors": {
+        "prompt_length": 293
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:14.593437",
+      "agent_name": "Sam",
+      "action_type": "dialogue_spoken",
+      "action": "Just letting the night breathe for a minute—hope you’re all feeling it too.",
+      "context": {
+        "role": "musician",
+        "mood": "neutral",
+        "name": "Sam",
+        "setting": "cozy bar",
+        "conversation_history": []
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "dialogue_generated"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:14.593727",
+      "agent_name": "Bob",
+      "action_type": "ai_service_action_generation",
+      "action": "requesting AI Service action",
+      "context": {
+        "role": "bartender",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {
+        "prompt_length": 426
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:18.618467",
+      "agent_name": "Bob",
+      "action_type": "action_execution",
+      "action": "wiping the rim of a cocktail glass with a fresh cloth.",
+      "context": {
+        "role": "bartender",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "completed"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:18.618520",
+      "agent_name": "Bob",
+      "action_type": "ai_service_dialogue_generation",
+      "action": "requesting AI Service dialogue",
+      "context": {
+        "role": "bartender",
+        "mood": "neutral",
+        "name": "Bob",
+        "setting": "cozy bar",
+        "conversation_history": [
+          "Hey there—what can I get you tonight?"
+        ]
+      },
+      "decision_factors": {
+        "prompt_length": 304
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:21.622685",
+      "agent_name": "Bob",
+      "action_type": "dialogue_spoken",
+      "action": "Just a regular on the rocks, if you're in the mood for something simple.",
+      "context": {
+        "role": "bartender",
+        "mood": "neutral",
+        "name": "Bob",
+        "setting": "cozy bar",
+        "conversation_history": [
+          "Hey there—what can I get you tonight?"
+        ]
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "dialogue_generated"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:21.622815",
+      "agent_name": "Alice",
+      "action_type": "ai_service_action_generation",
+      "action": "requesting AI Service action",
+      "context": {
+        "role": "regular customer",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {
+        "prompt_length": 519
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:26.011184",
+      "agent_name": "Alice",
+      "action_type": "action_execution",
+      "action": "tracing the rim of my glass with a fingertip.",
+      "context": {
+        "role": "regular customer",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "completed"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:26.011224",
+      "agent_name": "Alice",
+      "action_type": "ai_service_dialogue_generation",
+      "action": "requesting AI Service dialogue",
+      "context": {
+        "role": "regular customer",
+        "mood": "neutral",
+        "name": "Alice",
+        "setting": "cozy bar",
+        "conversation_history": [
+          "Just enjoying the quiet hum of the night, really—this place has a way of making time slow down."
+        ]
+      },
+      "decision_factors": {
+        "prompt_length": 371
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:29.421712",
+      "agent_name": "Alice",
+      "action_type": "dialogue_spoken",
+      "action": "Yeah, it’s funny—just sitting here, watching the rain trace patterns on the window, and I feel... grounded.",
+      "context": {
+        "role": "regular customer",
+        "mood": "neutral",
+        "name": "Alice",
+        "setting": "cozy bar",
+        "conversation_history": [
+          "Just enjoying the quiet hum of the night, really—this place has a way of making time slow down."
+        ]
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "dialogue_generated"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:29.421823",
+      "agent_name": "Sam",
+      "action_type": "ai_service_action_generation",
+      "action": "requesting AI Service action",
+      "context": {
+        "role": "musician",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {
+        "prompt_length": 484
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:33.315333",
+      "agent_name": "Sam",
+      "action_type": "action_execution",
+      "action": "pausing to let the last chord fade into the quiet.",
+      "context": {
+        "role": "musician",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "completed"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:33.315390",
+      "agent_name": "Sam",
+      "action_type": "ai_service_dialogue_generation",
+      "action": "requesting AI Service dialogue",
+      "context": {
+        "role": "musician",
+        "mood": "neutral",
+        "name": "Sam",
+        "setting": "cozy bar",
+        "conversation_history": [
+          "Just letting the night breathe for a minute—hope you’re all feeling it too."
+        ]
+      },
+      "decision_factors": {
+        "prompt_length": 341
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:35.957759",
+      "agent_name": "Sam",
+      "action_type": "dialogue_spoken",
+      "action": "The silence between the notes is where the story lives—just listen.",
+      "context": {
+        "role": "musician",
+        "mood": "neutral",
+        "name": "Sam",
+        "setting": "cozy bar",
+        "conversation_history": [
+          "Just letting the night breathe for a minute—hope you’re all feeling it too."
+        ]
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "dialogue_generated"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:35.958035",
+      "agent_name": "Bob",
+      "action_type": "ai_service_action_generation",
+      "action": "requesting AI Service action",
+      "context": {
+        "role": "bartender",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {
+        "prompt_length": 474
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:39.584220",
+      "agent_name": "Bob",
+      "action_type": "action_execution",
+      "action": "wiping down the counter with a clean rag.",
+      "context": {
+        "role": "bartender",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "completed"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:39.584263",
+      "agent_name": "Bob",
+      "action_type": "ai_service_dialogue_generation",
+      "action": "requesting AI Service dialogue",
+      "context": {
+        "role": "bartender",
+        "mood": "neutral",
+        "name": "Bob",
+        "setting": "cozy bar",
+        "conversation_history": [
+          "Hey there—what can I get you tonight?",
+          "Just a regular on the rocks, if you're in the mood for something simple."
+        ]
+      },
+      "decision_factors": {
+        "prompt_length": 378
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:42.401629",
+      "agent_name": "Bob",
+      "action_type": "dialogue_spoken",
+      "action": "Coming right up—same as always, neat and cold.",
+      "context": {
+        "role": "bartender",
+        "mood": "neutral",
+        "name": "Bob",
+        "setting": "cozy bar",
+        "conversation_history": [
+          "Hey there—what can I get you tonight?",
+          "Just a regular on the rocks, if you're in the mood for something simple."
+        ]
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "dialogue_generated"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:42.401691",
+      "agent_name": "Alice",
+      "action_type": "ai_service_action_generation",
+      "action": "requesting AI Service action",
+      "context": {
+        "role": "regular customer",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {
+        "prompt_length": 509
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:46.366441",
+      "agent_name": "Alice",
+      "action_type": "action_execution",
+      "action": "tracing the rim of my glass again, slow and quiet.",
+      "context": {
+        "role": "regular customer",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "completed"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:46.366489",
+      "agent_name": "Alice",
+      "action_type": "ai_service_dialogue_generation",
+      "action": "requesting AI Service dialogue",
+      "context": {
+        "role": "regular customer",
+        "mood": "neutral",
+        "name": "Alice",
+        "setting": "cozy bar",
+        "conversation_history": [
+          "Just enjoying the quiet hum of the night, really—this place has a way of making time slow down.",
+          "Yeah, it’s funny—just sitting here, watching the rain trace patterns on the window, and I feel... grounded."
+        ]
+      },
+      "decision_factors": {
+        "prompt_length": 480
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:50.340157",
+      "agent_name": "Alice",
+      "action_type": "dialogue_spoken",
+      "action": "You know, I think I could stay here forever, just listening to the rain and the soft jazz—no need to go anywhere.",
+      "context": {
+        "role": "regular customer",
+        "mood": "neutral",
+        "name": "Alice",
+        "setting": "cozy bar",
+        "conversation_history": [
+          "Just enjoying the quiet hum of the night, really—this place has a way of making time slow down.",
+          "Yeah, it’s funny—just sitting here, watching the rain trace patterns on the window, and I feel... grounded."
+        ]
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "dialogue_generated"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:50.340223",
+      "agent_name": "Sam",
+      "action_type": "ai_service_action_generation",
+      "action": "requesting AI Service action",
+      "context": {
+        "role": "musician",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {
+        "prompt_length": 464
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:54.303325",
+      "agent_name": "Sam",
+      "action_type": "action_execution",
+      "action": "tapping the rim of my empty mug, waiting for the next song to begin.",
+      "context": {
+        "role": "musician",
+        "mood": "neutral",
+        "energy": 100,
+        "setting": "cozy bar",
+        "time_period": "evening"
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "completed"
+    },
+    {
+      "timestamp": "2025-08-20T21:27:54.303396",
+      "agent_name": "Sam",
+      "action_type": "ai_service_dialogue_generation",
+      "action": "requesting AI Service dialogue",
+      "context": {
+        "role": "musician",
+        "mood": "neutral",
+        "name": "Sam",
+        "setting": "cozy bar",
+        "conversation_history": [
+          "Just letting the night breathe for a minute—hope you’re all feeling it too.",
+          "The silence between the notes is where the story lives—just listen."
+        ]
+      },
+      "decision_factors": {
+        "prompt_length": 410
+      },
+      "success": true,
+      "duration": 0.0,
+      "outcome": null
+    },
+    {
+      "timestamp": "2025-08-20T21:27:57.089778",
+      "agent_name": "Sam",
+      "action_type": "dialogue_spoken",
+      "action": "Sometimes the quietest moments are the ones that hum the loudest in your bones.",
+      "context": {
+        "role": "musician",
+        "mood": "neutral",
+        "name": "Sam",
+        "setting": "cozy bar",
+        "conversation_history": [
+          "Just letting the night breathe for a minute—hope you’re all feeling it too.",
+          "The silence between the notes is where the story lives—just listen."
+        ]
+      },
+      "decision_factors": {},
+      "success": true,
+      "duration": 0.0,
+      "outcome": "dialogue_generated"
+    }
+  ],
+  "agent_states": {
+    "Bob": {
+      "name": "Bob",
+      "role": "bartender",
+      "position": [
+        6,
+        2
+      ],
+      "mood": "neutral",
+      "energy": 100,
+      "drunk_level": 0,
+      "social_battery": 100,
+      "memory_count": 4,
+      "recent_memories": [
+        "I said: 'Hey there—what can I get you tonight?'",
+        "I was wiping the rim of a cocktail glass with a fresh cloth.",
+        "I said: 'Just a regular on the rocks, if you're in the mood for something simple.'"
+      ]
+    },
+    "Alice": {
+      "name": "Alice",
+      "role": "regular customer",
+      "position": [
+        2,
+        6
+      ],
+      "mood": "neutral",
+      "energy": 100,
+      "drunk_level": 0,
+      "social_battery": 100,
+      "memory_count": 4,
+      "recent_memories": [
+        "I said: 'Just enjoying the quiet hum of the night, really—this place has a way of making time slow down.'",
+        "I was tracing the rim of my glass with a fingertip.",
+        "I said: 'Yeah, it’s funny—just sitting here, watching the rain trace patterns on the window, and I feel... grounded.'"
+      ]
+    },
+    "Sam": {
+      "name": "Sam",
+      "role": "musician",
+      "position": [
+        9,
+        6
+      ],
+      "mood": "neutral",
+      "energy": 100,
+      "drunk_level": 0,
+      "social_battery": 100,
+      "memory_count": 4,
+      "recent_memories": [
+        "I said: 'Just letting the night breathe for a minute—hope you’re all feeling it too.'",
+        "I was pausing to let the last chord fade into the quiet.",
+        "I said: 'The silence between the notes is where the story lives—just listen.'"
+      ]
+    }
+  },
+  "action_chains": {
+    "Bob": [
+      "requesting AI Service action",
+      "wiping down the counter with a clean rag.",
+      "requesting AI Service dialogue",
+      "Hey there—what can I get you tonight?",
+      "requesting AI Service action",
+      "wiping the rim of a cocktail glass with a fresh cloth.",
+      "requesting AI Service dialogue",
+      "Just a regular on the rocks, if you're in the mood for something simple.",
+      "requesting AI Service action",
+      "wiping down the counter with a clean rag.",
+      "requesting AI Service dialogue",
+      "Coming right up—same as always, neat and cold."
+    ],
+    "Alice": [
+      "requesting AI Service action",
+      "sipping my whiskey, watching the rain trace patterns on the window.",
+      "requesting AI Service dialogue",
+      "Just enjoying the quiet hum of the night, really—this place has a way of making time slow down.",
+      "requesting AI Service action",
+      "tracing the rim of my glass with a fingertip.",
+      "requesting AI Service dialogue",
+      "Yeah, it’s funny—just sitting here, watching the rain trace patterns on the window, and I feel... grounded.",
+      "requesting AI Service action",
+      "tracing the rim of my glass again, slow and quiet.",
+      "requesting AI Service dialogue",
+      "You know, I think I could stay here forever, just listening to the rain and the soft jazz—no need to go anywhere."
+    ],
+    "Sam": [
+      "requesting AI Service action",
+      "strumming the opening chords, softly testing the night’s mood.",
+      "requesting AI Service dialogue",
+      "Just letting the night breathe for a minute—hope you’re all feeling it too.",
+      "requesting AI Service action",
+      "pausing to let the last chord fade into the quiet.",
+      "requesting AI Service dialogue",
+      "The silence between the notes is where the story lives—just listen.",
+      "requesting AI Service action",
+      "tapping the rim of my empty mug, waiting for the next song to begin.",
+      "requesting AI Service dialogue",
+      "Sometimes the quietest moments are the ones that hum the loudest in your bones."
+    ]
+  }
+}

@@ -1,1 +1,134 @@
-[]
+[
+  {
+    "timestamp": 1756923761.691804,
+    "datetime": "2025-09-03T19:22:41.691804",
+    "user_input": "Hello",
+    "npc_response": "Welcome to the bar! What can I get ya tonight?",
+    "is_deep_thinking": false,
+    "importance": 3.0,
+    "metadata": {
+      "response_time": 1.6863889694213867,
+      "model": "Llama-3.2-3B-Instruct-Q4_0.gguf (GPT4All)"
+    }
+  },
+  {
+    "timestamp": 1756923764.4118638,
+    "datetime": "2025-09-03T19:22:44.411863",
+    "user_input": "Hi",
+    "npc_response": "How's your night going so far?",
+    "is_deep_thinking": false,
+    "importance": 3.0,
+    "metadata": {
+      "response_time": 0.669367790222168,
+      "model": "Llama-3.2-3B-Instruct-Q4_0.gguf (GPT4All)"
+    }
+  },
+  {
+    "timestamp": 1756923768.5163991,
+    "datetime": "2025-09-03T19:22:48.516399",
+    "user_input": "Good day",
+    "npc_response": "We just got a fresh shipment of beer in, want me to pour you a cold one?",
+    "is_deep_thinking": false,
+    "importance": 3.0,
+    "metadata": {
+      "response_time": 2.0499935150146484,
+      "model": "Llama-3.2-3B-Instruct-Q4_0.gguf (GPT4All)"
+    }
+  },
+  {
+    "timestamp": 1756923773.8700595,
+    "datetime": "2025-09-03T19:22:53.870059",
+    "user_input": "What drinks?",
+    "npc_response": "Budweiser, Coors Light, and our specialty cocktail, the \"River Run\", made with whiskey, lemonade, and mint. What sounds good to ya?",
+    "is_deep_thinking": false,
+    "importance": 3.0,
+    "metadata": {
+      "response_time": 3.3083035945892334,
+      "model": "Llama-3.2-3B-Instruct-Q4_0.gguf (GPT4All)"
+    }
+  },
+  {
+    "timestamp": 1756923779.464878,
+    "datetime": "2025-09-03T19:22:59.464878",
+    "user_input": "Tell me about the bar",
+    "npc_response": "We're a small town pub, been around for 20 years. We've got a fireplace on chilly nights, regulars like my buddy Joe come in every day after work... you'll fit right in!",
+    "is_deep_thinking": false,
+    "importance": 3.0,
+    "metadata": {
+      "response_time": 3.5397067070007324,
+      "model": "Llama-3.2-3B-Instruct-Q4_0.gguf (GPT4All)"
+    }
+  },
+  {
+    "timestamp": 1756923786.2339063,
+    "datetime": "2025-09-03T19:23:06.233906",
+    "user_input": "What's your life story?",
+    "npc_response": "Well, I grew up here, bartended at this bar with my dad when he was the owner. Took over myself about 10 years ago. Got married to a wonderful woman named Sarah, have two kids who keep me on my toes... nothing too exciting, just small-town living and pouring drinks!",
+    "is_deep_thinking": false,
+    "importance": 3.0,
+    "metadata": {
+      "response_time": 4.7234156131744385,
+      "model": "Llama-3.2-3B-Instruct-Q4_0.gguf (GPT4All)"
+    }
+  },
+  {
+    "timestamp": 1756923791.9717443,
+    "datetime": "2025-09-03T19:23:11.971744",
+    "user_input": "Philosophy of bartending?",
+    "npc_response": "For me, it's all about hospitality and making people feel welcome. I like thinkin' that the drink you order is a reflection of your day, or who you're with... so I try to listen more than just pour drinks.",
+    "is_deep_thinking": false,
+    "importance": 3.0,
+    "metadata": {
+      "response_time": 3.691326141357422,
+      "model": "Llama-3.2-3B-Instruct-Q4_0.gguf (GPT4All)"
+    }
+  },
+  {
+    "timestamp": 1756923795.1211324,
+    "datetime": "2025-09-03T19:23:15.121132",
+    "user_input": "Hello",
+    "npc_response": "Welcome back! How was your break? Want another round?",
+    "is_deep_thinking": false,
+    "importance": 3.0,
+    "metadata": {
+      "response_time": 1.1022999286651611,
+      "model": "Llama-3.2-3B-Instruct-Q4_0.gguf (GPT4All)"
+    }
+  },
+  {
+    "timestamp": 1756925588.593758,
+    "datetime": "2025-09-03T19:53:08.593758",
+    "user_input": "Hello!",
+    "npc_response": "How can I pour you a drink tonight?",
+    "is_deep_thinking": false,
+    "importance": 3.0,
+    "metadata": {
+      "response_time": 1.4429099559783936,
+      "model": "Llama-3.2-3B-Instruct-Q4_0.gguf (GPT4All)"
+    }
+  },
+  {
+    "timestamp": 1756925917.7206867,
+    "datetime": "2025-09-03T19:58:37.720686",
+    "user_input": "Hello!",
+    "npc_response": "Another one, huh? What can I get ya?",
+    "is_deep_thinking": false,
+    "importance": 3.0,
+    "metadata": {
+      "response_time": 0.9726235866546631,
+      "model": "Llama-3.2-3B-Instruct-Q4_0.gguf (GPT4All)"
+    }
+  },
+  {
+    "timestamp": 1756925920.9228094,
+    "datetime": "2025-09-03T19:58:40.922809",
+    "user_input": "Hello!",
+    "npc_response": "Just another friendly face then. Whiskey or beer okay?",
+    "is_deep_thinking": false,
+    "importance": 3.0,
+    "metadata": {
+      "response_time": 1.0168037414550781,
+      "model": "Llama-3.2-3B-Instruct-Q4_0.gguf (GPT4All)"
+    }
+  }
+]
