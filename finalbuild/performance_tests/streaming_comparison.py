@@ -23,7 +23,7 @@ class StreamingComparison:
     
     async def test_with_streaming(self, query: str) -> Tuple[float, float, str]:
         """Test with streaming enabled - measures TTFT and total time"""
-        print("\n🚀 WITH STREAMING:")
+        print("\n[STREAMING ON]:")
         print(f"Query: '{query}'")
         
         start_time = time.time()
@@ -52,7 +52,7 @@ class StreamingComparison:
                         if first_token_time is None:
                             first_token_time = time.time()
                             ttft = (first_token_time - start_time) * 1000
-                            print(f"⚡ First token received at {ttft:.0f}ms")
+                            print(f"[FAST] First token received at {ttft:.0f}ms")
                             print(f"User sees: '{token}", end="", flush=True)
                         else:
                             # Simulate typewriter effect
@@ -61,7 +61,7 @@ class StreamingComparison:
                     elif data.get("type") == "complete":
                         end_time = time.time()
                         total_time = (end_time - start_time) * 1000
-                        print(f"'\n✓ Complete response in {total_time:.0f}ms ({token_count} tokens)")
+                        print(f"'\n[OK] Complete response in {total_time:.0f}ms ({token_count} tokens)")
                         break
                 
                 ttft = (first_token_time - start_time) * 1000 if first_token_time else 0
@@ -70,12 +70,12 @@ class StreamingComparison:
                 return ttft, total, response_text
                 
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"[ERROR] Error: {e}")
             return 0, 0, ""
     
     async def simulate_without_streaming(self, query: str, response_text: str, avg_time: float) -> Tuple[float, float]:
         """Simulate non-streaming response (user waits for complete response)"""
-        print("\n⏳ WITHOUT STREAMING:")
+        print("\n[STREAMING OFF]:")
         print(f"Query: '{query}'")
         
         print("Waiting for response...")
@@ -87,7 +87,7 @@ class StreamingComparison:
             print(".", end="", flush=True)
         
         print("]")
-        print(f"✓ Response received at {avg_time:.0f}ms")
+        print(f"[OK] Response received at {avg_time:.0f}ms")
         print(f"User sees: '{response_text}'")
         
         return avg_time, avg_time  # TTFT = Total time in non-streaming
@@ -120,7 +120,7 @@ class StreamingComparison:
             
             # Show immediate comparison
             if ttft_s > 0:
-                print(f"\n📊 Comparison for this query:")
+                print(f"\n[COMPARISON] for this query:")
                 print(f"  Streaming TTFT: {ttft_s:.0f}ms | Non-streaming TTFT: {total_s:.0f}ms")
                 print(f"  User starts reading {total_s - ttft_s:.0f}ms earlier with streaming!")
             
@@ -136,7 +136,7 @@ class StreamingComparison:
         print("="*60)
         
         if not streaming_results or not non_streaming_results:
-            print("❌ Insufficient data for comparison")
+            print("[ERROR] Insufficient data for comparison")
             return
         
         # Calculate averages
@@ -144,14 +144,14 @@ class StreamingComparison:
         avg_streaming_total = sum(r[1] for r in streaming_results) / len(streaming_results)
         avg_non_streaming_ttft = sum(r[0] for r in non_streaming_results) / len(non_streaming_results)
         
-        print(f"\n📊 Average Time to First Token (TTFT):")
+        print(f"\n[METRICS] Average Time to First Token (TTFT):")
         print(f"  • WITH Streaming: {avg_streaming_ttft:.0f}ms")
         print(f"  • WITHOUT Streaming: {avg_non_streaming_ttft:.0f}ms")
         print(f"  • Difference: {avg_non_streaming_ttft - avg_streaming_ttft:.0f}ms faster with streaming")
         
         improvement = ((avg_non_streaming_ttft - avg_streaming_ttft) / avg_non_streaming_ttft) * 100
         
-        print(f"\n📊 User Experience Metrics:")
+        print(f"\n[UX METRICS] User Experience Metrics:")
         print(f"  • Perceived latency reduction: {improvement:.1f}%")
         print(f"  • Users start reading {avg_non_streaming_ttft - avg_streaming_ttft:.0f}ms earlier")
         print(f"  • Engagement starts in {avg_streaming_ttft:.0f}ms vs {avg_non_streaming_ttft:.0f}ms wait")
@@ -167,7 +167,7 @@ class StreamingComparison:
         print(f"    • Full wait time feels longer")
         print(f"    • User stares at loading indicator")
         
-        print(f"\n🎯 Bottom Line:")
+        print(f"\n[SUMMARY] Bottom Line:")
         print(f"  Streaming provides {improvement:.0f}% better perceived performance")
         print(f"  Real-world impact: MASSIVE improvement in user satisfaction")
 
@@ -198,19 +198,19 @@ class StreamingComparison:
         print("   2500ms: 'Hello! Welcome to the bar. What can I get you today?'")
         print("   User starts reading at 350ms and stays engaged throughout")
         
-        print("\n✨ The difference: 2150ms of engagement vs dead waiting!")
+        print("\n[RESULT] The difference: 2150ms of engagement vs dead waiting!")
 
 async def main():
     """Main execution"""
-    print("\n🔬 Streaming vs Non-Streaming Comparison Test")
+    print("\n[TEST] Streaming vs Non-Streaming Comparison Test")
     print("=" * 60)
     
     # Check server
     try:
         async with websockets.connect("ws://127.0.0.1:9999") as ws:
-            print("✅ Server connected")
+            print("[OK] Server connected")
     except:
-        print("❌ Server not running at ws://127.0.0.1:9999")
+        print("[ERROR] Server not running at ws://127.0.0.1:9999")
         print("Start server with: python finalbuild/server/gpt4all_server.py")
         return
     
@@ -222,8 +222,8 @@ async def main():
     # Show visual demonstration
     await comparison.visual_demonstration()
     
-    print("\n✅ Comparison test completed!")
-    print("📝 Results clearly show streaming provides superior user experience")
+    print("\n[OK] Comparison test completed!")
+    print("[NOTE] Results clearly show streaming provides superior user experience")
 
 if __name__ == "__main__":
     asyncio.run(main())

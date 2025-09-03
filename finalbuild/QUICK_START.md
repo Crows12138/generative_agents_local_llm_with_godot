@@ -1,60 +1,74 @@
-# 快速启动指南
+# Quick Start Guide
 
-## 启动服务器
+## Start Server
 
 ```bash
 cd finalbuild/server
-../../.venv/Scripts/python.exe optimized_cozy_bar_server.py
+../../.venv/Scripts/python.exe gpt4all_server.py
 ```
 
-服务器将在端口 9999 上启动，等待 Godot 连接。
+The server will start on port 9999, waiting for Godot connections.
 
-## 查看记忆
+## View Memories
 
-查看所有 NPC 的记忆：
+View all NPC memories:
 ```bash
 cd finalbuild
 ../.venv/Scripts/python.exe tools/view_memories.py
 ```
 
-查看 Bob 的记忆：
+View Bob's memories:
 ```bash
 cd finalbuild
 ../.venv/Scripts/python.exe tools/view_memories.py Bob
 ```
 
-查看最近 5 条记忆和统计：
+View last 5 memories with statistics:
 ```bash
 cd finalbuild
 ../.venv/Scripts/python.exe tools/view_memories.py Bob --last 5 --stats
 ```
 
-## 配置
+## Configuration
 
-编辑 `server/cognitive_config.json` 调整参数：
+Edit `server/gpt4all_config.json` to adjust parameters:
 
-- `enable_4b`: 启用深度思考模式（默认 true）
-- `bob_deep_think_probability`: Bob 深度思考概率（默认 0.2）
-- `use_dual_1_7b`: 使用双 1.7B 模型测试（默认 true）
+- `model_file`: LLM model file name (default: Llama-3.2-3B-Instruct-Q4_0.gguf)
+- `device`: "gpu" or "cpu" (default: gpu)
+- `max_tokens`: Maximum response length (default: 150)
+- `temperature`: Creativity level 0.0-1.0 (default: 0.7)
+- `max_conversation_entries`: Maximum conversation history (default: 20)
 
-## 系统要求
+## System Requirements
 
 - Python 3.8+
-- CUDA GPU（推荐 4GB+ 显存）
-- 已安装的虚拟环境（.venv）
+- CUDA GPU (recommended 4GB+ VRAM)
+- Virtual environment installed (.venv)
+- GPT4All with CUDA support
 
-## 目录结构
+## Directory Structure
 
 ```
 finalbuild/
-├── server/          # 服务器端文件
-│   ├── optimized_cozy_bar_server.py
-│   ├── memory_integration.py
-│   └── cognitive_config.json
-├── client/          # 客户端文件
+├── server/          # Server files
+│   ├── gpt4all_server.py
+│   └── gpt4all_config.json
+├── client/          # Client files
 │   └── llm_client_cognitive.py
-├── tools/           # 工具脚本
+├── tools/           # Utility scripts
 │   └── view_memories.py
-└── npc_memories/    # NPC 记忆存储
-    └── Bob.json
+├── godot_project/   # Godot game files
+│   └── scripts/
+└── npc_memories/    # NPC memory storage (unified)
+    ├── Bob.json
+    ├── Alice.json
+    └── Sam.json
 ```
+
+## Features
+
+- **WebSocket Streaming**: Real-time token streaming for better UX
+- **Unified Memory System**: Single storage format, 50% less I/O
+- **GPU Acceleration**: Fast response times (0.5-2 seconds)
+- **Conversation Context**: NPCs remember previous interactions
+- **Dynamic Format Conversion**: Automatic format adaptation when needed

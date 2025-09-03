@@ -1,0 +1,244 @@
+{
+  "test_time": "2025-09-03T21:32:10.210378",
+  "server": "ws://127.0.0.1:9999",
+  "results": {
+    "simple": [
+      {
+        "query": "Hello!",
+        "ttft_ms": 337.1767997741699,
+        "total_time_ms": 1204.1516304016113,
+        "tokens_count": 14,
+        "tokens_per_second": 16.148104311019054,
+        "response_length": 52
+      },
+      {
+        "query": "Hi there",
+        "ttft_ms": 277.9362201690674,
+        "total_time_ms": 1916.6781902313232,
+        "tokens_count": 24,
+        "tokens_per_second": 14.645380687411233,
+        "response_length": 99
+      },
+      {
+        "query": "Good evening",
+        "ttft_ms": 226.08423233032227,
+        "total_time_ms": 2861.3440990448,
+        "tokens_count": 41,
+        "tokens_per_second": 15.558237924792191,
+        "response_length": 177
+      },
+      {
+        "query": "How are you?",
+        "ttft_ms": 312.70813941955566,
+        "total_time_ms": 3183.0437183380127,
+        "tokens_count": 43,
+        "tokens_per_second": 14.980826742287189,
+        "response_length": 178
+      },
+      {
+        "query": "What's your name?",
+        "ttft_ms": 223.10543060302734,
+        "total_time_ms": 3715.602397918701,
+        "tokens_count": 51,
+        "tokens_per_second": 14.602732794696884,
+        "response_length": 203
+      },
+      {
+        "query": "Thanks",
+        "ttft_ms": 208.4207534790039,
+        "total_time_ms": 3010.6210708618164,
+        "tokens_count": 31,
+        "tokens_per_second": 11.062735168395546,
+        "response_length": 135
+      },
+      {
+        "query": "Yes, please",
+        "ttft_ms": 222.2597599029541,
+        "total_time_ms": 3530.9925079345703,
+        "tokens_count": 52,
+        "tokens_per_second": 15.715986741732191,
+        "response_length": 199
+      },
+      {
+        "query": "No, thanks",
+        "ttft_ms": 579.6976089477539,
+        "total_time_ms": 3755.4523944854736,
+        "tokens_count": 37,
+        "tokens_per_second": 11.650773595145555,
+        "response_length": 155
+      },
+      {
+        "query": "Cheers!",
+        "ttft_ms": 225.42595863342285,
+        "total_time_ms": 4416.057825088501,
+        "tokens_count": 43,
+        "tokens_per_second": 10.260982441384044,
+        "response_length": 191
+      },
+      {
+        "query": "Bye",
+        "ttft_ms": 212.0823860168457,
+        "total_time_ms": 4286.030530929565,
+        "tokens_count": 37,
+        "tokens_per_second": 9.082098908451544,
+        "response_length": 159
+      }
+    ],
+    "context": [
+      {
+        "query": "What drinks do you serve?",
+        "ttft_ms": 244.16756629943848,
+        "total_time_ms": 5975.63099861145,
+        "tokens_count": 62,
+        "tokens_per_second": 10.817481561596539,
+        "response_length": 289
+      },
+      {
+        "query": "Tell me about this place",
+        "ttft_ms": 330.36136627197266,
+        "total_time_ms": 14352.203369140625,
+        "tokens_count": 150,
+        "tokens_per_second": 10.697595934208382,
+        "response_length": 681
+      },
+      {
+        "query": "What's the special today?",
+        "ttft_ms": 704.9858570098877,
+        "total_time_ms": 11235.027313232422,
+        "tokens_count": 95,
+        "tokens_per_second": 9.021806836654143,
+        "response_length": 424
+      },
+      {
+        "query": "Who comes here often?",
+        "ttft_ms": 672.4214553833008,
+        "total_time_ms": 13255.755424499512,
+        "tokens_count": 78,
+        "tokens_per_second": 6.198675183495771,
+        "response_length": 337
+      },
+      {
+        "query": "What's popular here?",
+        "ttft_ms": 670.5548763275146,
+        "total_time_ms": 9863.723516464233,
+        "tokens_count": 64,
+        "tokens_per_second": 6.961691067058268,
+        "response_length": 308
+      },
+      {
+        "query": "Any recommendations?",
+        "ttft_ms": 806.7522048950195,
+        "total_time_ms": 14310.417413711548,
+        "tokens_count": 91,
+        "tokens_per_second": 6.738911146922259,
+        "response_length": 391
+      },
+      {
+        "query": "What time do you close?",
+        "ttft_ms": 531.4903259277344,
+        "total_time_ms": 9283.890724182129,
+        "tokens_count": 54,
+        "tokens_per_second": 6.1697360201631,
+        "response_length": 232
+      },
+      {
+        "query": "How long have you worked here?",
+        "ttft_ms": 681.4661026000977,
+        "total_time_ms": 4694.6120262146,
+        "tokens_count": 31,
+        "tokens_per_second": 7.724613206209898,
+        "response_length": 139
+      }
+    ],
+    "complex": [
+      {
+        "query": "What's your philosophy on bartending and customer ",
+        "ttft_ms": 678.5478591918945,
+        "total_time_ms": 4371.556282043457,
+        "tokens_count": 29,
+        "tokens_per_second": 7.852676376407396,
+        "response_length": 124
+      },
+      {
+        "query": "Tell me about your most memorable experience here",
+        "ttft_ms": 414.79969024658203,
+        "total_time_ms": 10244.354009628296,
+        "tokens_count": 76,
+        "tokens_per_second": 7.731784934556469,
+        "response_length": 343
+      },
+      {
+        "query": "How would you describe the perfect evening at this",
+        "ttft_ms": 526.0789394378662,
+        "total_time_ms": 14961.080074310303,
+        "tokens_count": 104,
+        "tokens_per_second": 7.204710205997435,
+        "response_length": 518
+      },
+      {
+        "query": "What makes a good bartender in your opinion?",
+        "ttft_ms": 1145.1706886291504,
+        "total_time_ms": 15797.106742858887,
+        "tokens_count": 123,
+        "tokens_per_second": 8.394795032189089,
+        "response_length": 610
+      },
+      {
+        "query": "How has this place changed over the years?",
+        "ttft_ms": 466.8707847595215,
+        "total_time_ms": 17850.51131248474,
+        "tokens_count": 150,
+        "tokens_per_second": 8.628802451406226,
+        "response_length": 705
+      },
+      {
+        "query": "What's the story behind this bar's name?",
+        "ttft_ms": 686.6252422332764,
+        "total_time_ms": 10123.457670211792,
+        "tokens_count": 78,
+        "tokens_per_second": 8.265485330516624,
+        "response_length": 363
+      },
+      {
+        "query": "Describe your typical day at work",
+        "ttft_ms": 665.468692779541,
+        "total_time_ms": 23155.160665512085,
+        "tokens_count": 150,
+        "tokens_per_second": 6.669722296857883,
+        "response_length": 728
+      },
+      {
+        "query": "What advice would you give to new bartenders?",
+        "ttft_ms": 1147.550106048584,
+        "total_time_ms": 21750.621557235718,
+        "tokens_count": 150,
+        "tokens_per_second": 7.280467883411486,
+        "response_length": 705
+      },
+      {
+        "query": "Tell me about the most interesting customer you've",
+        "ttft_ms": 816.2884712219238,
+        "total_time_ms": 18154.45113182068,
+        "tokens_count": 121,
+        "tokens_per_second": 6.978824825249471,
+        "response_length": 603
+      },
+      {
+        "query": "What's your favorite thing about working here?",
+        "ttft_ms": 582.9527378082275,
+        "total_time_ms": 3245.8431720733643,
+        "tokens_count": 25,
+        "tokens_per_second": 9.388294643410333,
+        "response_length": 116
+      }
+    ]
+  },
+  "summary": {
+    "total_queries": 28,
+    "categories_tested": [
+      "simple",
+      "context",
+      "complex"
+    ]
+  }
+}
