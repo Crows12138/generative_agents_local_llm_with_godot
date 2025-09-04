@@ -1,0 +1,114 @@
+{
+  "bar_objects": {
+    "bar_counter": {
+      "position": [400, 280],
+      "interaction_radius": 50,
+      "categories": ["furniture", "work_station", "service"],
+      "default_state": "clean",
+      "has_physics": false,
+      "description": "Main bar counter with books and decorations"
+    },
+    "liquor_shelf": {
+      "position": [400, 150],
+      "interaction_radius": 40,
+      "categories": ["storage", "work_station"],
+      "default_state": "full",
+      "has_physics": false,
+      "description": "Wooden shelf with various bottles"
+    },
+    "left_table": {
+      "position": [150, 500],
+      "interaction_radius": 45,
+      "categories": ["furniture", "seating", "dining"],
+      "default_state": "empty",
+      "has_physics": false,
+      "seats": 4,
+      "description": "Round dining table on the left"
+    },
+    "center_table": {
+      "position": [400, 680],
+      "interaction_radius": 45,
+      "categories": ["furniture", "seating", "dining"],
+      "default_state": "empty",
+      "has_physics": false,
+      "seats": 4,
+      "description": "Center dining table"
+    },
+    "right_table": {
+      "position": [650, 680],
+      "interaction_radius": 45,
+      "categories": ["furniture", "seating", "dining"],
+      "default_state": "empty",
+      "has_physics": false,
+      "seats": 4,
+      "description": "Right dining table near pool table"
+    },
+    "pool_table": {
+      "position": [650, 500],
+      "interaction_radius": 60,
+      "categories": ["furniture", "entertainment"],
+      "default_state": "idle",
+      "has_physics": false,
+      "description": "Pool table for entertainment"
+    },
+    "jukebox": {
+      "position": [100, 200],
+      "interaction_radius": 30,
+      "categories": ["entertainment", "music"],
+      "default_state": "off",
+      "has_physics": false,
+      "description": "Classic jukebox"
+    }
+  },
+  "simple_objects": {
+    "cat": {
+      "position": [200, 420],
+      "categories": ["animal", "ambient"],
+      "moveable": true,
+      "description": "Friendly bar cat"
+    },
+    "bar_stools": {
+      "positions": [[350, 320], [400, 320], [450, 320]],
+      "categories": ["furniture", "seating"],
+      "description": "Bar stools"
+    }
+  },
+  "static_props": {
+    "paintings": {
+      "count": 3,
+      "categories": ["decoration"],
+      "description": "Wall paintings"
+    },
+    "carpet": {
+      "position": [400, 400],
+      "categories": ["decoration"],
+      "description": "Ornate carpet"
+    },
+    "wall_torches": {
+      "positions": [[100, 100], [700, 100]],
+      "categories": ["lighting", "decoration"],
+      "description": "Wall-mounted torches"
+    }
+  },
+  "interaction_types": {
+    "bar_counter": ["clean", "serve_drink", "lean_on", "wipe"],
+    "liquor_shelf": ["take_bottle", "restock", "organize", "inspect"],
+    "tables": ["sit", "leave", "clear_table", "serve_food", "eat"],
+    "pool_table": ["join_game", "leave_game", "play_shot", "chalk_cue"],
+    "jukebox": ["play_music", "change_song", "insert_coin"]
+  },
+  "state_definitions": {
+    "cleanliness": {
+      "states": ["pristine", "clean", "slightly_dirty", "dirty", "filthy"],
+      "thresholds": [90, 70, 50, 30, 0]
+    },
+    "stock_level": {
+      "states": ["full", "well_stocked", "half_empty", "low", "empty"],
+      "thresholds": [90, 70, 50, 25, 0]
+    },
+    "occupancy": {
+      "states": ["empty", "partially_occupied", "busy", "full"],
+      "thresholds": [0, 25, 50, 75]
+    }
+  }
+}

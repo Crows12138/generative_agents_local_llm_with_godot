@@ -31433,25 +31433,6 @@ position = Vector2(285, 303)
 offset = Vector2(50, -100)
 zoom = Vector2(1.9, 1.8)
 
-[node name="InteractiveObjects" type="Node2D" parent="."]
-
-[node name="BarCounter" type="Area2D" parent="InteractiveObjects"]
-position = Vector2(192, 96)
-
-[node name="BarCollision" type="CollisionShape2D" parent="InteractiveObjects/BarCounter"]
-
-[node name="Tables" type="Node2D" parent="InteractiveObjects"]
-
-[node name="Table1" type="Area2D" parent="InteractiveObjects/Tables"]
-position = Vector2(96, 192)
-
-[node name="Table1Collision" type="CollisionShape2D" parent="InteractiveObjects/Tables/Table1"]
-
-[node name="Table2" type="Area2D" parent="InteractiveObjects/Tables"]
-position = Vector2(288, 192)
-
-[node name="Table2Collision" type="CollisionShape2D" parent="InteractiveObjects/Tables/Table2"]
-
 [node name="AudioManager" type="Node" parent="."]
 
 [node name="BackgroundMusic" type="AudioStreamPlayer" parent="AudioManager"]
@@ -31487,9 +31468,9 @@ tile_map_data = PackedByteArray("AADXADAAAwAAAAAAAADvADwAAwACAAAAAAD2AGUAAwADAAE
 tile_set = SubResource("TileSet_0b1vl")
 
 [node name="bob" type="CharacterBody2D" parent="."]
-position = Vector2(317, 136)
 z_index = 2
 y_sort_enabled = true
+position = Vector2(317, 136)
 script = ExtResource("bob_npc_script")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="bob"]
@@ -31559,8 +31540,8 @@ position = Vector2(0, 8)
 shape = SubResource("RectangleShape2D_s282g")
 
 [node name="sam" type="CharacterBody2D" parent="."]
-position = Vector2(448, 279)
 z_index = 1
+position = Vector2(448, 279)
 script = ExtResource("23_277cw")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="sam"]
