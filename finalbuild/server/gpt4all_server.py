@@ -101,12 +101,20 @@ class MemoryImportanceScorer:
         repetition_penalty = self._calculate_repetition_penalty(user_input, conversation_history[-5:] if len(conversation_history) > 0 else [])
         score *= repetition_penalty
         
-        # 7. Apply brevity penalty for very short messages
-        if len(user_input.strip()) <= 3:  # "OK", "Yes", "No" etc.
-            score *= 0.7  # Reduce score by 30%
+        # 7. Special penalty for "small talk" or "random chat" patterns
+        user_lower = user_input.lower()
+        if ('small talk' in user_lower or 'random chat' in user_lower or 
+            'chat' in user_lower and len(user_input.split()) <= 2 or
+            'bye' in user_lower and len(user_input.split()) <= 2):
+            score *= 0.4  # Heavy 60% reduction for generic chat patterns
         
-        # 8. Additional penalty for single-word responses (but not if emotionally significant)
-        single_word_politeness = ['thanks', 'thank', 'sorry', 'please', 'ok', 'yes', 'no', 'bye', 'nice', 'good']
+        # 8. Apply brevity penalty for very short messages
+        if len(user_input.strip()) <= 3:  # "OK", "Yes", "No" etc.
+            score *= 0.5  # Reduce score by 50% (increased from 30%)
+        
+        # 9. Additional penalty for single-word responses (but not if emotionally significant)
+        single_word_politeness = ['thanks', 'thank', 'sorry', 'please', 'ok', 'yes', 'no', 'bye', 
+                                 'nice', 'good', 'sure', 'hello', 'hi']
         emotional_exceptions = ['love', 'want you', 'need you', 'miss', 'care']
         
         # Check if it's a short message that should be penalized
@@ -115,11 +123,17 @@ class MemoryImportanceScorer:
         if not is_emotional_exception:
             # Stricter penalty for single words
             if len(user_input.split()) == 1 and user_input.lower() in single_word_politeness:
-                score *= 0.5  # 50% reduction for single polite words
+                score *= 0.3  # 70% reduction for single polite words (increased from 50%)
             elif len(user_input.split()) <= 2 and any(word in user_input.lower() for word in single_word_politeness):
-                score *= 0.6  # 40% reduction for 2-word politeness
+                score *= 0.4  # 60% reduction for 2-word politeness (increased from 40%)
         
-        # 9. Boost for deep relationship expressions and emotional peaks
+        # 9. First encounters bonus (ensure initial meetings are remembered)
+        if len(conversation_history) < 3:
+            score += 1.5  # Bonus for first few interactions to establish relationship
+        elif len(conversation_history) < 5:
+            score += 0.5  # Smaller bonus for early conversations
+        
+        # 10. Boost for deep relationship expressions and emotional peaks
         deep_relationship_phrases = ['real friend', 'true friend', 'mean so much', 'care about you', 
                                      'love you', 'miss you', 'changed my life', 'saved me',
                                      'i want you', 'i need you', 'in love with']
@@ -128,7 +142,7 @@ class MemoryImportanceScorer:
             # Ensure emotional peaks don't score too low
             score = max(score, 6.0)  # Minimum score of 6 for important emotional moments
         
-        # 10. Boost for philosophical/existential topics
+        # 11. Boost for philosophical/existential topics
         philosophical_keywords = ['meaning', 'purpose', 'death', 'existence', 'consciousness', 
                                   'soul', 'destiny', 'universe', 'philosophy', 'wisdom']
         if sum(1 for word in philosophical_keywords if word in (user_input + " " + npc_response).lower()) >= 2:
@@ -139,7 +153,7 @@ class MemoryImportanceScorer:
     def _score_new_information(self, user_input: str, npc_response: str, history: List[Dict], npc_name: str = None) -> float:
         """Score based on information novelty using TF-IDF-like approach with caching and stop word filtering"""
         if not history:
-            return 3.0  # First conversation is always important
+            return 2.0  # First conversation is moderately important (reduced from 3.0)
         
         # Create cache key based on NPC name and history length
         cache_key = (npc_name, len(history)) if npc_name else ('default', len(history))
@@ -178,14 +192,14 @@ class MemoryImportanceScorer:
         new_words = current_words - historical_words
         novelty_ratio = len(new_words) / len(current_words)
         
-        # Score based on novelty (more meaningful with stop words filtered)
-        if novelty_ratio > 0.6:
-            return 3.0  # Mostly new meaningful information
-        elif novelty_ratio > 0.3:
-            return 2.0  # Some new meaningful information
-        elif novelty_ratio > 0.15:
-            return 1.0  # Little new meaningful information
-        return 0.5  # Mostly repetitive
+        # Score based on novelty (reduced scores for more strict evaluation)
+        if novelty_ratio > 0.7:
+            return 2.0  # Mostly new meaningful information (reduced from 3.0)
+        elif novelty_ratio > 0.4:
+            return 1.0  # Some new meaningful information (reduced from 2.0)
+        elif novelty_ratio > 0.2:
+            return 0.5  # Little new meaningful information (reduced from 1.0)
+        return 0.0  # Mostly repetitive (reduced from 0.5)
     
     def _score_emotion_intensity(self, text: str) -> float:
         """Score based on emotional content"""
@@ -197,11 +211,13 @@ class MemoryImportanceScorer:
                 if keyword in text_lower:
                     emotion_count += 1
         
-        # Score based on emotion density
+        # Score based on emotion density (reduced scores)
         if emotion_count >= 3:
-            return 2.0  # High emotion
+            return 1.5  # High emotion (reduced from 2.0)
+        elif emotion_count >= 2:
+            return 0.8  # Moderate emotion
         elif emotion_count >= 1:
-            return 1.0  # Some emotion
+            return 0.4  # Some emotion (reduced from 1.0)
         return 0.0  # No significant emotion
     
     def _score_conversation_depth(self, user_input: str, npc_response: str) -> float:
@@ -212,26 +228,32 @@ class MemoryImportanceScorer:
         depth_score = 0
         for indicator in self.depth_indicators:
             if indicator in combined_text:
-                depth_score += 0.3
+                depth_score += 0.2  # Reduced from 0.3
         
         # Check message length (longer usually means deeper)
-        if len(combined_text) > 200:
-            depth_score += 0.5
-        elif len(combined_text) > 100:
-            depth_score += 0.3
+        if len(combined_text) > 300:
+            depth_score += 0.4  # Very long conversation
+        elif len(combined_text) > 150:
+            depth_score += 0.2  # Moderate length (reduced from 0.5/0.3)
+        elif len(combined_text) > 50:
+            depth_score += 0.1  # Short conversation
         
         # Check for questions (indicates engagement)
-        if '?' in combined_text:
-            depth_score += 0.5
+        question_count = combined_text.count('?')
+        if question_count >= 2:
+            depth_score += 0.3  # Multiple questions
+        elif question_count == 1:
+            depth_score += 0.2  # Single question (reduced from 0.5)
         
-        return min(2.0, depth_score)
+        return min(1.5, depth_score)  # Cap at 1.5 (reduced from 2.0)
     
     def _score_relationship_change(self, text: str, history: List[Dict]) -> float:
         """Score based on relationship status changes"""
         text_lower = text.lower()
         
         # Check for routine politeness (should not score high)
-        routine_phrases = ['thanks', 'thank you', 'please', 'sorry', 'excuse me']
+        routine_phrases = ['thanks', 'thank you', 'please', 'sorry', 'excuse me', 'good morning', 
+                          'good evening', 'how are you', 'nice to meet you']
         is_routine = any(phrase in text_lower for phrase in routine_phrases) and len(text_lower) < 100
         
         positive_count = sum(1 for word in self.relationship_indicators['positive'] 
@@ -241,13 +263,15 @@ class MemoryImportanceScorer:
         
         # Apply reduction for routine politeness
         if is_routine:
-            positive_count *= 0.5  # Reduce weight of routine positive indicators
+            positive_count *= 0.3  # Stronger reduction for routine positive indicators
         
-        # Strong relationship indicator
-        if positive_count >= 2 or negative_count >= 2:
-            return 2.0 if not is_routine else 1.0
+        # Strong relationship indicator (reduced scores)
+        if positive_count >= 3 or negative_count >= 3:
+            return 1.5 if not is_routine else 0.5  # Very strong indicators
+        elif positive_count >= 2 or negative_count >= 2:
+            return 1.0 if not is_routine else 0.3  # Reduced from 2.0/1.0
         elif positive_count >= 1 or negative_count >= 1:
-            return 1.0 if not is_routine else 0.5
+            return 0.5 if not is_routine else 0.2  # Reduced from 1.0/0.5
         return 0.0
     
     def _calculate_recency_bonus(self, timestamp: float) -> float:
@@ -294,6 +318,105 @@ class MemoryImportanceScorer:
         return 1.0  # No penalty
 
 
+class ConversationBasedMemoryManager:
+    """Memory manager that uses conversation count as the primary time metric"""
+    
+    def __init__(self):
+        """Initialize with retention rules based on importance scores"""
+        # Retention rules: (min_score, max_conversations_to_keep)
+        # More strict thresholds to reduce memory accumulation
+        self.retention_rules = [
+            (8.0, float('inf')),  # ≥8: Permanent storage
+            (7.0, 100),           # ≥7: Keep for 100 conversations (increased from 6.0)
+            (5.0, 50),            # ≥5: Keep for 50 conversations (increased from 4.0)
+            (3.0, 20),            # ≥3: Keep for 20 conversations (increased from 2.0)
+            (0.0, 10),            # <3: Keep for 10 conversations
+        ]
+        self.context_window = 2  # Check 2 conversations before/after
+        
+    def manage_memories(self, memories: List[Dict]) -> List[Dict]:
+        """Main memory management function"""
+        if not memories:
+            return []
+        
+        total_count = len(memories)
+        kept_memories = []
+        
+        for idx, memory in enumerate(memories):
+            conversations_ago = total_count - idx
+            
+            # Apply context bonus for low-importance memories near important ones
+            adjusted_importance = self._calculate_contextual_importance(
+                memory, memories, idx
+            )
+            
+            # Check retention rules
+            should_keep = self._should_keep_memory(
+                adjusted_importance, conversations_ago
+            )
+            
+            if should_keep:
+                memory['adjusted_importance'] = adjusted_importance
+                kept_memories.append(memory)
+        
+        # Apply hard limit to prevent unlimited growth
+        return self._apply_hard_limits(kept_memories)
+    
+    def _should_keep_memory(self, importance: float, conversations_ago: int) -> bool:
+        """Determine if memory should be kept based on importance and recency"""
+        for min_score, max_convos in self.retention_rules:
+            if importance >= min_score:
+                return conversations_ago <= max_convos
+        return False
+    
+    def _calculate_contextual_importance(self, memory: Dict, all_memories: List[Dict], current_idx: int) -> float:
+        """Calculate importance with context bonus"""
+        base_importance = memory.get('importance', 0)
+        
+        # Only boost low-importance messages near important ones
+        if base_importance >= 3:
+            return base_importance
+        
+        context_bonus = 0
+        start_idx = max(0, current_idx - self.context_window)
+        end_idx = min(len(all_memories), current_idx + self.context_window + 1)
+        
+        for i in range(start_idx, end_idx):
+            if i == current_idx:
+                continue
+            nearby_importance = all_memories[i].get('importance', 0)
+            if nearby_importance >= 8:
+                distance = abs(i - current_idx)
+                bonus = 1.0 / distance  # 1.0 for adjacent, 0.5 for 2 away
+                context_bonus = max(context_bonus, bonus)
+        
+        return min(base_importance + context_bonus, 4.0)  # Cap at 4
+    
+    def _apply_hard_limits(self, memories: List[Dict]) -> List[Dict]:
+        """Apply absolute limits to prevent unlimited memory growth"""
+        max_total = 200  # Absolute maximum memories
+        max_low_importance = 30  # Maximum low-importance memories
+        
+        if len(memories) <= max_total:
+            return memories
+        
+        # Sort by importance and recency
+        memories.sort(
+            key=lambda m: (
+                m.get('adjusted_importance', m.get('importance', 0)),
+                -memories.index(m)  # Newer as tiebreaker
+            ),
+            reverse=True
+        )
+        
+        # Limit low-importance memories
+        high_importance = [m for m in memories if m.get('importance', 0) >= 4]
+        low_importance = [m for m in memories if m.get('importance', 0) < 4]
+        
+        result = high_importance + low_importance[:max_low_importance]
+        return result[:max_total]
+
+
 class GPT4AllNPCServer:
     """NPC server using GPT4All with Llama 3.2"""
     
@@ -314,6 +437,9 @@ class GPT4AllNPCServer:
         
         # Initialize memory importance scorer
         self.importance_scorer = MemoryImportanceScorer()
+        
+        # Initialize memory manager
+        self.memory_manager = ConversationBasedMemoryManager()
         
     def load_config(self, config_path: str) -> dict:
         """Load configuration from JSON file"""
@@ -448,10 +574,15 @@ class GPT4AllNPCServer:
         
         self.memory_cache[npc_name].append(memory_entry)
         
-        # Keep only recent memories in cache
-        max_entries = self.config.get("max_conversation_entries", 20)
-        if len(self.memory_cache[npc_name]) > max_entries:
-            self.memory_cache[npc_name] = self.memory_cache[npc_name][-max_entries:]
+        # Apply conversation-based memory management instead of simple truncation
+        self.memory_cache[npc_name] = self.memory_manager.manage_memories(
+            self.memory_cache[npc_name]
+        )
+        
+        # Log memory management stats
+        total = len(self.memory_cache[npc_name])
+        permanent = sum(1 for m in self.memory_cache[npc_name] if m.get('importance', 0) >= 8)
+        logger.info(f"[MEMORY] {npc_name}: {total} memories kept ({permanent} permanent)")
         
         # Mark cache as dirty (needs saving)
         self.cache_dirty[npc_name] = True
