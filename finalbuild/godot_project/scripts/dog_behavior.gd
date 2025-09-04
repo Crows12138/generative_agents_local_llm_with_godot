@@ -90,6 +90,9 @@ func _handle_moving(delta):
 		_bounce_off_wall()
 		time_until_direction_change = randf_range(2.0, 4.0)
 	
+	# Check for NPC collision and avoid them
+	_avoid_npcs()
+	
 	# Apply movement with current speed
 	var current_speed = run_speed if current_move_speed == MoveSpeed.RUN else walk_speed
 	velocity = movement_direction * current_speed
@@ -179,3 +182,37 @@ func _update_move_animation():
 			animated_sprite.play(anim_prefix + " right")
 		else:
 			animated_sprite.play(anim_prefix + " left")
+
+func _avoid_npcs():
+	"""Detect nearby NPCs and adjust movement direction to avoid pushing them"""
+	var space_state = get_world_2d().direct_space_state
+	var avoidance_distance = 50.0  # Distance to start avoiding NPCs
+	
+	# Check for NPCs in a circle around the dog
+	var query = PhysicsPointQueryParameters2D.new()
+	query.position = global_position
+	query.collision_mask = 0xFFFFFFFF  # Check all layers
+	
+	# Get all nearby bodies
+	var nearby_bodies = []
+	for angle in range(0, 360, 30):  # Check in 12 directions
+		var check_pos = global_position + Vector2(cos(deg_to_rad(angle)), sin(deg_to_rad(angle))) * avoidance_distance
+		query.position = check_pos
+		var result = space_state.intersect_point(query)
+		for collision in result:
+			var body = collision.collider
+			if body != self and body.is_in_group("npcs") or body.name in ["sam", "bob", "Alice"]:
+				nearby_bodies.append(body)
+	
+	# If NPCs found, adjust direction to avoid them
+	if nearby_bodies.size() > 0:
+		var avoidance_vector = Vector2.ZERO
+		for npc in nearby_bodies:
+			var direction_away = (global_position - npc.global_position).normalized()
+			avoidance_vector += direction_away
+		
+		if avoidance_vector.length() > 0:
+			# Blend current movement with avoidance
+			movement_direction = (movement_direction + avoidance_vector.normalized()).normalized()
+			# Change direction more frequently when avoiding
+			time_until_direction_change = min(time_until_direction_change, 0.5)

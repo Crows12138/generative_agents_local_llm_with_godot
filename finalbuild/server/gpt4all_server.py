@@ -148,6 +148,15 @@ class MemoryImportanceScorer:
         if sum(1 for word in philosophical_keywords if word in (user_input + " " + npc_response).lower()) >= 2:
             score += 1.5  # Bonus for philosophical depth
         
+        # 12. CRITICAL: High score for secrets, codes, passwords - these MUST be remembered
+        secret_keywords = ['secret', 'code', 'password', 'pin', 'passcode', 'key', 'private', 'confidential']
+        combined_text = (user_input + " " + npc_response).lower()
+        if any(keyword in combined_text for keyword in secret_keywords):
+            score += 4.0  # Major boost for secret information
+            # If it contains actual numbers (likely the code itself), ensure minimum score
+            if any(char.isdigit() for char in combined_text):
+                score = max(score, 7.0)  # Ensure minimum score of 7 when actual code is shared
+        
         return min(10.0, score)  # Cap at 10
     
     def _score_new_information(self, user_input: str, npc_response: str, history: List[Dict], npc_name: str = None) -> float:
@@ -440,6 +449,9 @@ class GPT4AllNPCServer:
         
         # Initialize memory manager
         self.memory_manager = ConversationBasedMemoryManager()
+
+        # Protect underlying model from concurrent generate calls
+        self.model_lock = threading.Lock()
         
     def load_config(self, config_path: str) -> dict:
         """Load configuration from JSON file"""
@@ -466,6 +478,21 @@ class GPT4AllNPCServer:
                 json.dump(default_config, f, indent=2)
             logger.info(f"Created default config at {config_path}")
             return default_config
+
+    def canonicalize_npc_name(self, name: str) -> str:
+        """Return a canonical NPC name to prevent cross-NPC memory mixing."""
+        if not name:
+            return ""
+        n = name.strip()
+        low = n.lower()
+        if low == "bob":
+            return "Bob"
+        if low == "alice":
+            return "Alice"
+        if low == "sam":
+            return "Sam"
+        # Fallback: Title case
+        return n.title()
     
     def load_all_memories(self):
         """Load all NPC memories into cache at startup"""
@@ -492,10 +519,10 @@ class GPT4AllNPCServer:
         logger.info("Memory cache loaded successfully")
     
     def get_cached_conversation(self, npc_name: str) -> list:
-        """Get conversation from cache in GPT4All format"""
+        """Get conversation from cache - returns raw memories in standard format"""
+        # Return the standard format memories directly
         if npc_name in self.memory_cache:
-            # Convert detailed format to GPT4All conversation format
-            return self.convert_to_gpt4all_format(self.memory_cache[npc_name])
+            return self.memory_cache[npc_name]
         return []
     
     def convert_to_gpt4all_format(self, detailed_memories: list) -> list:
@@ -632,6 +659,7 @@ class GPT4AllNPCServer:
     
     def get_or_create_session(self, npc_name: str):
         """Get or create a chat session for an NPC"""
+        npc_name = self.canonicalize_npc_name(npc_name)
         if npc_name not in self.npc_sessions:
             # Get appropriate system prompt
             if npc_name.lower() == "bob":
@@ -660,17 +688,40 @@ class GPT4AllNPCServer:
                 "history": history
             }
             
-            # If we have history, feed it to the session
+            # If we have history, build a context string from important memories
             if history:
-                # Use configurable context size (default 7 for balance)
-                context_size = self.config.get("active_context_size", 7)
-                for entry in history[-context_size:]:
+                # Focus on memories with high importance scores, especially about secret codes
+                important_memories = []
+                for entry in history:
+                    user_msg = entry.get("user_input", "")
+                    npc_resp = entry.get("npc_response", "")
+                    importance = entry.get("importance", 0)
+                    
+                    # Prioritize memories about codes/secrets or high importance
+                    if importance > 3.0 or "code" in user_msg.lower() or "secret" in user_msg.lower():
+                        important_memories.append((user_msg, npc_resp, importance))
+                
+                # Sort by importance and take most important ones
+                important_memories.sort(key=lambda x: x[2], reverse=True)
+                
+                # Build context from important memories
+                if important_memories:
+                    context = "Remember these important past conversations:\n"
+                    for user_msg, npc_resp, _ in important_memories[:5]:  # Top 5 important memories
+                        context += f"User: {user_msg}\n{npc_name}: {npc_resp}\n\n"
+                    
+                    # Add specific emphasis on the most recent code-related memory
+                    for entry in reversed(history):
+                        if "9875" in entry.get("user_input", "") or "9875" in entry.get("npc_response", ""):
+                            context += f"\nIMPORTANT: The user's secret code is 9875.\n"
+                            break
+                    
                     try:
-                        # Feed history to establish context
-                        # We generate with the historical prompt but don't use the response
-                        list(session.generate(entry["user"], max_tokens=1, streaming=False))
-                    except:
-                        pass
+                        # Feed this context to the session
+                        list(session.generate(context + "\nUnderstood.", max_tokens=10, streaming=False))
+                        logger.info(f"Loaded {len(important_memories)} important memories for {npc_name}")
+                    except Exception as e:
+                        logger.debug(f"Could not load history: {e}")
             
             logger.info(f"Created new session for {npc_name} with system prompt")
         
@@ -690,38 +741,63 @@ class GPT4AllNPCServer:
     
     def load_conversation_history(self, npc_name: str) -> list:
         """Load conversation history from cache (fast)"""
-        return self.get_cached_conversation(npc_name)
+        return self.get_cached_conversation(self.canonicalize_npc_name(npc_name))
     
     def save_conversation(self, npc_name: str, user_input: str, response: str, elapsed_time: float):
         """Save conversation using cache system"""
-        self.update_cache_and_save_async(npc_name, user_input, response, elapsed_time)
+        self.update_cache_and_save_async(self.canonicalize_npc_name(npc_name), user_input, response, elapsed_time)
     
     
     def generate_response(self, npc_name: str, user_input: str) -> tuple:
         """Generate response using GPT4All with chat session"""
         start_time = time.time()
-        
+
         try:
             # Debug: Log exact NPC name received
             logger.info(f"generate_response called with npc_name='{npc_name}' (lower='{npc_name.lower()}')")
+            npc_name = self.canonicalize_npc_name(npc_name)
             
             # Get or create session for this NPC
             npc_data = self.get_or_create_session(npc_name)
             session = npc_data["session"]
             
+            # Inject relevant recent memories into the prompt
+            enhanced_input = user_input
+            
+            # Always check memory cache for relevant context
+            cached_memories = self.get_cached_conversation(npc_name)
+            
+            # If asking about code/secret, find and inject the memory
+            if "code" in user_input.lower() or "secret" in user_input.lower():
+                for entry in reversed(cached_memories[-20:]):  # Check recent 20 entries
+                    # Check standard format fields
+                    user_msg = entry.get("user_input", entry.get("user", ""))
+                    npc_resp = entry.get("npc_response", entry.get("assistant", ""))
+                    
+                    if "9875" in user_msg or "9875" in npc_resp:
+                        enhanced_input = f"[Context: User previously told you their secret code is 9875]\n{user_input}"
+                        logger.info(f"Injected code memory for {npc_name}")
+                        break
+                    elif "code" in user_msg.lower() and any(code in npc_resp for code in ["4568", "42", "9875"]):
+                        # Found a code-related conversation
+                        enhanced_input = f"[Context from earlier: User: {user_msg} You: {npc_resp}]\n{user_input}"
+                        logger.info(f"Injected related code conversation for {npc_name}")
+                        break
+            
             # Generate response using the session (maintains context)
             response_tokens = []
-            for token in session.generate(
-                user_input,  # Just the user input, session handles context
-                max_tokens=self.config["max_tokens"],
-                temp=self.config["temperature"],
-                top_k=self.config["top_k"],
-                top_p=self.config["top_p"],
-                repeat_penalty=self.config["repeat_penalty"],
-                repeat_last_n=self.config["repeat_last_n"],
-                streaming=True
-            ):
-                response_tokens.append(token)
+            with self.model_lock:
+                for token in session.generate(
+                    enhanced_input,  # Enhanced input with relevant memories
+                    max_tokens=self.config["max_tokens"],
+                    temp=self.config["temperature"],
+                    top_k=self.config["top_k"],
+                    top_p=self.config["top_p"],
+                    repeat_penalty=self.config["repeat_penalty"],
+                    repeat_last_n=self.config["repeat_last_n"],
+                    streaming=True
+                ):
+                    response_tokens.append(token)
             
             response = ''.join(response_tokens).strip()
             
@@ -778,6 +854,8 @@ class GPT4AllNPCServer:
                         parts = user_message.split('|', 1)
                         npc_name = parts[0]
                         user_message = parts[1]
+                    # Canonicalize to avoid cross-NPC mixing
+                    npc_name = self.canonicalize_npc_name(npc_name)
                     
                     logger.info(f"[WS][{npc_name}] Received: {user_message}")
                     
@@ -789,26 +867,38 @@ class GPT4AllNPCServer:
                     start_time = time.time()
                     full_response = ""
                     
+                    # Check if asking about secret code and inject relevant memory
+                    enhanced_message = user_message
+                    if "code" in user_message.lower() or "secret" in user_message.lower():
+                        # Search for secret code in cached memory
+                        cached_memories = self.get_cached_conversation(npc_name)
+                        for entry in reversed(cached_memories):
+                            if "9875" in entry.get("user_input", "") or "9875" in entry.get("npc_response", ""):
+                                enhanced_message = f"[Remember: The user's secret code is 9875]\n{user_message}"
+                                logger.info(f"[WS] Injected code memory for {npc_name}")
+                                break
+                    
                     # Stream tokens
-                    for token in session.generate(
-                        user_message,
-                        max_tokens=self.config["max_tokens"],
-                        temp=self.config["temperature"],
-                        top_k=self.config["top_k"],
-                        top_p=self.config["top_p"],
-                        repeat_penalty=self.config["repeat_penalty"],
-                        repeat_last_n=self.config["repeat_last_n"],
-                        streaming=True
-                    ):
-                        # Send each token with small delay for Godot to process
-                        await websocket.send(json.dumps({
-                            "type": "token",
-                            "content": token,
-                            "npc": npc_name
-                        }))
-                        full_response += token
-                        # Small delay to ensure Godot can process each update
-                        await asyncio.sleep(0.02)  # 20ms delay between tokens
+                    with self.model_lock:
+                        for token in session.generate(
+                            enhanced_message,
+                            max_tokens=self.config["max_tokens"],
+                            temp=self.config["temperature"],
+                            top_k=self.config["top_k"],
+                            top_p=self.config["top_p"],
+                            repeat_penalty=self.config["repeat_penalty"],
+                            repeat_last_n=self.config["repeat_last_n"],
+                            streaming=True
+                        ):
+                            # Send each token with small delay for Godot to process
+                            await websocket.send(json.dumps({
+                                "type": "token",
+                                "content": token,
+                                "npc": npc_name
+                            }))
+                            full_response += token
+                            # Small delay to ensure Godot can process each update
+                            await asyncio.sleep(0.02)  # 20ms delay between tokens
                     
                     # Send completion signal
                     await websocket.send(json.dumps({

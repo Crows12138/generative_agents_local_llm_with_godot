@@ -71,4 +71,5 @@ finalbuild/
 - **Unified Memory System**: Single storage format, 50% less I/O
 - **GPU Acceleration**: Fast response times (0.5-2 seconds)
 - **Conversation Context**: NPCs remember previous interactions
-- **Dynamic Format Conversion**: Automatic format adaptation when needed
+
+Note: Memories are stored only under `finalbuild/npc_memories/`.

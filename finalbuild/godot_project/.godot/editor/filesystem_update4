@@ -2,3 +2,5 @@ res://scenes/cozy_bar.tscn
 res://scripts/npc_decision_controller.gd
 res://scripts/action_executor.gd
 res://scripts/integrate_ai_system.gd
+res://scripts/dog_behavior.gd
+res://scripts/bar_server_client_fixed.gd
