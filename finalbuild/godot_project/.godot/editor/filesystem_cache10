@@ -1,8 +1,8 @@
 ea4bc82a6ad023ab7ee23ee620429895
-::res://::1756925657
-::res://scenes/::1756925578
-cozy_bar.tscn::PackedScene::3805698554169447289::1756925578::0::1::::<><><>0<>0<><>::uid://ds88w13lmor3f::::res://scripts/bar_server_client_fixed.gd<>uid://qfjrktybjd21::::res://scripts/camera_fix.gd
-::res://scripts/::1756925555
-bar_server_client_fixed.gd::GDScript/GDScript::8492830060053083665::1756925392::0::1::::<>Node2D<><>0<>0<><>::
+::res://::1756944983
+::res://scenes/::1756928371
+cozy_bar.tscn::PackedScene::3805698554169447289::1756928371::0::1::::<><><>0<>0<><>::uid://ds88w13lmor3f::::res://scripts/bar_server_client_fixed.gd<>uid://qfjrktybjd21::::res://scripts/camera_fix.gd
+::res://scripts/::1756926720
+bar_server_client_fixed.gd::GDScript::8492830060053083665::1756926720::0::1::::<>Node2D<><>0<>0<><>::
 camera_fix.gd::GDScript/GDScript::1133920754087028436::1756925392::0::1::::<>Camera2D<><>0<>0<><>::
 ::res://tilesets/::1756925312

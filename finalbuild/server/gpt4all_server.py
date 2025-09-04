@@ -12,12 +12,286 @@ import logging
 import asyncio
 import websockets
 import threading
+import re
 from pathlib import Path
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
+from collections import Counter
 from gpt4all import GPT4All
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+class MemoryImportanceScorer:
+    """Multi-dimensional memory importance scoring system"""
+    
+    def __init__(self):
+        """Initialize the scorer with emotion keywords and patterns"""
+        self.emotion_keywords = {
+            'positive': ['happy', 'love', 'great', 'wonderful', 'amazing', 'excellent', 
+                        'fantastic', 'beautiful', 'awesome', 'perfect', 'joy', 'excited'],
+            'negative': ['sad', 'angry', 'hate', 'terrible', 'awful', 'horrible', 
+                        'disgusting', 'disappointed', 'frustrated', 'upset', 'fear', 'worried'],
+            'surprise': ['wow', 'amazing', 'unbelievable', 'incredible', 'shocking', 
+                        'surprising', 'unexpected', 'astonishing']
+        }
+        
+        self.relationship_indicators = {
+            'positive': ['friend', 'trust', 'help', 'together', 'care', 'support', 
+                        'appreciate', 'thank', 'love', 'like'],
+            'negative': ['enemy', 'distrust', 'hate', 'avoid', 'dislike', 'angry', 
+                        'disappointed', 'betray']
+        }
+        
+        self.depth_indicators = ['because', 'why', 'think', 'feel', 'believe', 
+                                 'remember', 'understand', 'realize', 'mean', 'important']
+        
+        # Common English stop words to filter out
+        self.stop_words = {
+            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+            'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
+            'before', 'after', 'above', 'below', 'between', 'under', 'again',
+            'further', 'then', 'once', 'is', 'are', 'was', 'were', 'be', 'have',
+            'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
+            'may', 'might', 'must', 'shall', 'can', 'need', 'dare', 'ought', 'i',
+            'you', 'he', 'she', 'it', 'we', 'they', 'them', 'their', 'this', 'that',
+            'these', 'those', 'there', 'here', 'where', 'when', 'what', 'which', 'who'
+        }
+        
+        # Cache for historical words to avoid recomputation
+        self.historical_words_cache = {}  # Key: (npc_name, history_length), Value: word set
+    
+    def calculate_importance(self, 
+                            user_input: str, 
+                            npc_response: str,
+                            conversation_history: List[Dict],
+                            timestamp: float,
+                            npc_name: str = None) -> float:
+        """
+        Calculate importance score (0-10) based on multiple dimensions
+        
+        Args:
+            user_input: User's message
+            npc_response: NPC's response
+            conversation_history: Previous conversation entries
+            timestamp: Current timestamp
+            npc_name: Optional NPC name for caching
+            
+        Returns:
+            importance_score: Float between 0 and 10
+        """
+        score = 0.0
+        
+        # 1. New Information Detection (0-3 points)
+        score += self._score_new_information(user_input, npc_response, conversation_history, npc_name)
+        
+        # 2. Emotional Intensity (0-2 points)
+        score += self._score_emotion_intensity(user_input + " " + npc_response)
+        
+        # 3. Conversation Depth (0-2 points)
+        score += self._score_conversation_depth(user_input, npc_response)
+        
+        # 4. Relationship Changes (0-2 points)
+        score += self._score_relationship_change(user_input + " " + npc_response, conversation_history)
+        
+        # 5. Recency Bonus (0-1 point)
+        score += self._calculate_recency_bonus(timestamp)
+        
+        # 6. Apply repetition penalty (check recent 5 messages)
+        repetition_penalty = self._calculate_repetition_penalty(user_input, conversation_history[-5:] if len(conversation_history) > 0 else [])
+        score *= repetition_penalty
+        
+        # 7. Apply brevity penalty for very short messages
+        if len(user_input.strip()) <= 3:  # "OK", "Yes", "No" etc.
+            score *= 0.7  # Reduce score by 30%
+        
+        # 8. Additional penalty for single-word responses (but not if emotionally significant)
+        single_word_politeness = ['thanks', 'thank', 'sorry', 'please', 'ok', 'yes', 'no', 'bye', 'nice', 'good']
+        emotional_exceptions = ['love', 'want you', 'need you', 'miss', 'care']
+        
+        # Check if it's a short message that should be penalized
+        is_emotional_exception = any(phrase in user_input.lower() for phrase in emotional_exceptions)
+        
+        if not is_emotional_exception:
+            # Stricter penalty for single words
+            if len(user_input.split()) == 1 and user_input.lower() in single_word_politeness:
+                score *= 0.5  # 50% reduction for single polite words
+            elif len(user_input.split()) <= 2 and any(word in user_input.lower() for word in single_word_politeness):
+                score *= 0.6  # 40% reduction for 2-word politeness
+        
+        # 9. Boost for deep relationship expressions and emotional peaks
+        deep_relationship_phrases = ['real friend', 'true friend', 'mean so much', 'care about you', 
+                                     'love you', 'miss you', 'changed my life', 'saved me',
+                                     'i want you', 'i need you', 'in love with']
+        if any(phrase in (user_input + " " + npc_response).lower() for phrase in deep_relationship_phrases):
+            score += 2.0  # Significant bonus for deep relationship moments
+            # Ensure emotional peaks don't score too low
+            score = max(score, 6.0)  # Minimum score of 6 for important emotional moments
+        
+        # 10. Boost for philosophical/existential topics
+        philosophical_keywords = ['meaning', 'purpose', 'death', 'existence', 'consciousness', 
+                                  'soul', 'destiny', 'universe', 'philosophy', 'wisdom']
+        if sum(1 for word in philosophical_keywords if word in (user_input + " " + npc_response).lower()) >= 2:
+            score += 1.5  # Bonus for philosophical depth
+        
+        return min(10.0, score)  # Cap at 10
+    
+    def _score_new_information(self, user_input: str, npc_response: str, history: List[Dict], npc_name: str = None) -> float:
+        """Score based on information novelty using TF-IDF-like approach with caching and stop word filtering"""
+        if not history:
+            return 3.0  # First conversation is always important
+        
+        # Create cache key based on NPC name and history length
+        cache_key = (npc_name, len(history)) if npc_name else ('default', len(history))
+        
+        # Check cache or compute historical words
+        if cache_key in self.historical_words_cache:
+            historical_words = self.historical_words_cache[cache_key]
+        else:
+            # Extract all previous text
+            historical_text = " ".join([
+                entry.get('user_input', '') + " " + entry.get('npc_response', '')
+                for entry in history[-10:]  # Check last 10 entries
+            ])
+            
+            # Tokenize and filter stop words
+            historical_words = set(re.findall(r'\w+', historical_text.lower()))
+            historical_words = historical_words - self.stop_words
+            
+            # Cache the result
+            self.historical_words_cache[cache_key] = historical_words
+            
+            # Limit cache size to prevent memory issues
+            if len(self.historical_words_cache) > 50:
+                # Remove oldest cache entries
+                oldest_key = next(iter(self.historical_words_cache))
+                del self.historical_words_cache[oldest_key]
+        
+        # Tokenize current exchange and filter stop words
+        current_words = set(re.findall(r'\w+', (user_input + " " + npc_response).lower()))
+        current_words = current_words - self.stop_words
+        
+        # Calculate novelty ratio
+        if not current_words:
+            return 0.0
+            
+        new_words = current_words - historical_words
+        novelty_ratio = len(new_words) / len(current_words)
+        
+        # Score based on novelty (more meaningful with stop words filtered)
+        if novelty_ratio > 0.6:
+            return 3.0  # Mostly new meaningful information
+        elif novelty_ratio > 0.3:
+            return 2.0  # Some new meaningful information
+        elif novelty_ratio > 0.15:
+            return 1.0  # Little new meaningful information
+        return 0.5  # Mostly repetitive
+    
+    def _score_emotion_intensity(self, text: str) -> float:
+        """Score based on emotional content"""
+        text_lower = text.lower()
+        emotion_count = 0
+        
+        for emotion_type, keywords in self.emotion_keywords.items():
+            for keyword in keywords:
+                if keyword in text_lower:
+                    emotion_count += 1
+        
+        # Score based on emotion density
+        if emotion_count >= 3:
+            return 2.0  # High emotion
+        elif emotion_count >= 1:
+            return 1.0  # Some emotion
+        return 0.0  # No significant emotion
+    
+    def _score_conversation_depth(self, user_input: str, npc_response: str) -> float:
+        """Score based on conversation depth and complexity"""
+        combined_text = (user_input + " " + npc_response).lower()
+        
+        # Check for depth indicators
+        depth_score = 0
+        for indicator in self.depth_indicators:
+            if indicator in combined_text:
+                depth_score += 0.3
+        
+        # Check message length (longer usually means deeper)
+        if len(combined_text) > 200:
+            depth_score += 0.5
+        elif len(combined_text) > 100:
+            depth_score += 0.3
+        
+        # Check for questions (indicates engagement)
+        if '?' in combined_text:
+            depth_score += 0.5
+        
+        return min(2.0, depth_score)
+    
+    def _score_relationship_change(self, text: str, history: List[Dict]) -> float:
+        """Score based on relationship status changes"""
+        text_lower = text.lower()
+        
+        # Check for routine politeness (should not score high)
+        routine_phrases = ['thanks', 'thank you', 'please', 'sorry', 'excuse me']
+        is_routine = any(phrase in text_lower for phrase in routine_phrases) and len(text_lower) < 100
+        
+        positive_count = sum(1 for word in self.relationship_indicators['positive'] 
+                           if word in text_lower)
+        negative_count = sum(1 for word in self.relationship_indicators['negative'] 
+                           if word in text_lower)
+        
+        # Apply reduction for routine politeness
+        if is_routine:
+            positive_count *= 0.5  # Reduce weight of routine positive indicators
+        
+        # Strong relationship indicator
+        if positive_count >= 2 or negative_count >= 2:
+            return 2.0 if not is_routine else 1.0
+        elif positive_count >= 1 or negative_count >= 1:
+            return 1.0 if not is_routine else 0.5
+        return 0.0
+    
+    def _calculate_recency_bonus(self, timestamp: float) -> float:
+        """Calculate bonus for recent memories"""
+        current_time = time.time()
+        hours_ago = (current_time - timestamp) / 3600
+        
+        if hours_ago < 1:
+            return 1.0  # Very recent
+        elif hours_ago < 24:
+            return 0.5  # Same day
+        elif hours_ago < 168:  # One week
+            return 0.2
+        return 0.0  # Older memories
+    
+    def _calculate_repetition_penalty(self, user_input: str, recent_history: List[Dict]) -> float:
+        """Calculate penalty for repetitive messages"""
+        if not recent_history:
+            return 1.0  # No penalty for first messages
+        
+        # Normalize input for comparison
+        normalized_input = user_input.lower().strip()
+        
+        # Check for exact or very similar repetitions
+        repetition_count = 0
+        for entry in recent_history:
+            recent_input = entry.get('user_input', '').lower().strip()
+            
+            # Exact match
+            if normalized_input == recent_input:
+                repetition_count += 1
+            # Very short and similar (like greetings)
+            elif len(normalized_input) < 20 and normalized_input in recent_input or recent_input in normalized_input:
+                repetition_count += 0.5
+        
+        # Apply progressive penalty
+        if repetition_count >= 2:
+            return 0.5  # Heavy penalty for multiple repetitions
+        elif repetition_count >= 1:
+            return 0.7  # Moderate penalty for one repetition
+        elif repetition_count >= 0.5:
+            return 0.85  # Light penalty for similar content
+        
+        return 1.0  # No penalty
 
 
 class GPT4AllNPCServer:
@@ -37,6 +311,9 @@ class GPT4AllNPCServer:
         self.memory_cache = {}  # Cache all NPC memories in RAM
         self.cache_dirty = {}  # Track which caches need saving
         self.load_all_memories()  # Load memories at startup
+        
+        # Initialize memory importance scorer
+        self.importance_scorer = MemoryImportanceScorer()
         
     def load_config(self, config_path: str) -> dict:
         """Load configuration from JSON file"""
@@ -132,23 +409,40 @@ class GPT4AllNPCServer:
             return self.memory_cache[npc_name]
     
     def update_cache_and_save_async(self, npc_name: str, user_input: str, response: str, elapsed_time: float):
-        """Update cache immediately and mark for saving"""
+        """Update cache immediately and mark for saving with dynamic importance scoring"""
         from datetime import datetime
         
         # Create unified memory entry (detailed format)
         if npc_name not in self.memory_cache:
             self.memory_cache[npc_name] = []
         
+        # Calculate dynamic importance score
+        timestamp = time.time()
+        importance_score = self.importance_scorer.calculate_importance(
+            user_input=user_input,
+            npc_response=response,
+            conversation_history=self.memory_cache[npc_name],
+            timestamp=timestamp,
+            npc_name=npc_name  # Pass NPC name for caching
+        )
+        
+        # Log importance score for monitoring
+        logger.info(f"[MEMORY] {npc_name}: Importance={importance_score:.2f} for '{user_input[:30]}...'")
+        
         memory_entry = {
-            "timestamp": time.time(),
+            "timestamp": timestamp,
             "datetime": datetime.now().isoformat(),
             "user_input": user_input,
             "npc_response": response,
             "is_deep_thinking": False,
-            "importance": 3.0,
+            "importance": importance_score,  # Now using dynamic score (0-10)
             "metadata": {
                 "response_time": elapsed_time,
-                "model": f"{self.config['model_file']} (GPT4All)"
+                "model": f"{self.config['model_file']} (GPT4All)",
+                "importance_details": {
+                    "calculated_score": importance_score,
+                    "scoring_method": "multi_dimensional"
+                }
             }
         }
         
