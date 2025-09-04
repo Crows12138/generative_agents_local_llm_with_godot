@@ -1,5 +1,4 @@
 res://scenes/cozy_bar.tscn
-res://scripts/camera_fix.gd
-res://scripts/alice_npc.gd
-res://scripts/bob_npc.gd
-res://scripts/sam_npc.gd
+res://scripts/npc_decision_controller.gd
+res://scripts/action_executor.gd
+res://scripts/integrate_ai_system.gd

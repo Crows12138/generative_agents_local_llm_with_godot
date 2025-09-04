@@ -48,6 +48,13 @@ func _ready():
 	print("Python path: ", python_path)
 	print("Project root: ", project_root)
 	
+	# INTEGRATE AI DECISION SYSTEM
+	print("\n[AI SYSTEM] Integrating AI decision system...")
+	var IntegrateAI = load("res://scripts/integrate_ai_system.gd")
+	IntegrateAI.integrate_ai_to_scene(self)
+	print("[AI SYSTEM] Integration complete! NPCs now have intelligent decision making.")
+	print("[AI SYSTEM] Make sure decision_server.py is running on port 9998!")
+	
 	# Get NPC nodes
 	setup_npcs()
 	
