@@ -1,2 +1,5 @@
 res://scenes/cozy_bar.tscn
 res://scripts/camera_fix.gd
+res://scripts/alice_npc.gd
+res://scripts/bob_npc.gd
+res://scripts/sam_npc.gd

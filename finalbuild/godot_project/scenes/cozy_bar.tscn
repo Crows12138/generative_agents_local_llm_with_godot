@@ -31487,18 +31487,18 @@ tile_map_data = PackedByteArray("AADXADAAAwAAAAAAAADvADwAAwACAAAAAAD2AGUAAwADAAE
 tile_set = SubResource("TileSet_0b1vl")
 
 [node name="bob" type="CharacterBody2D" parent="."]
+position = Vector2(317, 136)
 z_index = 2
 y_sort_enabled = true
 script = ExtResource("bob_npc_script")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="bob"]
-position = Vector2(317, 136)
 sprite_frames = SubResource("SpriteFrames_1jur2")
 animation = &"idle"
 frame_progress = 0.969266
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="bob"]
-position = Vector2(316.5, 143)
+position = Vector2(-0.5, 7)
 shape = SubResource("RectangleShape2D_bob")
 
 [node name="dog" type="CharacterBody2D" parent="."]
@@ -31546,27 +31546,28 @@ position = Vector2(59, -31.5)
 shape = SubResource("RectangleShape2D_wall_vertical")
 
 [node name="Alice" type="CharacterBody2D" parent="."]
+position = Vector2(85, 285)
 script = ExtResource("21_pxi4p")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Alice"]
-position = Vector2(85, 285)
 sprite_frames = SubResource("SpriteFrames_4j87i")
 animation = &"idle"
 frame_progress = 0.992173
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Alice"]
-position = Vector2(85, 293)
+position = Vector2(0, 8)
 shape = SubResource("RectangleShape2D_s282g")
 
 [node name="sam" type="CharacterBody2D" parent="."]
+position = Vector2(448, 279)
+z_index = 1
 script = ExtResource("23_277cw")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="sam"]
-position = Vector2(448, 279)
 sprite_frames = SubResource("SpriteFrames_8sadc")
 animation = &"idle"
 frame_progress = 0.672659
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="sam"]
-position = Vector2(448, 286)
+position = Vector2(0, 7)
 shape = SubResource("RectangleShape2D_me8ii")
