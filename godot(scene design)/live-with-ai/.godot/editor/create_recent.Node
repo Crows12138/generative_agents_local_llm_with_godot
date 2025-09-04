@@ -1,0 +1,10 @@
+TileMapLayer
+AnimatedSprite2D
+CharacterBody2D
+AnimationPlayer
+TileMap
+Node
+Label
+ColorRect
+Sprite2D
+CollisionShape2D
