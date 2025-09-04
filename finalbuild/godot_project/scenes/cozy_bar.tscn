@@ -1,24 +1,21 @@
-[gd_scene load_steps=221 format=4 uid="uid://buhrkf3qrgfxx"]
+[gd_scene load_steps=218 format=4 uid="uid://buhrkf3qrgfxx"]
 
 [ext_resource type="Script" uid="uid://ds88w13lmor3f" path="res://scripts/bar_server_client_fixed.gd" id="1_6ieo7"]
-[ext_resource type="Texture2D" path="res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/WoodenTable.png" id="2_6ieo7"]
-[ext_resource type="Script" uid="uid://qfjrktybjd21" path="res://scripts/camera_fix.gd" id="2_camera"]
-[ext_resource type="Texture2D" path="res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/tilesetformattedupdate1.png" id="2_l1gog"]
-[ext_resource type="Texture2D" path="res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/walls.png" id="2_qhmbj"]
-[ext_resource type="Texture2D" path="res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/sinucamesa.png" id="3_7q6y5"]
-[ext_resource type="Texture2D" path="res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/tavern-deco.png" id="5_qy3bk"]
-[ext_resource type="Texture2D" path="res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/tigela3.png" id="6_arur4"]
-[ext_resource type="Texture2D" path="res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/container.png" id="7_w8cgu"]
-[ext_resource type="Texture2D" path="res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/barrr2.png" id="8_3mp8l"]
-[ext_resource type="Texture2D" path="res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/download (3).jpg" id="9_5u45j"]
-[ext_resource type="Texture2D" path="res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/Dog_medium.png" id="9_mm8xd"]
-[ext_resource type="Texture2D" path="res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/download (3).png" id="10_ek8yi"]
+[ext_resource type="Texture2D" uid="uid://cbhnfgjc5qpaq" path="res://assets/sprites/tiles/Cozy_bar/WoodenTable.png" id="2_6ieo7"]
+[ext_resource type="Texture2D" uid="uid://1ute6mgfqoce" path="res://assets/sprites/tiles/Cozy_bar/tilesetformattedupdate1.png" id="2_l1gog"]
+[ext_resource type="Texture2D" uid="uid://40dtb2ke51or" path="res://assets/sprites/tiles/Cozy_bar/walls.png" id="2_qhmbj"]
+[ext_resource type="Texture2D" uid="uid://cv73yvrjx4x47" path="res://assets/sprites/tiles/Cozy_bar/sinucamesa.png" id="3_7q6y5"]
+[ext_resource type="Texture2D" uid="uid://dmmot5posh7rr" path="res://assets/sprites/tiles/Cozy_bar/tavern-deco.png" id="5_qy3bk"]
+[ext_resource type="Texture2D" uid="uid://bxtegxs8k8f3m" path="res://assets/sprites/tiles/Cozy_bar/tigela3.png" id="6_arur4"]
+[ext_resource type="Texture2D" uid="uid://bw2m5yjcvt0hp" path="res://assets/sprites/tiles/Cozy_bar/container.png" id="7_w8cgu"]
+[ext_resource type="Texture2D" uid="uid://ch4nxel06yi6g" path="res://assets/sprites/tiles/Cozy_bar/barrr2.png" id="8_3mp8l"]
+[ext_resource type="Texture2D" uid="uid://b6sokam6rys0o" path="res://assets/sprites/tiles/Cozy_bar/download (3).jpg" id="9_5u45j"]
+[ext_resource type="Texture2D" uid="uid://bx7vsn8l0dbt" path="res://assets/sprites/tiles/Cozy_bar/Dog_medium.png" id="9_mm8xd"]
+[ext_resource type="Texture2D" uid="uid://c7wkk0awdm2da" path="res://assets/sprites/tiles/Cozy_bar/download (3).png" id="10_ek8yi"]
 [ext_resource type="Texture2D" uid="uid://cnawwem0ck7rb" path="res://assets/sprites/characters/flautist.png" id="10_lt322"]
-[ext_resource type="Texture2D" uid="uid://bw2m5yjcvt0hp" path="res://assets/sprites/tiles/Our/container.png" id="11_oxopg"]
 [ext_resource type="Texture2D" uid="uid://bttw8tkn4vigc" path="res://assets/sprites/characters/Dog_medium.png" id="12_0d7pu"]
-[ext_resource type="Texture2D" uid="uid://dmmot5posh7rr" path="res://assets/sprites/tiles/Our/tavern-deco.png" id="12_3im3m"]
-[ext_resource type="Texture2D" path="res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/download 4.png" id="12_s282g"]
-[ext_resource type="Texture2D" path="res://assets/sprites/tiles/Cute RPG World - RPG Maker VX Ace/download 5.png" id="13_me8ii"]
+[ext_resource type="Texture2D" uid="uid://bbvrwe5ubhklh" path="res://assets/sprites/tiles/Cozy_bar/download 4.png" id="12_s282g"]
+[ext_resource type="Texture2D" uid="uid://c1t0aj7upxida" path="res://assets/sprites/tiles/Cozy_bar/download 5.png" id="13_me8ii"]
 [ext_resource type="Texture2D" uid="uid://b6iaa04djmxnb" path="res://assets/sprites/characters/Dog_medium r.png" id="13_nv83j"]
 [ext_resource type="Texture2D" uid="uid://dyn1j7trdfnb0" path="res://assets/sprites/characters/drummer.png" id="15_rpnp4"]
 [ext_resource type="Texture2D" uid="uid://demm4idbf005e" path="res://assets/sprites/characters/lutist.png" id="16_a0od2"]
@@ -25763,7 +25760,7 @@ margins = Vector2i(2, 5)
 13:13/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_0b1vl"]
-texture = ExtResource("11_oxopg")
+texture = ExtResource("7_w8cgu")
 margins = Vector2i(8, 1)
 texture_region_size = Vector2i(22, 16)
 0:0/0 = 0
@@ -28157,7 +28154,7 @@ texture_region_size = Vector2i(22, 16)
 31:123/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qfxmb"]
-texture = ExtResource("12_3im3m")
+texture = ExtResource("5_qy3bk")
 margins = Vector2i(22, 0)
 texture_region_size = Vector2i(27, 16)
 6:0/0 = 0
@@ -30795,7 +30792,7 @@ animations = [{
 }]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_dog"]
-size = Vector2(40, 30)
+size = Vector2(48, 30)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_horizontal"]
 size = Vector2(652, 20)
@@ -31432,9 +31429,9 @@ size = Vector2(24, 24)
 script = ExtResource("1_6ieo7")
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(331.841, 198.077)
-zoom = Vector2(1.915, 1.795)
-script = ExtResource("2_camera")
+position = Vector2(285, 303)
+offset = Vector2(50, -100)
+zoom = Vector2(1.9, 1.8)
 
 [node name="InteractiveObjects" type="Node2D" parent="."]
 
@@ -31515,7 +31512,7 @@ sprite_frames = SubResource("SpriteFrames_4uflq")
 animation = &"look up"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="dog"]
-position = Vector2(-6, 4)
+position = Vector2(-2, 4)
 shape = SubResource("RectangleShape2D_dog")
 
 [node name="InvisibleWalls" type="Node2D" parent="."]
