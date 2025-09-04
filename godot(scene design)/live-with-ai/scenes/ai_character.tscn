@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3 uid="uid://frhy5q45nllb"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_oymnt"]
+
+[node name="AiCharacter" type="CharacterBody2D"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_oymnt")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="Label" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 23.0
