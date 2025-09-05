@@ -8,14 +8,22 @@ extends Node
 @export var debug_mode: bool = true
 
 # Component references
-@onready var state_detector = $StateDetector
-@onready var action_executor = $ActionExecutor
+var state_detector: Node
+var action_executor: Node
 
 # WebSocket client
 var socket = WebSocketPeer.new()
 var connected_to_server: bool = false
 var reconnect_timer: Timer
 var last_state_sent: int = -1
+
+# Request deduplication and rate limiting
+var last_request_time: float = 0.0
+var min_request_interval: float = 1.0  # Minimum 1 second between requests
+var request_queue: Array = []  # Queue for delayed requests
+var queue_timer: Timer
+var last_state_hash: int = 0  # Track state changes
+var pending_request: bool = false  # Track if request is in progress
 
 # Statistics
 var stats = {
@@ -37,19 +45,27 @@ func _ready():
 	reconnect_timer.timeout.connect(_attempt_reconnect)
 	add_child(reconnect_timer)
 	
-	# Connect component signals
-	if state_detector:
-		state_detector.state_changed.connect(_on_state_changed)
-	else:
-		push_error("[DecisionController] StateDetector not found!")
+	# Setup queue timer for request rate limiting
+	queue_timer = Timer.new()
+	queue_timer.wait_time = 0.1  # Check queue every 100ms
+	queue_timer.timeout.connect(_process_request_queue)
+	queue_timer.autostart = true
+	add_child(queue_timer)
 	
-	if action_executor:
-		action_executor.action_completed.connect(_on_action_completed)
-	else:
-		push_error("[DecisionController] ActionExecutor not found!")
+	# Setup request timeout timer
+	var timeout_timer = Timer.new()
+	timeout_timer.name = "RequestTimeoutTimer"
+	timeout_timer.wait_time = 3.0  # 3 second timeout
+	timeout_timer.one_shot = true
+	timeout_timer.timeout.connect(_on_request_timeout)
+	add_child(timeout_timer)
+	
 	
 	# Connect to decision server
 	_connect_to_server()
+	
+	# Delay component connection until child nodes are ready
+	call_deferred("_connect_components")
 
 func _process(_delta):
 	if socket.get_ready_state() != WebSocketPeer.STATE_CLOSED:
@@ -75,6 +91,41 @@ func _process(_delta):
 				print("[DecisionController] Disconnected from server")
 				reconnect_timer.start()
 
+func _connect_components():
+	"""Connect to child components after they're ready"""
+	print("[DecisionController-", npc_name, "] Connecting to components...")
+	
+	# Find component references after scene is ready
+	state_detector = get_node_or_null("StateDetector")
+	action_executor = get_node_or_null("ActionExecutor")
+	
+	# If ActionExecutor not found as child, try finding it as sibling
+	if not action_executor:
+		action_executor = get_parent().get_node_or_null("ActionExecutor")
+	
+	# If still not found, try finding it in the parent's parent (NPC node)
+	if not action_executor:
+		var npc_parent = get_parent()
+		if npc_parent:
+			action_executor = npc_parent.get_node_or_null("ActionExecutor")
+	
+	# Connect component signals
+	if state_detector:
+		if state_detector.has_signal("state_changed"):
+			state_detector.state_changed.connect(_on_state_changed)
+			print("[DecisionController-", npc_name, "] Connected to StateDetector signal")
+		else:
+			push_error("[DecisionController-", npc_name, "] StateDetector has no state_changed signal!")
+	else:
+		push_error("[DecisionController-", npc_name, "] StateDetector not found!")
+	
+	if action_executor:
+		if action_executor.has_signal("action_completed"):
+			action_executor.action_completed.connect(_on_action_completed)
+		print("[DecisionController-", npc_name, "] Connected to ActionExecutor")
+	else:
+		push_error("[DecisionController-", npc_name, "] ActionExecutor not found!")
+
 func _connect_to_server():
 	"""Connect to the decision server"""
 	print("[DecisionController] Connecting to: ", decision_server_url)
@@ -93,33 +144,42 @@ func _attempt_reconnect():
 		_connect_to_server()
 
 func _on_state_changed(state_flags: int):
-	"""Handle state changes from detector"""
+	"""Handle state changes from detector with improved deduplication"""
+	print("[DecisionController-", npc_name, "] State changed: ", state_flags, " Connected: ", connected_to_server)
+	
 	if not connected_to_server:
-		if debug_mode:
-			print("[DecisionController] State changed but not connected: ", state_flags)
+		print("[DecisionController-", npc_name, "] State changed but not connected: ", state_flags)
 		return
 	
-	# Don't send duplicate states
-	if state_flags == last_state_sent:
+	# Don't send if we're already waiting for a response
+	if pending_request:
+		print("[DecisionController-", npc_name, "] Already waiting for response, skipping: ", state_flags)
 		return
 	
-	last_state_sent = state_flags
+	# Improved duplicate detection using hash
+	var current_time = Time.get_ticks_msec() / 1000.0
+	var state_hash = hash(str(state_flags) + str(int(current_time * 10)))  # Include time component
 	
-	# Create request
-	var request = {
-		"npc": npc_name,
-		"state": state_flags,
-		"timestamp": Time.get_ticks_msec() / 1000.0
-	}
+	# Don't send duplicate states or very recent similar states
+	if (state_flags == last_state_sent and 
+		current_time - last_request_time < min_request_interval):
+		print("[DecisionController-", npc_name, "] Duplicate/too frequent, skipping: ", state_flags)
+		return
 	
-	# Send to server
-	_send_to_server(request)
-	request_timestamp = Time.get_ticks_msec() / 1000.0
-	stats.decisions_requested += 1
+	# Check rate limiting
+	if current_time - last_request_time < min_request_interval:
+		print("[DecisionController-", npc_name, "] Rate limited, queuing request: ", state_flags)
+		# Clear old queue items for same state
+		request_queue = request_queue.filter(func(req): return req.state != state_flags)
+		# Add to queue
+		request_queue.append({
+			"state": state_flags,
+			"timestamp": current_time
+		})
+		return
 	
-	if debug_mode:
-		var decoded = state_detector.decode_state(state_flags)
-		print("[DecisionController] Sent state: ", decoded)
+	# Send immediately
+	_send_state_request(state_flags)
 
 func _send_to_server(data: Dictionary):
 	"""Send data to decision server"""
@@ -143,6 +203,13 @@ func _handle_server_message():
 		return
 	
 	var data = json.data
+	
+	# Clear pending request flag
+	pending_request = false
+	
+	# Reset any timeout timer if exists
+	if has_node("RequestTimeoutTimer"):
+		$RequestTimeoutTimer.stop()
 	
 	# Update response time stat
 	if request_timestamp > 0:
@@ -169,11 +236,11 @@ func _handle_decision(data: Dictionary):
 	var action = data.get("action", "observe")
 	var priority = data.get("priority", 0)
 	
-	if debug_mode:
-		print("[DecisionController] Received decision: ", action, " (priority: ", priority, ")")
+	print("[DecisionController-", npc_name, "] Received decision: ", action, " (priority: ", priority, ")")
 	
 	# Queue action for execution
 	if action_executor:
+		print("[DecisionController-", npc_name, "] Queuing action to executor")
 		action_executor.queue_action({
 			"action": action,
 			"priority": priority,
@@ -251,3 +318,71 @@ func _input(event):
 	if event.is_action_pressed("ui_page_down"):  # PageDown - Force decision
 		print("[DecisionController] Forcing decision request...")
 		force_decision_request()
+
+func test_manual_decision():
+	"""Test sending a manual decision request"""
+	print("[DecisionController-", npc_name, "] Testing manual decision...")
+	print("  Connected: ", connected_to_server)
+	print("  Socket state: ", socket.get_ready_state())
+	
+	if connected_to_server:
+		# Send test state: counter dirty
+		print("[DecisionController-", npc_name, "] Sending test state (counter_dirty)...")
+		_on_state_changed(1)  # Bit flag 1 = counter_dirty
+	else:
+		print("[DecisionController-", npc_name, "] Not connected, cannot test")
+
+func _send_state_request(state_flags: int):
+	"""Send state request with proper tracking"""
+	last_state_sent = state_flags
+	last_request_time = Time.get_ticks_msec() / 1000.0
+	pending_request = true  # Mark as pending
+	
+	# Start timeout timer
+	if has_node("RequestTimeoutTimer"):
+		$RequestTimeoutTimer.start()
+	
+	# Create request
+	var request = {
+		"npc": npc_name,
+		"state": state_flags,
+		"timestamp": last_request_time
+	}
+	
+	print("[DecisionController-", npc_name, "] Sending request: ", request)
+	
+	# Send to server
+	_send_to_server(request)
+	request_timestamp = last_request_time
+	stats.decisions_requested += 1
+	
+	if state_detector and state_detector.has_method("decode_state"):
+		var decoded = state_detector.decode_state(state_flags)
+		print("[DecisionController-", npc_name, "] Sent state: ", decoded)
+
+func _process_request_queue():
+	"""Process queued requests with rate limiting"""
+	if request_queue.is_empty() or pending_request:
+		return
+	
+	var current_time = Time.get_ticks_msec() / 1000.0
+	if current_time - last_request_time >= min_request_interval:
+		# Process next request in queue
+		var queued_request = request_queue.pop_front()
+		var state_flags = queued_request.state
+		
+		# Remove any older duplicate states from queue
+		request_queue = request_queue.filter(func(req): return req.state != state_flags)
+		
+		print("[DecisionController-", npc_name, "] Processing queued request: ", state_flags)
+		_send_state_request(state_flags)
+
+func _on_request_timeout():
+	"""Handle request timeout"""
+	print("[DecisionController-", npc_name, "] Request timeout! Clearing pending flag")
+	pending_request = false
+	stats.connection_failures += 1
+	
+	# Try to process next queued request if any
+	if not request_queue.is_empty():
+		_process_request_queue()

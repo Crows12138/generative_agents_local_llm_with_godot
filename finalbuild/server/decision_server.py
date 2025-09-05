@@ -52,7 +52,7 @@ class BitStateDecoder:
 class NPCDecisionEngine:
     """Fast decision engine for NPCs using local LLM"""
     
-    def __init__(self, model_name: str = "Llama-3.2-3B-Instruct-Q4_0.gguf"):
+    def __init__(self, model_name: str = "Phi-3-mini-4k-instruct.Q4_0.gguf"):
         # Initialize model
         model_path = Path(__file__).parent.parent.parent / "models" / "llms"
         self.model = GPT4All(
@@ -83,29 +83,43 @@ class NPCDecisionEngine:
     def state_to_perception(self, state_dict: Dict[str, bool], npc_name: str) -> str:
         """Convert state to natural language perception"""
         perceptions = []
+        has_customers = False
         
-        # Priority order for perception
+        # Customer situations (highest priority)
         if state_dict.get("counter_has_customers"):
-            perceptions.append("customers are waiting at the bar")
+            perceptions.append("customers are waiting at the bar counter")
+            has_customers = True
         if state_dict.get("table_has_customers"):
-            perceptions.append("customers are at a table")
+            perceptions.append("customers are sitting at tables") 
+            has_customers = True
+        
+        # Urgent maintenance issues
         if state_dict.get("shelf_empty"):
-            perceptions.append("the liquor shelf is empty")
+            perceptions.append("the liquor shelf is completely empty")
+        if state_dict.get("shelf_low"):
+            perceptions.append("supplies are running low")
+            
+        # Cleaning issues
         if state_dict.get("counter_dirty"):
             perceptions.append("the bar counter is dirty")
         if state_dict.get("table_dirty"):
             perceptions.append("a table needs cleaning")
-        if state_dict.get("shelf_low"):
-            perceptions.append("supplies are running low")
+            
+        # Other situations
         if state_dict.get("pool_waiting"):
             perceptions.append("someone is waiting for a pool partner")
         if state_dict.get("music_playing"):
             perceptions.append("music is playing")
         
         if not perceptions:
-            return "Everything looks normal"
+            return "Everything looks normal. No customers are present."
         
-        return "You notice that " + " and ".join(perceptions)
+        # Add customer status context
+        result = "You notice that " + " and ".join(perceptions)
+        if not has_customers:
+            result += ". No customers are currently present."
+        
+        return result
     
     def get_npc_role(self, npc_name: str) -> str:
         """Get NPC role description"""
@@ -134,13 +148,26 @@ class NPCDecisionEngine:
         perception = self.state_to_perception(state_dict, npc_name)
         role = self.get_npc_role(npc_name)
         
-        # Detailed prompt for LLM
+        # Simplified direct prompt for LLM
         prompt = f"""You are {npc_name}, {role}.
 {perception}
 
-Choose ONE action: serve_customer, clean_counter, clear_table, restock, observe, take_break
+What should you do?
+- clean_counter (if counter is dirty)
+- restock (if supplies low/empty)
+- serve_customer (ONLY if customers waiting)
+- clear_table (if table dirty)
+- observe (if nothing needs attention)
 
-Reply with just the action word."""
+Reply with ONE action word:"""
+        
+        import sys
+        
+        # Force output to stderr and flush
+        print(f"\n{'='*50}", file=sys.stderr, flush=True)
+        print(f"[LLM-{npc_name}] PROMPT:", file=sys.stderr, flush=True)
+        print(f"{prompt}", file=sys.stderr, flush=True)
+        print(f"{'='*50}", file=sys.stderr, flush=True)
         
         # Fast generation with low temperature
         response = self.model.generate(
@@ -151,10 +178,20 @@ Reply with just the action word."""
             top_p=0.95
         )
         
+        print(f"\n[LLM-{npc_name}] RAW RESPONSE:", file=sys.stderr, flush=True)
+        print(f"'{response.strip()}'", file=sys.stderr, flush=True)
+        print(f"{'='*50}", file=sys.stderr, flush=True)
+        
         # Extract action from response
         action = self.extract_action(response)
         priority = self.action_priority.get(action, 1)
         decision = {"action": action, "priority": priority}
+        
+        print(f"[LLM-{npc_name}] EXTRACTED ACTION: {action} (priority: {priority})", file=sys.stderr, flush=True)
+        print(f"{'='*50}\n", file=sys.stderr, flush=True)
+        
+        # Also log to logger
+        logger.info(f"[LLM-{npc_name}] Decision: {action} (priority: {priority})")
         
         # Cache decision
         self.decision_cache[cache_key] = (time.time(), decision)
@@ -195,6 +232,9 @@ class DecisionServer:
             "avg_response_time": 0,
             "cache_hits": 0
         }
+        # Request deduplication
+        self.last_requests = {}  # Track last request per NPC
+        self.duplicate_threshold = 0.1  # 100ms threshold for duplicates
     
     async def handle_client(self, websocket):
         """Handle WebSocket client connection"""
@@ -225,8 +265,22 @@ class DecisionServer:
                     else:
                         npc_name = data.get("npc", "unknown")
                         state_int = data.get("state", 0)
+                        request_timestamp = data.get("timestamp", time.time())
                         
+                        # Check for duplicate requests
+                        if self._is_duplicate_request(npc_name, state_int, request_timestamp):
+                            print(f"[SKIP] Duplicate request from {npc_name} (state: {state_int})")
+                            continue
+                        
+                        # Process decision
                         decision = self.engine.decide_action(npc_name, state_int)
+                        
+                        # Record this request
+                        self.last_requests[npc_name] = {
+                            "state": state_int,
+                            "timestamp": request_timestamp,
+                            "decision": decision
+                        }
                         
                         await websocket.send(json.dumps({
                             "type": "decision",
@@ -235,6 +289,8 @@ class DecisionServer:
                             "priority": decision["priority"],
                             "timestamp": time.time()
                         }))
+                        
+                        print(f"[DECISION] {npc_name}: {decision['action']} (p={decision['priority']})")
                     
                     # Update stats
                     response_time = time.time() - start_time
@@ -263,6 +319,20 @@ class DecisionServer:
         finally:
             self.clients.remove(websocket)
             logger.info(f"Client disconnected. Total clients: {len(self.clients)}")
+    
+    def _is_duplicate_request(self, npc_name: str, state_int: int, timestamp: float) -> bool:
+        """Check if this is a duplicate request"""
+        if npc_name not in self.last_requests:
+            return False
+        
+        last_req = self.last_requests[npc_name]
+        
+        # Same state and very close timestamp = duplicate
+        if (last_req["state"] == state_int and 
+            abs(timestamp - last_req["timestamp"]) < self.duplicate_threshold):
+            return True
+        
+        return False
     
     async def start(self):
         """Start the WebSocket server"""

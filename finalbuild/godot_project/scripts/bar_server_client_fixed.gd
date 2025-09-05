@@ -48,15 +48,23 @@ func _ready():
 	print("Python path: ", python_path)
 	print("Project root: ", project_root)
 	
-	# INTEGRATE AI DECISION SYSTEM
+	# INTEGRATE AI DECISION SYSTEM (objects now exist in scene)
 	print("\n[AI SYSTEM] Integrating AI decision system...")
 	var IntegrateAI = load("res://scripts/integrate_ai_system.gd")
 	IntegrateAI.integrate_ai_to_scene(self)
 	print("[AI SYSTEM] Integration complete! NPCs now have intelligent decision making.")
 	print("[AI SYSTEM] Make sure decision_server.py is running on port 9998!")
 	
+	# VISUAL CLICK ZONES REMOVED - Using invisible click detection
+	# var AddClickZones = load("res://scripts/add_click_zones.gd")
+	# AddClickZones.add_visual_zones(self)
+	
 	# Get NPC nodes
 	setup_npcs()
+	
+	# Connect environment manager to conversation events (after integration)
+	await get_tree().process_frame  # Wait one frame for nodes to be ready
+	_connect_environment_manager()
 	
 	# Check server
 	check_server()
@@ -67,6 +75,22 @@ func _ready():
 	
 	# Create memory viewer button
 	create_memory_button()
+	
+	# Add debug checker (temporary)
+	if OS.is_debug_build():
+		var debug_node = Node.new()
+		debug_node.name = "DebugChecker"
+		debug_node.set_script(load("res://scripts/debug_decision_flow.gd"))
+		add_child(debug_node)
+		
+		# Add AI pipeline test
+		var pipeline_test = Node.new()
+		pipeline_test.name = "PipelineTest"
+		pipeline_test.set_script(load("res://scripts/ai_pipeline_test.gd"))
+		add_child(pipeline_test)
+		
+		# System monitor removed per user request
+		print("[DEBUG] System Monitor disabled")
 
 func setup_npcs():
 	"""Setup NPC nodes and click detection"""
@@ -675,6 +699,21 @@ func show_response(npc_name: String, text: String):
 	# Show speech bubble above NPC
 	if npc:
 		show_speech_bubble(npc, text, npc_name)
+
+func _connect_environment_manager():
+	"""Connect environment manager to conversation events"""
+	var env_manager = get_node_or_null("EnvironmentStateManager")
+	if env_manager:
+		print("[AI SYSTEM] Connecting environment manager to conversation events")
+		
+		# Connect to our response_completed signal
+		if not response_completed.is_connected(env_manager._on_conversation_completed):
+			response_completed.connect(env_manager._on_conversation_completed)
+			print("  - Connected to conversation events")
+		else:
+			print("  - Already connected to conversation events")
+	else:
+		print("[AI SYSTEM] Warning: Environment manager not found yet")
 
 func create_memory_button():
 	"""Create buttons for memory management"""

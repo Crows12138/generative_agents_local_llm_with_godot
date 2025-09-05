@@ -4,3 +4,12 @@ res://scripts/action_executor.gd
 res://scripts/integrate_ai_system.gd
 res://scripts/dog_behavior.gd
 res://scripts/bar_server_client_fixed.gd
+res://scripts/environment_state_manager.gd
+res://scripts/state_detector.gd
+res://scripts/system_monitor.gd
+res://scripts/clickable_environment.gd
+res://scripts/visual_click_zones.gd
+res://scripts/invisible_click_handler.gd
+res://scenes/bar_counter.gd
+res://scenes/liquor_shelf.gd
+res://scripts/position_debug.gd

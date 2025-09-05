@@ -637,7 +637,8 @@ class GPT4AllNPCServer:
     def load_model(self):
         """Load GPT4All model"""
         try:
-            model_path = Path(self.config["model_path"]).resolve()
+            # Use absolute path to the models directory
+            model_path = Path(__file__).parent.parent.parent / "models" / "llms"
             model_file = self.config["model_file"]
             
             logger.info(f"Loading model: {model_file} from {model_path}")
