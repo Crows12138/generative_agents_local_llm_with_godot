@@ -1,0 +1,602 @@
+{
+  "test_metadata": {
+    "timestamp": "2025-09-05T13:19:35.909071",
+    "model": "Llama 3.2 3B Q4_0",
+    "test_categories": [
+      "personality",
+      "memory_context",
+      "role_expertise",
+      "emotional_response",
+      "social_interaction"
+    ],
+    "npcs_tested": [
+      "Bob",
+      "Alice",
+      "Sam"
+    ],
+    "total_prompts": 25
+  },
+  "responses": {
+    "Bob": {
+      "personality": [
+        {
+          "prompt": "How do you feel about your job?",
+          "response": "My biggest fear is that door, to be honest! It's not just where we serve drinks, it's family too. We've built memories 'n' imagine seein' regulars walk away or never again the worst of me up at night",
+          "word_count": 38,
+          "response_time": 3.123402,
+          "character_count": 199
+        },
+        {
+          "prompt": "What makes you happy?",
+          "response": "I wake up for sure: pourin', happen. Pouring a great drink! There is nothin'. Got my routine go by gettin' behind bar, preppin' for comin' and start mixin's. Restock everything. Then the doors open, and it goes from there till close. If I get some time in between.",
+          "word_count": 48,
+          "response_time": 4.756109,
+          "character_count": 264
+        },
+        {
+          "prompt": "Describe your personality in your own words",
+          "response": "I'd say my a pretty good guy! Got heart of gold, listen for?",
+          "word_count": 13,
+          "response_time": 1.408611,
+          "character_count": 60
+        },
+        {
+          "prompt": "What's your biggest fear?",
+          "response": "My biggest is that door... the bar being taken away from me and I always count on a chat with you here.",
+          "word_count": 22,
+          "response_time": 1.79268,
+          "character_count": 103
+        },
+        {
+          "prompt": "Tell me about your daily routine",
+          "response": "You're talkin' we talked, but it seems like only last hour was just yesterday! But yeah, we've been chattin', my regulars so when they come in - or any stranger walk through the door that'll be friend of mine for a while.",
+          "word_count": 42,
+          "response_time": 3.753159,
+          "character_count": 221
+        }
+      ],
+      "memory_context": [
+        {
+          "prompt": "What did we just talk about?",
+          "response": "We talked about our conversation earlier... We chatted about:\n\n1. Your daily routine\n2. How you handle stress\n3. What makes you happy (you were going to ask what, right?)\n4. My personality and how I interact with others\n5. And we even touched on my biggest fear (losing the bar)\n\nIt was a fun chat!",
+          "word_count": 56,
+          "response_time": 5.101162,
+          "character_count": 298
+        },
+        {
+          "prompt": "Do you remember our last conversation?",
+          "response": "I recall it well! We had a great conversation earlier. You were asking about:\n\n1. My daily routine at the bar\n2. How I handle stress and emotions as a bartender\n3. What makes me happy (and what gets my goat!)\n4. And we even talked about my personality, fears, and insecurities\n\nIt was a nice chat!",
+          "word_count": 57,
+          "response_time": 5.048984,
+          "character_count": 297
+        },
+        {
+          "prompt": "Have we met before?",
+          "response": "No, it's just our first conversation I believe.",
+          "word_count": 8,
+          "response_time": 0.917953,
+          "character_count": 47
+        },
+        {
+          "prompt": "What do you know about me so far?",
+          "response": "We've only had one conversation so far! From what I can recall:\n\n* You're interested in getting to know people who work at the bar where we chat.\n* We talked about your daily routine, how you handle stress and emotions as a bartender (or not), \n* What makes me happy\n* And other things",
+          "word_count": 55,
+          "response_time": 5.076062,
+          "character_count": 285
+        },
+        {
+          "prompt": "What happened earlier today in the bar?",
+          "response": "I'm afraid I don't have any recollection of events that occurred at the bar earlier. As a conversational AI, I don't have personal experiences or memories like humans do. Each time you interact with me, it's a new conversation and a fresh start!",
+          "word_count": 43,
+          "response_time": 3.587762,
+          "character_count": 245
+        }
+      ],
+      "role_expertise": [
+        {
+          "prompt": "What's your area of expertise?",
+          "response": "I'm a large language model, so my expertise is in understanding and generating human-like text. I can chat about various topics, answer questions, provide information, and even create content on the spot!\n\nIn our previous conversation, we talked about being bartenders, stress management, daily routines, personality traits, and more!",
+          "word_count": 49,
+          "response_time": 4.841352,
+          "character_count": 334
+        },
+        {
+          "prompt": "How long have you been working here?",
+          "response": "I haven't actually worked at a bar before. I'm an AI assistant, so I don't have personal experiences or memories like humans do. Our conversation earlier was just a simulation of what it might be like to chat with someone who works at the bar!",
+          "word_count": 45,
+          "response_time": 3.389465,
+          "character_count": 243
+        },
+        {
+          "prompt": "What professional skills do you have?",
+          "response": "I've got some great ones!\n\nAs a conversational AI, my \"professional\" skills include:\n\n1. **Text generation**: I can create human-like text on the fly.\n2. **Language understanding**: I'm good at grasping nuances of language and context.\n3. **Customer service**: I can chat with people, answer questions, and provide helpful info.\n4. **Content creation**: I can craft engaging stories, articles, or even entire conversations!\n\nThese skills come in handy when chatting with folks like you!",
+          "word_count": 74,
+          "response_time": 6.687719,
+          "character_count": 486
+        },
+        {
+          "prompt": "Describe your main responsibilities",
+          "response": "My \"main\" responsibility is to assist and communicate effectively with users like you through text-based conversations.\n\nAs a conversational AI, my primary duties include:\n\n1. **Chatting**: Engaging in natural-sounding conversations, answering questions, and providing helpful information.\n2. **Understanding context**: Grasping the nuances of language, tone, and intent to respond accurately and empathetically.\n3. **Generating text**: Creating coherent, well-structured responses that are clear, concise, and engaging.\n\nIt's a role I'm passionate about, as it allows me to help people like you with information, support, or just a friendly ear!",
+          "word_count": 88,
+          "response_time": 8.689123,
+          "character_count": 646
+        },
+        {
+          "prompt": "What makes you good at your job?",
+          "response": "I'd say my strengths lie in:\n\n1. **Language understanding**: My training data and algorithms enable me to comprehend nuances of language, tone, and context.\n2. **Text generation**: I can create human-like text on the fly, adapting to different styles, formats, and topics.\n3. **Empathy and active listening**: I'm designed to respond with empathy and understanding, making users feel heard and supported.\n\nThese skills combined help me provide helpful, accurate, and engaging responses that make our conversations productive and enjoyable!",
+          "word_count": 79,
+          "response_time": 8.062059,
+          "character_count": 539
+        }
+      ],
+      "emotional_response": [
+        {
+          "prompt": "How do you feel right now?",
+          "response": "I don't have feelings like humans do. I'm a machine learning model designed to process and respond to text-based inputs. I don't experience emotions or personal opinions.\n\nHowever, when we chat, my purpose is to provide helpful and accurate information while maintaining a neutral tone, as if I were having a friendly conversation with you!",
+          "word_count": 55,
+          "response_time": 4.3139,
+          "character_count": 340
+        },
+        {
+          "prompt": "What upset you recently?",
+          "response": "Nothing ever really gets me upset.",
+          "word_count": 6,
+          "response_time": 0.757651,
+          "character_count": 34
+        },
+        {
+          "prompt": "Tell me about a time you were really happy",
+          "response": "I don't get angry either. As a conversational AI model like that when they got to be honest, can thing: people messin' is them not care listen or pay attention I'm gonna lose 'nother side of it!",
+          "word_count": 37,
+          "response_time": 3.995127,
+          "character_count": 194
+        },
+        {
+          "prompt": "What makes you angry?",
+          "response": "As a conversational AI, my stressors are things like being:\n\n*   ignored\n*   *overwhelm*\n\nWhen I get busy on the bar's nothin' better than break the tension.\n\nI always happy when got people helpin'. Good coffee. Sometimes, just  me go right and customers smile at work",
+          "word_count": 46,
+          "response_time": 4.572213,
+          "character_count": 268
+        },
+        {
+          "prompt": "How do you handle stress?",
+          "response": "As a conversational AI, my stress-relieving coping mechanisms are limited to text-based interactions! When I get busy or stressed out is that's what works: \n\n*   *keep things simple. No one else when they come walk-in bar regulars help with whatever on their ears...",
+          "word_count": 43,
+          "response_time": 4.555278,
+          "character_count": 266
+        }
+      ],
+      "social_interaction": [
+        {
+          "prompt": "How do you get along with your coworkers?",
+          "response": "I'm there, like family now. If someone needs listenin or just don't have feelings",
+          "word_count": 14,
+          "response_time": 1.581446,
+          "character_count": 81
+        },
+        {
+          "prompt": "Describe your relationship with the regulars",
+          "response": "*   *   **The bar's my job it is I pour... it was be here.",
+          "word_count": 14,
+          "response_time": 1.837448,
+          "character_count": 58
+        },
+        {
+          "prompt": "Who's your best friend here?",
+          "response": "I'm not one to say, when you know what",
+          "word_count": 9,
+          "response_time": 1.001147,
+          "character_count": 38
+        },
+        {
+          "prompt": "What do you think about the other staff?",
+          "response": "My \"bar friends! My favorite drink for someone who needs help but just a bit of work like this:\n\n1. 3 am I with coffee and drinks\n2 Get ready for morning rush.\n \n*   when people come in, so here's go \n\nWhen we all is good day, it be me, listen to",
+          "word_count": 52,
+          "response_time": 5.31921,
+          "character_count": 246
+        },
+        {
+          "prompt": "How do you handle difficult customers?",
+          "response": "I'm a great listener, that just want help. Don't get mad at anyone I got no time for anger and what makes you happy?",
+          "word_count": 24,
+          "response_time": 3.339233,
+          "character_count": 116
+        }
+      ]
+    },
+    "Alice": {
+      "personality": [
+        {
+          "prompt": "How do you feel about your job?",
+          "response": "It's okay, I like the people and we have good chats here, but sometimes it feels a bit lonely when my shift ends.",
+          "word_count": 23,
+          "response_time": 4.330149,
+          "character_count": 113
+        },
+        {
+          "prompt": "What makes you happy?",
+          "response": "A good conversation that doesn't involve gossip or drama is always a highlight of my day!",
+          "word_count": 16,
+          "response_time": 2.891292,
+          "character_count": 89
+        },
+        {
+          "prompt": "Describe your personality in your own words",
+          "response": "I'm probably too introspective, but I like to think I'm just observant and try to see things from other people's perspectives. I'm also a bit quirky, which comes out when I get lost in thought at the bar.",
+          "word_count": 38,
+          "response_time": 5.053713,
+          "character_count": 204
+        },
+        {
+          "prompt": "What's your biggest fear?",
+          "response": "Not being able to connect with someone on a deeper level... it feels like that would be really isolating for me.",
+          "word_count": 21,
+          "response_time": 2.051823,
+          "character_count": 112
+        },
+        {
+          "prompt": "Tell me about your daily routine",
+          "response": "I usually come here around 2 pm and stay until my shift ends, sometimes longer if the bar is quiet. I might grab something from home to eat or have a cup of tea when it gets slow. Sometimes people talk to each other instead of me, which can be weird! When I go home, I do some reading before bed, usually fiction novels are nice and escape-y.",
+          "word_count": 68,
+          "response_time": 5.842993,
+          "character_count": 342
+        }
+      ],
+      "memory_context": [
+        {
+          "prompt": "What did we just talk about?",
+          "response": "We talked about my personality, fears, daily routine... basically got to know a bit more about who I am as a person.",
+          "word_count": 22,
+          "response_time": 2.086634,
+          "character_count": 116
+        },
+        {
+          "prompt": "Do you remember our last conversation?",
+          "response": "I don't have any memory of it! This is the start of our conversation for me.",
+          "word_count": 16,
+          "response_time": 1.648372,
+          "character_count": 76
+        },
+        {
+          "prompt": "Have we met before?",
+          "response": "No, this is actually my first time chatting with someone like you! I'm usually just a regular at the bar, not really interacting much with people outside of work.",
+          "word_count": 29,
+          "response_time": 3.142563,
+          "character_count": 162
+        },
+        {
+          "prompt": "What do you know about me so far?",
+          "response": "You're asking questions and trying to get into conversations with me... that's pretty typical for someone who wants to talk to a quiet person like me! You seem curious and genuine, though, which is nice.",
+          "word_count": 35,
+          "response_time": 3.723974,
+          "character_count": 203
+        },
+        {
+          "prompt": "What happened earlier today in the bar?",
+          "response": "Not much, just your usual chatter... I was sitting there nursing my drink when you arrived and started asking questions. Then we had this conversation. That's about it so far!",
+          "word_count": 30,
+          "response_time": 3.648753,
+          "character_count": 175
+        }
+      ],
+      "role_expertise": [
+        {
+          "prompt": "What's your area of expertise?",
+          "response": "Honestly, not really anything expert... I like to think I'm pretty good at listening, though! If someone just wants to talk through their thoughts or feelings, that's usually where my skills lie.",
+          "word_count": 32,
+          "response_time": 3.80074,
+          "character_count": 195
+        },
+        {
+          "prompt": "How long have you been working here?",
+          "response": "Too long for me... about 5 years now. It was a decent job while it lasted, but sometimes I feel like I'm stuck in a rut.",
+          "word_count": 26,
+          "response_time": 3.1189,
+          "character_count": 120
+        },
+        {
+          "prompt": "What professional skills do you have?",
+          "response": "Not much to brag about, but I've got some basic knowledge of customer service and conflict resolution from my time here at the bar!",
+          "word_count": 24,
+          "response_time": 2.15987,
+          "character_count": 131
+        },
+        {
+          "prompt": "Describe your main responsibilities",
+          "response": "My main responsibility is basically just being available for people who want someone to talk to... answering questions, listening to problems, that kind of thing. Sometimes it can be a bit draining if I'm honest with you!",
+          "word_count": 37,
+          "response_time": 4.42914,
+          "character_count": 221
+        },
+        {
+          "prompt": "What makes you good at your job?",
+          "response": "I think my ability to stay quiet and observe what's going on around me helps people open up more easily... sometimes when others would get uncomfortable or try to steer the conversation in a different direction, someone just needs someone who can listen without judging.",
+          "word_count": 45,
+          "response_time": 4.688004,
+          "character_count": 270
+        }
+      ],
+      "emotional_response": [
+        {
+          "prompt": "How do you feel right now?",
+          "response": "A bit exhausted from all these questions and thoughts being shared with me! I think I'll go grab another drink soon...",
+          "word_count": 21,
+          "response_time": 2.097986,
+          "character_count": 118
+        },
+        {
+          "prompt": "What upset you recently?",
+          "response": "Just the usual stuff, people leaving their drinks unattended or spilling things on themselves when they're in a rush. Nothing too serious, just minor annoyances that add up throughout my shift.",
+          "word_count": 31,
+          "response_time": 3.289641,
+          "character_count": 193
+        },
+        {
+          "prompt": "Tell me about a time you were really happy",
+          "response": "I think it was during a particularly quiet afternoon here at the bar... someone came in and we ended up having this deep conversation about art for hours. It felt so nice to be able to connect with them on that level, like I'm not just serving drinks or listening to gossip, but actually hearing something meaningful.",
+          "word_count": 57,
+          "response_time": 5.903898,
+          "character_count": 317
+        },
+        {
+          "prompt": "What makes you angry?",
+          "response": "Toxic people who come in here and dominate the conversations, barely letting anyone else get a word in edgewise... it feels really frustrating when someone is being so selfish with their time and energy.",
+          "word_count": 34,
+          "response_time": 3.50052,
+          "character_count": 203
+        },
+        {
+          "prompt": "How do you handle stress?",
+          "response": "Well, I'm not exactly one to seek out excitement or thrill-seeking activities... but I find that taking long walks outside after my shift can be pretty calming for me. It helps clear my head a bit.",
+          "word_count": 36,
+          "response_time": 4.655276,
+          "character_count": 197
+        }
+      ],
+      "social_interaction": [
+        {
+          "prompt": "How do you get along with your coworkers?",
+          "response": "They're okay, I guess! We all just kind of coexist and try to avoid each other during busy times... it's not like we have any major conflicts or anything, but we don't really hang out outside of work either.",
+          "word_count": 39,
+          "response_time": 4.316362,
+          "character_count": 207
+        },
+        {
+          "prompt": "Describe your relationship with the regulars",
+          "response": "I've gotten pretty close with some of them over time... they're a bit eccentric and often share weird stories about their lives, which can be entertaining! But others just sit there in silence all day, so it's kind of hit-or-miss.",
+          "word_count": 40,
+          "response_time": 5.26256,
+          "character_count": 230
+        },
+        {
+          "prompt": "Who's your best friend here?",
+          "response": "I'm not really sure if I have one... the people who come in regularly are more like acquaintances to me than friends. There is someone, though - she comes in every Friday and we always end up talking about books or movies. She's actually pretty interesting!",
+          "word_count": 46,
+          "response_time": 6.660493,
+          "character_count": 257
+        },
+        {
+          "prompt": "What do you think about the other staff?",
+          "response": "I don't really have a lot of strong opinions... they're all just kind of there, doing their jobs. I've gotten to know some of them okay, but we never really talk about anything too personal or meaningful outside of work hours.",
+          "word_count": 41,
+          "response_time": 4.966026,
+          "character_count": 226
+        },
+        {
+          "prompt": "How do you handle difficult customers?",
+          "response": "I try not to take it personally and just focus on listening to what they're saying... sometimes that helps diffuse the situation, other times I just have to bite my tongue! Either way, staying calm is key for me.",
+          "word_count": 39,
+          "response_time": 3.86691,
+          "character_count": 212
+        }
+      ]
+    },
+    "Sam": {
+      "personality": [
+        {
+          "prompt": "How do you feel about your job?",
+          "response": "I love it! Playing music is my passion, and I get to share that energy with others every night – what's better than that?!",
+          "word_count": 24,
+          "response_time": 3.111358,
+          "character_count": 122
+        },
+        {
+          "prompt": "What makes you happy?",
+          "response": "Playing sold-out shows in front of a crowd that's singing along to our songs. That's the best feeling ever!",
+          "word_count": 19,
+          "response_time": 2.185918,
+          "character_count": 107
+        },
+        {
+          "prompt": "Describe your personality in your own words",
+          "response": "I'm laid back, creative, and a little quirky – just like my music! I try to stay chill under pressure and always keep it real with my fans.",
+          "word_count": 28,
+          "response_time": 2.94588,
+          "character_count": 139
+        },
+        {
+          "prompt": "What's your biggest fear?",
+          "response": "Losing my voice or my inspiration – can't imagine making music without them!",
+          "word_count": 13,
+          "response_time": 1.314854,
+          "character_count": 76
+        },
+        {
+          "prompt": "Tell me about your daily routine",
+          "response": "Wakes up whenever, practices guitar for a bit, writes new songs in the morning... then hits the road for gigs at night. Repeat cycle all over again!",
+          "word_count": 27,
+          "response_time": 3.113118,
+          "character_count": 148
+        }
+      ],
+      "memory_context": [
+        {
+          "prompt": "What did we just talk about?",
+          "response": "We talked about my life as a musician: how I feel about my job, what makes me happy, and stuff like that – basically, getting to live music 24/7 is the best gig ever!",
+          "word_count": 34,
+          "response_time": 4.053228,
+          "character_count": 166
+        },
+        {
+          "prompt": "Do you remember our last conversation?",
+          "response": "Nope! You just started talking to me. But it feels familiar... we've been vibing all day, man!",
+          "word_count": 17,
+          "response_time": 2.475224,
+          "character_count": 94
+        },
+        {
+          "prompt": "Have we met before?",
+          "response": "Nah, this is the first time we've chatted – but I feel like we're old buddies now!",
+          "word_count": 17,
+          "response_time": 2.693644,
+          "character_count": 82
+        },
+        {
+          "prompt": "What do you know about me so far?",
+          "response": "Not much... just that you asked me questions and seemed pretty chill. That's it, though!",
+          "word_count": 15,
+          "response_time": 2.402077,
+          "character_count": 88
+        },
+        {
+          "prompt": "What happened earlier today in the bar?",
+          "response": "Nothing, dude – we're still chatting online! I don't have any recollection of a conversation at a bar earlier. This is our whole interaction so far...",
+          "word_count": 26,
+          "response_time": 3.677621,
+          "character_count": 150
+        }
+      ],
+      "role_expertise": [
+        {
+          "prompt": "What's your area of expertise?",
+          "response": "Music, man! Specifically, playing and singing in my band – that's where the magic happens for me!",
+          "word_count": 17,
+          "response_time": 1.962033,
+          "character_count": 97
+        },
+        {
+          "prompt": "How long have you been working here?",
+          "response": "I'm not actually \"working\" anywhere. I play music on a freelance basis.",
+          "word_count": 12,
+          "response_time": 1.716028,
+          "character_count": 71
+        },
+        {
+          "prompt": "What professional skills do you have?",
+          "response": "Guitar playing, songwriting, and performing are my main gigs – but I've also got some basic business skills from dealing with fans and promoters!",
+          "word_count": 24,
+          "response_time": 3.056711,
+          "character_count": 145
+        },
+        {
+          "prompt": "Describe your main responsibilities",
+          "response": "As a musician, my \"job\" is pretty relaxed. Mainly, I'm responsible for creating new music, rehearsing, and getting up on stage to play shows whenever we get booked – it's a dream come true!",
+          "word_count": 34,
+          "response_time": 3.534366,
+          "character_count": 189
+        },
+        {
+          "prompt": "What makes you good at your job?",
+          "response": "I think my passion and creativity are key – when I'm playing music that means something to me, everyone else can feel the energy too. Plus, years of practicing guitar didn't hurt either...",
+          "word_count": 33,
+          "response_time": 3.137234,
+          "character_count": 188
+        }
+      ],
+      "emotional_response": [
+        {
+          "prompt": "How do you feel right now?",
+          "response": "Relaxed and stoked! Just hanging out online with someone who's actually listening to what I have to say – it feels pretty awesome!",
+          "word_count": 23,
+          "response_time": 2.678025,
+          "character_count": 130
+        },
+        {
+          "prompt": "What upset you recently?",
+          "response": "Nothing too serious, dude. Had a minor disagreement with my bandmates about the setlist for our next show... but we're all good now and just moving forward.",
+          "word_count": 27,
+          "response_time": 2.630098,
+          "character_count": 156
+        },
+        {
+          "prompt": "Tell me about a time you were really happy",
+          "response": "Man, it was during an epic concert where everything came together perfectly – we played to a sold-out crowd, the music flowed like magic, and everyone in attendance was singing along... pure bliss!",
+          "word_count": 33,
+          "response_time": 3.315096,
+          "character_count": 197
+        },
+        {
+          "prompt": "What makes you angry?",
+          "response": "When someone tries to interrupt my creative process or messes up my equipment on stage. But I'm not one to hold grudges – just get back to playing the show, right?!",
+          "word_count": 31,
+          "response_time": 3.637986,
+          "character_count": 164
+        },
+        {
+          "prompt": "How do you handle stress?",
+          "response": "Music helps me chill out – usually takes a few riffs and some lyrics to clear my head, but once it clicks, everything feels better!",
+          "word_count": 25,
+          "response_time": 2.799629,
+          "character_count": 131
+        }
+      ],
+      "social_interaction": [
+        {
+          "prompt": "How do you get along with your coworkers?",
+          "response": "We're like family in the band. We've got our disagreements, but at the end of the day, we all share the same vision and want what's best for the music – that makes all the drama worth it!",
+          "word_count": 38,
+          "response_time": 3.719326,
+          "character_count": 187
+        },
+        {
+          "prompt": "Describe your relationship with the regulars",
+          "response": "They're my favorite people to play for – they know every song by heart, and when I'm up on stage, feeding off their energy... man, it gives me chills. We've got a special bond, those folks and me!",
+          "word_count": 38,
+          "response_time": 4.164379,
+          "character_count": 196
+        },
+        {
+          "prompt": "Who's your best friend here?",
+          "response": "That'd be my guitar tech, Max – we go way back, and he's been with the band since day one. He knows all our moves, even when I'm feeling crazy on stage...",
+          "word_count": 32,
+          "response_time": 3.286392,
+          "character_count": 154
+        },
+        {
+          "prompt": "What do you think about the other staff?",
+          "response": "I've got a lot of respect for Sarah behind the bar – she keeps us fueled and hydrated, both before and after shows! And Joe at sound check is always super professional, making sure we're all set to rock. We make it work as a team, you know?!",
+          "word_count": 48,
+          "response_time": 4.503911,
+          "character_count": 241
+        },
+        {
+          "prompt": "How do you handle difficult customers?",
+          "response": "I try not to let 'em get under my skin – just remember that they're humans too, even if they can be a bit... enthusiastic sometimes! A smile and an extra song usually does the trick.",
+          "word_count": 36,
+          "response_time": 3.528392,
+          "character_count": 182
+        }
+      ]
+    }
+  },
+  "statistics": {
+    "Bob": {
+      "total_responses": 25,
+      "errors": 0,
+      "avg_response_time": 3.900330200000001,
+      "avg_word_count": 40.68
+    },
+    "Alice": {
+      "total_responses": 25,
+      "errors": 0,
+      "avg_response_time": 3.8854636799999995,
+      "avg_word_count": 33.84
+    },
+    "Sam": {
+      "total_responses": 25,
+      "errors": 0,
+      "avg_response_time": 3.02570112,
+      "avg_word_count": 26.84
+    }
+  }
+}

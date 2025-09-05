@@ -1,0 +1,13 @@
+{
+  "test_date": "2025-09-05T13:19:35.909071",
+  "model": "Llama 3.2 3B Q4_0",
+  "npcs_tested": 3,
+  "total_prompts_per_npc": 25,
+  "categories_tested": [
+    "personality",
+    "memory_context",
+    "role_expertise",
+    "emotional_response",
+    "social_interaction"
+  ]
+}
