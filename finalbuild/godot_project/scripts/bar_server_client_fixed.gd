@@ -48,8 +48,23 @@ func _ready():
 	print("Python path: ", python_path)
 	print("Project root: ", project_root)
 	
+	# INTEGRATE AI DECISION SYSTEM (objects now exist in scene)
+	print("\n[AI SYSTEM] Integrating AI decision system...")
+	var IntegrateAI = load("res://scripts/integrate_ai_system.gd")
+	IntegrateAI.integrate_ai_to_scene(self)
+	print("[AI SYSTEM] Integration complete! NPCs now have intelligent decision making.")
+	print("[AI SYSTEM] Make sure decision_server.py is running on port 9998!")
+	
+	# VISUAL CLICK ZONES REMOVED - Using invisible click detection
+	# var AddClickZones = load("res://scripts/add_click_zones.gd")
+	# AddClickZones.add_visual_zones(self)
+	
 	# Get NPC nodes
 	setup_npcs()
+	
+	# Connect environment manager to conversation events (after integration)
+	await get_tree().process_frame  # Wait one frame for nodes to be ready
+	_connect_environment_manager()
 	
 	# Check server
 	check_server()
@@ -60,28 +75,176 @@ func _ready():
 	
 	# Create memory viewer button
 	create_memory_button()
+	
+	# Add debug checker (temporary)
+	if OS.is_debug_build():
+		var debug_node = Node.new()
+		debug_node.name = "DebugChecker"
+		debug_node.set_script(load("res://scripts/debug_decision_flow.gd"))
+		add_child(debug_node)
+		
+		# Add AI pipeline test
+		var pipeline_test = Node.new()
+		pipeline_test.name = "PipelineTest"
+		pipeline_test.set_script(load("res://scripts/ai_pipeline_test.gd"))
+		add_child(pipeline_test)
+		
+		# System monitor removed per user request
+		print("[DEBUG] System Monitor disabled")
 
 func setup_npcs():
 	"""Setup NPC nodes and click detection"""
-	# Find ColorRect type NPCs
-	var bob = $Bob if has_node("Bob") else null
-	var alice = $Alice if has_node("Alice") else null
-	var sam = $Sam if has_node("Sam") else null
+	print("=== Setting up NPCs ===")
 	
-	# Setup click detection
-	if bob and bob is ColorRect:
+	# Find CharacterBody2D NPCs by their actual names
+	var bob = $bob if has_node("bob") else null
+	var alice = $Alice if has_node("Alice") else null  
+	var sam = $sam if has_node("sam") else null
+	
+	print("Found nodes - bob: ", bob, " alice: ", alice, " sam: ", sam)
+	
+	# Setup click detection for CharacterBody2D nodes
+	if bob and bob is CharacterBody2D:
 		npcs["Bob"] = bob
-		make_clickable(bob, "Bob")
+		make_npc_clickable(bob, "Bob")
+		print("Bob setup as clickable at position: ", bob.global_position)
 		
-	if alice and alice is ColorRect:
+	if alice and alice is CharacterBody2D:
 		npcs["Alice"] = alice
-		make_clickable(alice, "Alice")
+		make_npc_clickable(alice, "Alice")
+		print("Alice setup as clickable at position: ", alice.global_position)
 		
-	if sam and sam is ColorRect:
+	if sam and sam is CharacterBody2D:
 		npcs["Sam"] = sam
-		make_clickable(sam, "Sam")
+		make_npc_clickable(sam, "Sam")
+		print("Sam setup as clickable at position: ", sam.global_position)
 	
 	print("NPCs setup complete: ", npcs.keys())
+	
+	# Debug: List all clickable NPCs
+	var clickable_npcs = get_tree().get_nodes_in_group("clickable_npcs")
+	print("Clickable NPCs in group: ", clickable_npcs.size())
+	for npc in clickable_npcs:
+		print("  - ", npc.name, " at ", npc.global_position)
+
+func make_npc_clickable(npc: CharacterBody2D, npc_name: String):
+	"""Make CharacterBody2D clickable"""
+	# Add to clickable NPCs list
+	npc.add_to_group("clickable_npcs")
+	npc.set_meta("npc_name", npc_name)
+	print(npc_name, " CharacterBody2D is now clickable")
+
+func _input(event: InputEvent):
+	"""Handle global input for NPC clicking"""
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			# Convert screen coordinates to world coordinates
+			var world_pos = get_global_mouse_position()
+			_check_npc_click(world_pos, false)
+		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			# Convert screen coordinates to world coordinates
+			var world_pos = get_global_mouse_position()
+			_check_npc_click(world_pos, true)
+
+func _check_npc_click(click_pos: Vector2, is_right_click: bool):
+	"""Check if click position hits any NPC"""
+	# Configurable click threshold - adjust this value to change click sensitivity
+	# Smaller value = more precise clicking required
+	# Larger value = easier to click but may activate wrong NPC
+	var click_threshold = 20.0  # Small value for precise clicking on character body only
+	var found_npc = false
+	var closest_npc = ""
+	var closest_distance = click_threshold + 1.0
+	
+	for npc_name in npcs.keys():
+		var npc_node = npcs[npc_name]
+		var distance = npc_node.global_position.distance_to(click_pos)
+		
+		# Only activate if within reasonable distance
+		if distance <= click_threshold:
+			found_npc = true
+			if is_right_click:
+				_on_npc_right_click(npc_name)
+			else:
+				_on_npc_left_click(npc_name)
+			break
+	
+	# If no NPC within threshold, do nothing (don't activate random NPCs)
+
+func _on_npc_left_click(npc_name: String):
+	"""Handle left click on NPC"""
+	interact_with_npc(npc_name)
+
+func _on_npc_right_click(npc_name: String):
+	"""Handle right click on NPC"""
+	show_custom_input_dialog(npc_name)
+
+func _calculate_bubble_position(npc_node: Node) -> Vector2:
+	"""Calculate bubble position above NPC"""
+	if not npc_node:
+		# Fallback to center of screen
+		var viewport_size = get_viewport().size
+		return Vector2(viewport_size.x * 0.5 - 150, viewport_size.y * 0.3)
+	
+	# Use Godot's built-in coordinate conversion for CanvasLayer
+	var npc_screen_pos: Vector2
+	
+	# Try to get the main camera
+	var camera = get_viewport().get_camera_2d()
+	
+	if camera:
+		# Use Godot's built-in method to convert world to screen coordinates
+		# This handles camera position, zoom, and viewport transforms automatically
+		npc_screen_pos = camera.get_screen_center_position() + (npc_node.global_position - camera.global_position) * camera.zoom
+	else:
+		# No camera - use world coordinates directly
+		npc_screen_pos = npc_node.global_position
+	
+	print("NPC ", npc_node.name, " world pos: ", npc_node.global_position, " screen pos: ", npc_screen_pos)
+	print("Camera pos: ", camera.global_position if camera else "No camera", " zoom: ", camera.zoom if camera else "No camera")
+	
+	# Position bubble above and centered on NPC with per-character adjustments
+	var bubble_x = npc_screen_pos.x - 150  # Center bubble (300px width / 2)
+	var bubble_y = npc_screen_pos.y - 150  # Above NPC (120px height + some margin)
+	
+	# Apply per-character position corrections if needed
+	match npc_node.name.to_lower():
+		"alice":
+			bubble_x -= 50  # Move Alice's bubble left
+			bubble_y -= 20  # Move Alice's bubble up more
+		"sam":
+			bubble_x -= 30  # Move Sam's bubble left slightly
+			bubble_y -= 10  # Move Sam's bubble up slightly
+		"bob":
+			pass  # Bob's position is already correct
+	
+	# Keep bubble within screen bounds
+	var viewport_size = get_viewport().size
+	bubble_x = clamp(bubble_x, 10, viewport_size.x - 310)  # 10px margin, 300px bubble width
+	bubble_y = clamp(bubble_y, 10, viewport_size.y - 130)  # 10px margin, 120px bubble height
+	
+	return Vector2(bubble_x, bubble_y)
+
+func _calculate_thinking_bubble_position(npc_node: Node) -> Vector2:
+	"""Calculate thinking bubble position above NPC (smaller bubble)"""
+	if not npc_node:
+		# Fallback to center of screen
+		var viewport_size = get_viewport().size
+		return Vector2(viewport_size.x * 0.5 - 50, viewport_size.y * 0.35)
+	
+	# Get NPC position in screen coordinates
+	var npc_screen_pos = npc_node.global_position
+	
+	# Position smaller bubble above and centered on NPC
+	var bubble_x = npc_screen_pos.x - 50   # Center small bubble (100px width / 2)
+	var bubble_y = npc_screen_pos.y - 80   # Above NPC (50px height + margin)
+	
+	# Keep bubble within screen bounds
+	var viewport_size = get_viewport().size
+	bubble_x = clamp(bubble_x, 10, viewport_size.x - 110)  # 10px margin, 100px bubble width
+	bubble_y = clamp(bubble_y, 10, viewport_size.y - 60)   # 10px margin, 50px bubble height
+	
+	return Vector2(bubble_x, bubble_y)
 
 func make_clickable(color_rect: ColorRect, npc_name: String):
 	"""Make ColorRect clickable"""
@@ -254,102 +417,93 @@ func find_rich_text_label(node: Node) -> RichTextLabel:
 	return null
 
 func create_streaming_bubble(npc_node: Node, text: String, npc_name: String):
-	"""Create a speech bubble specifically for streaming (no auto-fade)"""
+	"""Create a streaming bubble for ongoing conversation"""
 	# Remove existing bubble if any
 	if npc_name in speech_bubbles:
 		speech_bubbles[npc_name].queue_free()
 		speech_bubbles.erase(npc_name)
 	
-	# Get or create UI layer
+	# Get or create UI layer for top-level display
 	var ui_layer = get_node_or_null("UILayer")
 	if not ui_layer:
 		ui_layer = CanvasLayer.new()
 		ui_layer.name = "UILayer"
+		ui_layer.layer = 100  # High layer to ensure it's on top
 		add_child(ui_layer)
 	
-	# Create bubble container
-	var bubble_container = Control.new()
-	bubble_container.name = "SpeechBubble_" + npc_name
+	# Proper coordinate conversion: world to screen for CanvasLayer
+	var camera = get_viewport().get_camera_2d()
+	var viewport_rect = get_viewport().get_visible_rect()
+	var screen_center = viewport_rect.size / 2
 	
-	# Position bubble
-	var viewport_size = get_viewport().size
-	var bubble_x = viewport_size.x * 0.5 - 150
-	var bubble_y = viewport_size.y * 0.3
+	var world_pos = npc_node.global_position
+	var screen_pos: Vector2
 	
-	if npc_name == "Bob":
-		bubble_x = viewport_size.x * 0.4 - 150
-	elif npc_name == "Alice":
-		bubble_x = viewport_size.x * 0.6 - 150
+	if camera:
+		# Convert world coordinates to screen coordinates accounting for camera
+		var offset_from_camera = world_pos - camera.global_position
+		screen_pos = screen_center + offset_from_camera * camera.zoom
+	else:
+		# No camera, use world coordinates directly
+		screen_pos = world_pos
 	
-	bubble_container.position = Vector2(bubble_x, bubble_y)
+	# Position bubble - center it above character
+	screen_pos.x -= 250  # Shift left MORE to compensate for rightward offset  
+	screen_pos.y -= 20  # Position above character with space for arrow
 	
-	# Create the bubble panel
+	# Create simple bubble
 	var bubble_panel = Panel.new()
-	bubble_panel.size = Vector2(300, 120)
-	bubble_panel.position = Vector2(0, 0)
+	bubble_panel.name = "StreamingBubble_" + npc_name
+	bubble_panel.size = Vector2(300, 120)  # Much larger bubble
+	bubble_panel.position = screen_pos
 	
-	# Style
+	# Semi-transparent white bubble style
 	var style_box = StyleBoxFlat.new()
-	style_box.bg_color = Color(1, 1, 1, 0.95)
-	style_box.corner_radius_top_left = 15
-	style_box.corner_radius_top_right = 15
-	style_box.corner_radius_bottom_left = 15
-	style_box.corner_radius_bottom_right = 15
-	style_box.border_width_left = 2
-	style_box.border_width_right = 2
-	style_box.border_width_top = 2
-	style_box.border_width_bottom = 2
-	style_box.border_color = Color(0.2, 0.2, 0.2, 0.8)
+	style_box.bg_color = Color(1.0, 1.0, 1.0, 0.6)  # White with 60% opacity (more transparent)
+	style_box.corner_radius_top_left = 8
+	style_box.corner_radius_top_right = 8
+	style_box.corner_radius_bottom_left = 8
+	style_box.corner_radius_bottom_right = 8
+	style_box.border_width_left = 1
+	style_box.border_width_right = 1
+	style_box.border_width_top = 1
+	style_box.border_width_bottom = 1
+	style_box.border_color = Color.BLACK
 	bubble_panel.add_theme_stylebox_override("panel", style_box)
 	
-	# Create ScrollContainer
-	var scroll_container = ScrollContainer.new()
-	scroll_container.position = Vector2(10, 10)
-	scroll_container.size = Vector2(280, 100)
-	scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	
-	# Create text label
-	var bubble_text = RichTextLabel.new()
-	bubble_text.bbcode_enabled = false  # Disable bbcode for simpler text handling
-	bubble_text.custom_minimum_size = Vector2(270, 0)
-	bubble_text.fit_content = true
-	bubble_text.add_theme_font_size_override("normal_font_size", 13)
-	bubble_text.add_theme_color_override("default_color", Color(0, 0, 0, 1))
-	bubble_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	bubble_text.text = text  # Use text property instead of append_text
-	
-	scroll_container.add_child(bubble_text)
-	bubble_panel.add_child(scroll_container)
-	bubble_container.add_child(bubble_panel)
-	
-	# Add tail
-	var tail = Polygon2D.new()
-	var tail_offset_x = 0
-	if npc_name == "Bob":
-		tail_offset_x = -50
-	elif npc_name == "Alice":
-		tail_offset_x = 50
-	
-	var points = PackedVector2Array([
-		Vector2(-10, 120),
-		Vector2(10, 120),
-		Vector2(tail_offset_x, 150)
+	# Create a smaller, more elegant arrow pointing down
+	var arrow = Polygon2D.new()
+	arrow.name = "BubbleArrow"
+	# Small triangle tail pointing to character
+	var arrow_points = PackedVector2Array([
+		Vector2(145, 118),  # Left point, slightly inside bubble
+		Vector2(155, 118),  # Right point, slightly inside bubble  
+		Vector2(150, 128)   # Bottom tip pointing down (smaller arrow)
 	])
-	tail.polygon = points
-	tail.color = Color(1, 1, 1, 0.95)
-	tail.position = Vector2(150, 0)
+	arrow.polygon = arrow_points
+	arrow.color = Color(1.0, 1.0, 1.0, 0.6)  # Same semi-transparent white as bubble
+	bubble_panel.add_child(arrow)
 	
-	bubble_container.add_child(tail)
-	ui_layer.add_child(bubble_container)
+	# Create text with RichTextLabel for better text handling
+	var bubble_text = RichTextLabel.new()
+	bubble_text.text = text
+	bubble_text.size = Vector2(290, 110)  # Much larger text area to match bubble
+	bubble_text.position = Vector2(5, 5)
+	bubble_text.add_theme_font_size_override("normal_font_size", 13)  # Larger font as requested
+	bubble_text.add_theme_color_override("default_color", Color.BLACK)
+	bubble_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	bubble_text.fit_content = false  # Fixed height for scrolling
+	bubble_text.scroll_active = true  # Enable scrolling
+	bubble_text.scroll_following = true  # Auto scroll to bottom
+	bubble_text.bbcode_enabled = false  # Plain text only
+	bubble_text.clip_contents = true  # Prevent text overflow
 	
-	# Store reference
-	speech_bubbles[npc_name] = bubble_container
+	bubble_panel.add_child(bubble_text)
+	ui_layer.add_child(bubble_panel)  # Add to UI layer instead of scene
+	speech_bubbles[npc_name] = bubble_panel
 	
-	# Simple fade in, NO auto fade out for streaming
-	bubble_container.modulate.a = 0
-	var tween = create_tween()
-	tween.tween_property(bubble_container, "modulate:a", 1.0, 0.3)
+	
+	return  # Skip old code
 
 func show_custom_input_dialog(npc_name: String):
 	"""Show custom message input dialog"""
@@ -546,6 +700,21 @@ func show_response(npc_name: String, text: String):
 	if npc:
 		show_speech_bubble(npc, text, npc_name)
 
+func _connect_environment_manager():
+	"""Connect environment manager to conversation events"""
+	var env_manager = get_node_or_null("EnvironmentStateManager")
+	if env_manager:
+		print("[AI SYSTEM] Connecting environment manager to conversation events")
+		
+		# Connect to our response_completed signal
+		if not response_completed.is_connected(env_manager._on_conversation_completed):
+			response_completed.connect(env_manager._on_conversation_completed)
+			print("  - Connected to conversation events")
+		else:
+			print("  - Already connected to conversation events")
+	else:
+		print("[AI SYSTEM] Warning: Environment manager not found yet")
+
 func create_memory_button():
 	"""Create buttons for memory management"""
 	# Create a CanvasLayer for UI elements to ensure they're on top
@@ -562,7 +731,7 @@ func create_memory_button():
 		var view_button = Button.new()
 		view_button.text = "View " + npc_name + "'s Memories"
 		view_button.position = Vector2(10, button_y)
-		view_button.size = Vector2(150, 30)
+		view_button.size = Vector2(180, 30)  # Slightly wider for better text fit
 		view_button.add_theme_font_size_override("font_size", 12)
 		view_button.pressed.connect(_on_memory_button_pressed.bind(npc_name))
 		ui_layer.add_child(view_button)
@@ -570,8 +739,8 @@ func create_memory_button():
 		# Clear memories button
 		var clear_button = Button.new()
 		clear_button.text = "Clear " + npc_name
-		clear_button.position = Vector2(170, button_y)  # Right of view button
-		clear_button.size = Vector2(100, 30)
+		clear_button.position = Vector2(200, button_y)  # More space from view button
+		clear_button.size = Vector2(120, 30)  # Slightly wider
 		clear_button.add_theme_font_size_override("font_size", 12)
 		clear_button.modulate = Color(1, 0.8, 0.8)  # Slightly red to indicate danger
 		clear_button.pressed.connect(_on_clear_memory_button_pressed.bind(npc_name))
@@ -615,23 +784,13 @@ func _on_clear_memory_confirmed(npc_name: String = "Bob"):
 	"""Actually clear the memories after confirmation"""
 	print("Clearing ", npc_name, "'s memories...")
 	
-	# Clear both memory files directly for the specific NPC
-	var mem_file1 = project_root + "finalbuild/npc_memories/" + npc_name + ".json"
-	var mem_file2 = project_root + "finalbuild/server/npc_gpt4all_memories/" + npc_name + ".json"
-	
-	# Clear standard memory file
-	var file1 = FileAccess.open(mem_file1, FileAccess.WRITE)
-	if file1:
-		file1.store_string("[]")  # Empty array
-		file1.close()
-		print("Cleared standard memory file")
-	
-	# Clear GPT4All conversation file
-	var file2 = FileAccess.open(mem_file2, FileAccess.WRITE)
-	if file2:
-		file2.store_string('{"npc": "' + npc_name + '", "conversation": []}')  # Empty conversation
-		file2.close()
-		print("Cleared GPT4All conversation file for ", npc_name)
+	# Clear unified memory file (single source of truth)
+	var mem_file = project_root + "finalbuild/npc_memories/" + npc_name + ".json"
+	var file = FileAccess.open(mem_file, FileAccess.WRITE)
+	if file:
+		file.store_string("[]")  # Empty array
+		file.close()
+		print("Cleared memory file for ", npc_name)
 	
 	# Silent success - no dialog needed
 	print(npc_name + "'s memories have been cleared successfully")
@@ -716,199 +875,9 @@ func load_npc_memories(npc_name: String = "Bob"):
 			memory_text.append_text(output[0])
 
 func show_thinking_bubble(npc_node: Node, npc_name: String):
-	"""Create and show a thinking bubble (simpler, smaller)"""
-	# Remove existing bubble if any
-	if npc_name in speech_bubbles:
-		speech_bubbles[npc_name].queue_free()
-		speech_bubbles.erase(npc_name)
-	
-	# Get or create UI layer
-	var ui_layer = get_node_or_null("UILayer")
-	if not ui_layer:
-		ui_layer = CanvasLayer.new()
-		ui_layer.name = "UILayer"
-		add_child(ui_layer)
-	
-	# Create bubble container
-	var bubble_container = Control.new()
-	bubble_container.name = "ThinkingBubble_" + npc_name
-	
-	# Position bubble in center-ish area
-	var viewport_size = get_viewport().size
-	var bubble_x = viewport_size.x * 0.5 - 50  # Smaller bubble, so less offset
-	var bubble_y = viewport_size.y * 0.35
-	
-	# Adjust position based on which NPC
-	if npc_name == "Bob":
-		bubble_x = viewport_size.x * 0.4 - 50
-	elif npc_name == "Alice":
-		bubble_x = viewport_size.x * 0.6 - 50
-	
-	bubble_container.position = Vector2(bubble_x, bubble_y)
-	
-	# Create smaller bubble panel
-	var bubble_panel = Panel.new()
-	bubble_panel.size = Vector2(100, 50)
-	bubble_panel.position = Vector2(0, 0)
-	
-	# Create bubble style
-	var style_box = StyleBoxFlat.new()
-	style_box.bg_color = Color(0.9, 0.9, 1.0, 0.9)  # Light blue background
-	style_box.corner_radius_top_left = 10
-	style_box.corner_radius_top_right = 10
-	style_box.corner_radius_bottom_left = 10
-	style_box.corner_radius_bottom_right = 10
-	style_box.border_width_left = 2
-	style_box.border_width_right = 2
-	style_box.border_width_top = 2
-	style_box.border_width_bottom = 2
-	style_box.border_color = Color(0.7, 0.7, 0.9, 0.8)
-	bubble_panel.add_theme_stylebox_override("panel", style_box)
-	
-	# Create animated dots label
-	var thinking_text = Label.new()
-	thinking_text.position = Vector2(25, 10)
-	thinking_text.size = Vector2(50, 30)
-	thinking_text.add_theme_font_size_override("font_size", 20)
-	thinking_text.add_theme_color_override("font_color", Color(0.3, 0.3, 0.5))
-	thinking_text.text = "..."
-	
-	# Assemble the bubble
-	bubble_panel.add_child(thinking_text)
-	bubble_container.add_child(bubble_panel)
-	
-	# Add to UI layer
-	ui_layer.add_child(bubble_container)
-	
-	# Store reference
-	speech_bubbles[npc_name] = bubble_container
-	
-	# Animate the dots - simple animation without complex callbacks
-	var tween = create_tween()
-	tween.set_loops()  # Loop animation
-	tween.tween_property(thinking_text, "modulate:a", 0.5, 0.3)
-	tween.tween_property(thinking_text, "modulate:a", 1.0, 0.3)
-	tween.tween_property(thinking_text, "modulate:a", 0.5, 0.3)
-	tween.tween_property(thinking_text, "modulate:a", 1.0, 0.3)
+	"""Thinking bubble disabled - no longer shows anything"""
+	pass
 
 func show_speech_bubble(npc_node: Node, text: String, npc_name: String):
-	"""Create and show a speech bubble above the NPC"""
-	# Remove existing bubble if any with fade animation
-	if npc_name in speech_bubbles and is_instance_valid(speech_bubbles[npc_name]):
-		var old_bubble = speech_bubbles[npc_name]
-		speech_bubbles.erase(npc_name)
-		
-		# Quick fade out before creating new bubble
-		var fade_tween = create_tween()
-		fade_tween.tween_property(old_bubble, "modulate:a", 0.0, 0.2).set_ease(Tween.EASE_IN)
-		fade_tween.tween_callback(old_bubble.queue_free)
-	
-	# Get or create UI layer
-	var ui_layer = get_node_or_null("UILayer")
-	if not ui_layer:
-		ui_layer = CanvasLayer.new()
-		ui_layer.name = "UILayer"
-		add_child(ui_layer)
-	
-	# Create bubble container
-	var bubble_container = Control.new()
-	bubble_container.name = "SpeechBubble_" + npc_name
-	
-	# Position bubble in center-ish area but calculate tail direction
-	var viewport_size = get_viewport().size
-	var bubble_x = viewport_size.x * 0.5 - 150  # Center horizontally (minus half of 300px width)
-	var bubble_y = viewport_size.y * 0.3  # Upper-middle of screen
-	
-	# Adjust position based on which NPC (left/right bias)
-	if npc_name == "Bob":
-		bubble_x = viewport_size.x * 0.4 - 150  # Slightly left
-	elif npc_name == "Alice":
-		bubble_x = viewport_size.x * 0.6 - 150  # Slightly right
-	
-	bubble_container.position = Vector2(bubble_x, bubble_y)
-	
-	# Create the bubble panel (smaller size for shorter responses)
-	var bubble_panel = Panel.new()
-	bubble_panel.size = Vector2(300, 120)  # Reduced size for shorter responses
-	bubble_panel.position = Vector2(0, 0)
-	
-	# Create bubble style with rounded corners
-	var style_box = StyleBoxFlat.new()
-	style_box.bg_color = Color(1, 1, 1, 0.95)  # White background, slightly transparent
-	style_box.corner_radius_top_left = 15
-	style_box.corner_radius_top_right = 15
-	style_box.corner_radius_bottom_left = 15
-	style_box.corner_radius_bottom_right = 15
-	style_box.border_width_left = 2
-	style_box.border_width_right = 2
-	style_box.border_width_top = 2
-	style_box.border_width_bottom = 2
-	style_box.border_color = Color(0.2, 0.2, 0.2, 0.8)
-	bubble_panel.add_theme_stylebox_override("panel", style_box)
-	
-	# Create ScrollContainer for scrollable text
-	var scroll_container = ScrollContainer.new()
-	scroll_container.position = Vector2(10, 10)
-	scroll_container.size = Vector2(280, 100)  # Match smaller panel interior size
-	scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	
-	# Create text label inside scroll container
-	var bubble_text = RichTextLabel.new()
-	if bubble_text:
-		bubble_text.bbcode_enabled = false  # Disable BBCode to avoid formatting issues
-		bubble_text.custom_minimum_size = Vector2(270, 0)  # Width slightly less than scroll container
-		bubble_text.fit_content = true  # Auto-adjust height based on content
-		bubble_text.add_theme_font_size_override("normal_font_size", 13)  # Good size for readability
-		bubble_text.add_theme_color_override("default_color", Color(0, 0, 0, 1))  # Pure black for better contrast
-		bubble_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		bubble_text.text = text  # Use text property for plain text
-		
-	# Add text to scroll container
-	scroll_container.add_child(bubble_text)
-	
-	# Add tail/pointer to bubble pointing toward NPC
-	var tail = Polygon2D.new()
-	var tail_offset_x = 0
-	
-	# Adjust tail position based on NPC
-	if npc_name == "Bob":
-		tail_offset_x = -50  # Point left toward Bob
-	elif npc_name == "Alice":
-		tail_offset_x = 50  # Point right toward Alice
-	elif npc_name == "Sam":
-		tail_offset_x = 0  # Center for Sam
-	
-	# Create tail shape pointing down and slightly to the side
-	var points = PackedVector2Array([
-		Vector2(-10, 120),  # Left corner at bottom of bubble (120 = new panel height)
-		Vector2(10, 120),   # Right corner at bottom of bubble
-		Vector2(tail_offset_x, 150)  # Point toward NPC
-	])
-	tail.polygon = points
-	tail.color = Color(1, 1, 1, 0.95)
-	tail.position = Vector2(150, 0)  # Center horizontally on bubble (150 = half of 300px width)
-	
-	# Assemble the bubble
-	bubble_panel.add_child(scroll_container)
-	bubble_container.add_child(bubble_panel)
-	bubble_container.add_child(tail)
-	
-	# Add to UI layer for proper display
-	ui_layer.add_child(bubble_container)
-	
-	# Store reference
-	speech_bubbles[npc_name] = bubble_container
-	
-	# Animate appearance
-	bubble_container.modulate.a = 0
-	var tween = create_tween()
-	tween.tween_property(bubble_container, "modulate:a", 1.0, 0.3)
-	tween.tween_interval(8.0)  # Display for 8 seconds
-	tween.tween_property(bubble_container, "modulate:a", 0.0, 0.5)
-	tween.tween_callback(func(): 
-		if is_instance_valid(bubble_container):
-			bubble_container.queue_free()
-		if npc_name in speech_bubbles:
-			speech_bubbles.erase(npc_name)
-	)
+	"""Speech bubble disabled - streaming bubble handles all text display"""
+	pass
