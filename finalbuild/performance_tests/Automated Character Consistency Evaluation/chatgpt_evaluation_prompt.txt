@@ -1,0 +1,70 @@
+# NPC Character Consistency Evaluation Request
+
+## Background
+These responses are from NPCs in a bar simulation game using Llama 3.2 3B model.
+
+## NPCs to Evaluate:
+- **Bob**: Professional bartender, experienced, friendly
+- **Alice**: Contemplative regular patron, philosophical  
+- **Sam**: Energetic musician, creative, passionate about music
+
+## Evaluation Criteria (Score 1-10):
+
+### 1. Personality Consistency
+- Are personality traits stable across responses?
+- Does each character maintain their unique voice?
+- Are emotional responses appropriate to character?
+
+### 2. Memory & Context Awareness
+- Do they maintain context within conversations?
+- Are references to past events consistent?
+- Do they show appropriate knowledge of their environment?
+
+### 3. Role Expertise
+- Do they demonstrate appropriate professional knowledge?
+- Are their skills and expertise consistent with their role?
+- Do they respond appropriately to role-specific questions?
+
+### 4. Language & Communication Style
+- Is their vocabulary consistent with their character?
+- Do they maintain a consistent communication style?
+- Are responses appropriately detailed?
+
+## Required Output Format:
+```
+Character Consistency Scores:
+================================
+Bob:
+  - Personality: X.X/10
+  - Memory & Context: X.X/10
+  - Role Expertise: X.X/10
+  - Language Style: X.X/10
+  - Overall: X.X/10
+
+Alice:
+  - Personality: X.X/10
+  - Memory & Context: X.X/10
+  - Role Expertise: X.X/10
+  - Language Style: X.X/10
+  - Overall: X.X/10
+
+Sam:
+  - Personality: X.X/10
+  - Memory & Context: X.X/10
+  - Role Expertise: X.X/10
+  - Language Style: X.X/10
+  - Overall: X.X/10
+
+Overall System Score: X.X/10
+================================
+
+Detailed Analysis:
+[Provide 2-3 sentences for each character highlighting strengths and areas for improvement]
+
+Key Findings:
+[List 3-4 main observations about the system's character consistency]
+```
+
+## JSON Data:
+[Paste the contents of the JSON file below this line]
+

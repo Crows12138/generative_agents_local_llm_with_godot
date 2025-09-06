@@ -1,0 +1,46 @@
+{
+  "idle": {
+    "gpu_util_min": 24,
+    "gpu_util_max": 52,
+    "gpu_util_avg": 31,
+    "gpu_util_std": 5.82141639885766,
+    "mem_min": 1161,
+    "mem_max": 1163,
+    "mem_avg": 1161.2105263157894,
+    "temp_avg": 45,
+    "samples": 19
+  },
+  "dialogue": {
+    "gpu_util_min": 21,
+    "gpu_util_max": 53,
+    "gpu_util_avg": 33.08108108108108,
+    "gpu_util_std": 8.954757824066919,
+    "mem_min": 1141,
+    "mem_max": 1161,
+    "mem_avg": 1154.5135135135135,
+    "temp_avg": 45,
+    "samples": 37
+  },
+  "decision": {
+    "gpu_util_min": 21,
+    "gpu_util_max": 57,
+    "gpu_util_avg": 32.86486486486486,
+    "gpu_util_std": 8.981963909729078,
+    "mem_min": 1141,
+    "mem_max": 1142,
+    "mem_avg": 1141.1081081081081,
+    "temp_avg": 45,
+    "samples": 37
+  },
+  "concurrent": {
+    "gpu_util_min": 25,
+    "gpu_util_max": 71,
+    "gpu_util_avg": 31.660714285714285,
+    "gpu_util_std": 8.088772883030327,
+    "mem_min": 1139,
+    "mem_max": 1140,
+    "mem_avg": 1139.0357142857142,
+    "temp_avg": 45,
+    "samples": 56
+  }
+}

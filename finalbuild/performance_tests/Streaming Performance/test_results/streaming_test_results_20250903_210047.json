@@ -1,0 +1,92 @@
+{
+  "test_time": "2025-09-03T21:00:47.778485",
+  "server": "ws://127.0.0.1:9999",
+  "results": {
+    "simple": [
+      {
+        "query": "Hello!",
+        "ttft_ms": 640.9275531768799,
+        "total_time_ms": 8958.278179168701,
+        "tokens_count": 64,
+        "tokens_per_second": 7.694757967759496,
+        "response_length": 255
+      },
+      {
+        "query": "How are you?",
+        "ttft_ms": 309.7493648529053,
+        "total_time_ms": 12772.515296936035,
+        "tokens_count": 98,
+        "tokens_per_second": 7.863422978017807,
+        "response_length": 396
+      },
+      {
+        "query": "What's your name?",
+        "ttft_ms": 357.94782638549805,
+        "total_time_ms": 6283.032417297363,
+        "tokens_count": 48,
+        "tokens_per_second": 8.101150163092075,
+        "response_length": 194
+      }
+    ],
+    "context": [
+      {
+        "query": "What drinks do you serve?",
+        "ttft_ms": 658.5361957550049,
+        "total_time_ms": 22456.28571510315,
+        "tokens_count": 136,
+        "tokens_per_second": 6.23917619932661,
+        "response_length": 575
+      },
+      {
+        "query": "Tell me about this place.",
+        "ttft_ms": 727.0145416259766,
+        "total_time_ms": 17124.693393707275,
+        "tokens_count": 92,
+        "tokens_per_second": 5.610550177857811,
+        "response_length": 409
+      },
+      {
+        "query": "What's the special today?",
+        "ttft_ms": 672.3198890686035,
+        "total_time_ms": 10388.36145401001,
+        "tokens_count": 57,
+        "tokens_per_second": 5.866586677199312,
+        "response_length": 229
+      }
+    ],
+    "complex": [
+      {
+        "query": "What's your philosophy on bartending and customer ",
+        "ttft_ms": 819.9052810668945,
+        "total_time_ms": 2941.0476684570312,
+        "tokens_count": 15,
+        "tokens_per_second": 7.071661048863423,
+        "response_length": 61
+      },
+      {
+        "query": "Tell me about your most memorable experience here.",
+        "ttft_ms": 788.3169651031494,
+        "total_time_ms": 9129.460334777832,
+        "tokens_count": 53,
+        "tokens_per_second": 6.354044961352472,
+        "response_length": 214
+      },
+      {
+        "query": "How would you describe the perfect evening at this",
+        "ttft_ms": 1132.1179866790771,
+        "total_time_ms": 8491.111755371094,
+        "tokens_count": 42,
+        "tokens_per_second": 5.70730201983376,
+        "response_length": 182
+      }
+    ]
+  },
+  "summary": {
+    "total_queries": 9,
+    "categories_tested": [
+      "simple",
+      "context",
+      "complex"
+    ]
+  }
+}

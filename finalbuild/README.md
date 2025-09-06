@@ -35,8 +35,7 @@ Edit `finalbuild/server/gpt4all_config.json`:
 - `temperature`: Creativity level (0.0-1.0)
 
 ## Memory Storage
-- Conversations: `finalbuild/server/npc_gpt4all_conversations/`
-- Compatible format: `finalbuild/npc_memories/`
+- Conversations and memories: `finalbuild/npc_memories/`
 
 ## Godot Integration
 The server listens on port 9999 and is compatible with the existing Godot client.

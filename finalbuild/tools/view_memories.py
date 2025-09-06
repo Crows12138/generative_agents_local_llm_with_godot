@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Memory Viewer for GPT4All NPC System
-Views Bob's conversation memories
+View a specific NPC's conversation memories
 """
 
 import json
@@ -40,7 +40,7 @@ def main():
         
         # Show conversation
         print(f"User: {memory.get('user_input', 'N/A')}")
-        print(f"Bob: {memory.get('npc_response', 'N/A')}")
+        print(f"{npc_name}: {memory.get('npc_response', 'N/A')}")
         
         # Show metadata
         metadata = memory.get('metadata', {})
