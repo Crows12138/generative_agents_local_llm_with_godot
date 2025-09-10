@@ -15,6 +15,9 @@ var is_dialogue_processing = false
 var input_dialog = null
 var current_npc_for_input = ""
 
+# Decision system control
+var decision_system_enabled = false  # Global toggle for decision system (default: OFF)
+
 # Memory viewer UI elements (from scene)
 var memory_panel = null
 var memory_text = null
@@ -30,7 +33,7 @@ var last_update_time = 0.0
 var update_interval = 0.05  # Update every 50ms for smooth streaming
 
 func _ready():
-	print("Bar scene - Dialogue System (WebSocket mode)!")
+	# print("Bar scene - Dialogue System (WebSocket mode)!")
 	
 	# Get NPC nodes
 	setup_npcs()
@@ -201,6 +204,25 @@ func apply_panel_style(panel: Panel, bg_color: Color = Color(1, 1, 1, 0.95)):
 	style_box.shadow_offset = Vector2(2, 2)
 	panel.add_theme_stylebox_override("panel", style_box)
 
+func _on_decision_toggle(pressed: bool):
+	"""Handle decision system toggle button"""
+	decision_system_enabled = pressed  # pressed = ON, not pressed = OFF
+	
+	# Update button text
+	var ui_layer = get_node_or_null("UILayer")
+	if ui_layer:
+		var toggle_button = ui_layer.get_node_or_null("DecisionToggleButton")
+		if toggle_button:
+			toggle_button.text = "Decisions: ON" if pressed else "Decisions: OFF"
+	
+	# Notify all NPCs about the decision system state change
+	var npcs_group = get_tree().get_nodes_in_group("npcs")
+	for npc in npcs_group:
+		if npc.has_method("set_decision_enabled"):
+			npc.set_decision_enabled(decision_system_enabled)
+	
+	print("Decision system ", "enabled" if pressed else "disabled")
+
 func setup_ui_from_scene():
 	"""Connect UI elements from the scene"""
 	var ui_layer = get_node_or_null("UILayer")
@@ -246,7 +268,14 @@ func setup_ui_from_scene():
 	if sam_clear:
 		sam_clear.pressed.connect(_on_clear_memory_button_pressed.bind("Sam"))
 	
-	print("UI setup from scene complete")
+	# Connect decision system toggle button (already exists in scene)
+	var toggle_button = ui_layer.get_node_or_null("DecisionToggleButton")
+	if toggle_button:
+		toggle_button.button_pressed = decision_system_enabled
+		toggle_button.toggled.connect(_on_decision_toggle)
+		# print("Decision toggle button connected")
+	
+	# print("UI setup from scene complete")
 
 func setup_npcs():
 	"""Setup NPC nodes and click detection"""
@@ -255,7 +284,7 @@ func setup_npcs():
 	var alice = $Alice if has_node("Alice") else null
 	var sam = $sam if has_node("sam") else null
 	
-	print("Found nodes - Bob: ", bob != null, ", Alice: ", alice != null, ", Sam: ", sam != null)
+	# print("Found nodes - Bob: ", bob != null, ", Alice: ", alice != null, ", Sam: ", sam != null)
 	
 	# Setup click detection for CharacterBody2D
 	if bob and bob is CharacterBody2D:
@@ -285,7 +314,7 @@ func setup_npcs():
 				setup_area_click(child, "Sam")
 				break
 	
-	print("NPCs setup complete: ", npcs.keys())
+	# print("NPCs setup complete: ", npcs.keys())
 
 func setup_character_click(character: CharacterBody2D, npc_name: String):
 	"""Setup CharacterBody2D for click detection"""
@@ -296,7 +325,7 @@ func setup_character_click(character: CharacterBody2D, npc_name: String):
 	# Make sure it can receive input
 	character.input_pickable = true
 	
-	print(npc_name, " CharacterBody2D is now clickable")
+	# print(npc_name, " CharacterBody2D is now clickable")
 
 func setup_area_click(area: Area2D, npc_name: String):
 	"""Setup Area2D for expanded click detection"""
@@ -307,7 +336,7 @@ func setup_area_click(area: Area2D, npc_name: String):
 	# Make sure it can receive input
 	area.input_pickable = true
 	
-	print(npc_name, " Area2D expanded click area is now active")
+	# print(npc_name, " Area2D expanded click area is now active")
 
 func _on_character_input_event(_viewport: Node, event: InputEvent, _shape_idx: int, npc_name: String):
 	"""Handle CharacterBody2D click events"""
@@ -332,8 +361,8 @@ func _on_area_input_event(_viewport: Node, event: InputEvent, _shape_idx: int, n
 func check_server():
 	"""Check server status"""
 	# For WebSocket, we'll just try to connect
-	print("WebSocket server should be running on port 9999")
-	print("Start with: python afterbuild/server/dialogue_server.py")
+	# print("WebSocket server should be running on port 9999")
+	# print("Start with: python afterbuild/server/dialogue_server.py")
 
 func connect_websocket():
 	"""Connect to WebSocket server for streaming"""
@@ -412,7 +441,7 @@ func _process_websocket_message(data: String):
 			var tween = create_tween()
 			tween.tween_interval(8.0)  # Display for 8 seconds
 			tween.tween_property(bubble, "modulate:a", 0.0, 0.5).set_ease(Tween.EASE_IN_OUT)
-			tween.tween_callback(func():
+			tween.tween_callback(func(): 
 				if is_instance_valid(bubble):
 					bubble.queue_free()
 				if npc in speech_bubbles:
@@ -471,6 +500,9 @@ func update_streaming_bubble(npc_name: String, partial_text: String):
 	
 	# Update bubble text and position
 	if bubble and is_instance_valid(bubble):
+		# Store bubble reference in dictionary for cleanup
+		speech_bubbles[npc_name] = bubble
+		
 		var text_label = find_rich_text_label(bubble)
 		if text_label:
 			# Only update if text is different to avoid flicker
@@ -686,6 +718,10 @@ func interact_with_npc(npc_name: String, custom_message: String = ""):
 		var tween = create_tween()
 		tween.tween_property(npc, "modulate", Color(1.2, 1.2, 1.2), 0.1)
 		tween.tween_property(npc, "modulate", original_modulate, 0.1)
+		
+		# Call the NPC's handle_user_dialogue function to interrupt their action
+		if npc.has_method("handle_user_dialogue"):
+			npc.handle_user_dialogue()
 	
 	# No thinking bubble needed for WebSocket (it's fast)
 	
@@ -714,6 +750,28 @@ func interact_with_npc(npc_name: String, custom_message: String = ""):
 		var json_str = JSON.stringify(data)
 		websocket.send_text(json_str)
 		print("Sent WebSocket request for ", npc_name)
+		
+		# Add timeout to prevent stuck dialogue
+		var timeout_timer = get_tree().create_timer(10.0)  # 10 second timeout
+		timeout_timer.timeout.connect(func():
+			if is_dialogue_processing and current_streaming_npc == npc_name:
+				print("Dialogue timeout for ", npc_name)
+				is_dialogue_processing = false
+				current_streaming_npc = ""
+				current_streaming_response = ""
+				
+				# Clean up stuck bubble if exists
+				if npc_name in speech_bubbles and is_instance_valid(speech_bubbles[npc_name]):
+					var bubble = speech_bubbles[npc_name]
+					var tween = create_tween()
+					tween.tween_property(bubble, "modulate:a", 0.0, 0.5)
+					tween.tween_callback(func():
+						if is_instance_valid(bubble):
+							bubble.queue_free()
+						if npc_name in speech_bubbles:
+							speech_bubbles.erase(npc_name)
+					)
+		)
 	else:
 		# WebSocket not connected
 		print("WebSocket not connected. Please start afterbuild/server/dialogue_server.py")

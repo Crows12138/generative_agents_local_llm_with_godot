@@ -1,187 +1,77 @@
 {
-  "level_1": {
-    "name": "Single Word Actions",
-    "description": "Basic action selection without parameters",
-    
-    "valid_actions": ["idle", "walk", "serve", "chat", "clean"],
-    
-    "npc_specific_actions": {
-      "Bob": ["idle", "walk", "serve", "chat", "clean"],
-      "Alice": ["idle", "walk", "chat", "think", "observe"],
-      "Sam": ["idle", "walk", "chat", "play", "rest"],
-      "default": ["idle", "walk", "chat"]
+  "name": "Action with Target",
+  "description": "Action selection with target specification",
+  
+  "valid_actions": ["walk", "chat", "serve", "observe", "play", "clean"],
+  
+  "npc_specific_actions": {
+    "Bob": ["walk", "chat", "serve", "clean", "observe"],
+    "Alice": ["walk", "chat", "observe"],
+    "Sam": ["walk", "chat", "play", "observe"]
+  },
+  
+  "npc_specific_targets": {
+    "Bob": ["bar", "dog", "Alice", "Sam", "customer"],
+    "Alice": ["bar", "dog", "Bob", "Sam", "customer"],
+    "Sam": ["bar", "dog", "Alice", "Bob", "guitar", "customer"]
+  },
+  
+  "separator": "|",
+  
+  "system_prompts": {
+    "strict": "You are a decision bot. Reply with EXACTLY the format: action|target. No explanations. No spaces.",
+    "simple": "Choose action and target. Format: action|target"
+  },
+  
+  "npc_prompts": {
+    "Bob": {
+      "template": "You are Bob the bartender. Choose an action and target.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nReply ONLY with format: action|target",
+      "examples": "Examples: serve|customer, clean|bar, chat|Alice"
     },
-    
-    "action_mappings": {
-      "watch": "observe",
-      "look": "observe",
-      "see": "observe",
-      "view": "observe",
-      "gaze": "observe",
-      "listen": "observe",
-      "hear": "observe",
-      "wait": "idle",
-      "stand": "idle",
-      "pause": "idle",
-      "leave": "idle",
-      "exit": "idle",
-      "quit": "idle",
-      "stop": "idle",
-      "greet": "chat",
-      "talk": "chat",
-      "speak": "chat",
-      "converse": "chat",
-      "answer": "chat",
-      "respond": "chat",
-      "reply": "chat",
-      "ask": "chat",
-      "write": "think",
-      "read": "think",
-      "ponder": "think",
-      "consider": "think",
-      "reflect": "think",
-      "perform": "play",
-      "music": "play",
-      "sing": "play",
-      "tune": "play",
-      "relax": "rest",
-      "sleep": "rest",
-      "nap": "rest",
-      "wipe": "clean",
-      "wash": "clean",
-      "tidy": "clean",
-      "move": "walk",
-      "go": "walk",
-      "approach": "walk",
-      "sign": "chat",
-      "accept": "chat",
-      "decline": "idle",
-      "refuse": "idle",
-      "adjust": "idle",
-      "fix": "idle",
-      "none": "idle"
+    "Alice": {
+      "template": "You are Alice, a thoughtful regular. Choose an action and target.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nReply ONLY with format: action|target",
+      "examples": "Examples: observe|Sam, chat|Bob, walk|dog"
     },
-    
-    "system_prompts": {
-      "strict": "You are a decision bot. Reply with EXACTLY one word from the list. No explanations. No punctuation.",
-      "simple": "Choose one action word only.",
-      "focused": "Select the most appropriate action. Reply with just the action word."
-    },
-    
-    "npc_prompts": {
-      "Bob": {
-        "template": "You are Bob the bartender. Choose ONE action.\nOptions: {actions}\nContext: {context}\nReply with ONLY the action word:",
-        "personality_hint": "Bob is professional and customer-focused"
-      },
-      "Alice": {
-        "template": "You are Alice, a thoughtful regular. Choose ONE action.\nOptions: {actions}\nContext: {context}\nReply with ONLY the action word:",
-        "personality_hint": "Alice is contemplative and observant"
-      },
-      "Sam": {
-        "template": "You are Sam the musician. Choose ONE action.\nOptions: {actions}\nContext: {context}\nReply with ONLY the action word:",
-        "personality_hint": "Sam is energetic and social"
-      },
-      "default": {
-        "template": "You are {npc}. Choose ONE action.\nOptions: {actions}\nContext: {context}\nReply with ONLY the action word:",
-        "personality_hint": ""
-      }
-    },
-    
-    "generation_params": {
-      "max_tokens": 10,
-      "temperature": 0.3,
-      "top_k": 10,
-      "top_p": 0.5,
-      "repeat_penalty": 1.0
+    "Sam": {
+      "template": "You are Sam the musician. Choose an action and target.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nReply ONLY with format: action|target",
+      "examples": "Examples: play|guitar, chat|Alice, walk|bar"
     }
   },
   
-  "level_2": {
-    "name": "Action with Target",
-    "description": "Action selection with target specification",
-    
-    "valid_actions": ["walk", "chat", "serve", "observe", "play", "clean"],
-    
-    "npc_specific_actions": {
-      "Bob": ["walk", "chat", "serve", "clean", "observe"],
-      "Alice": ["walk", "chat", "observe"],
-      "Sam": ["walk", "chat", "play", "observe"]
-    },
-    
-    "npc_specific_targets": {
-      "Bob": ["bar", "dog", "Alice", "Sam", "customer"],
-      "Alice": ["bar", "dog", "Bob", "Sam", "customer"],
-      "Sam": ["bar", "dog", "Alice", "Bob", "guitar", "customer"]
-    },
-    
-    "separator": "|",
-    
-    "system_prompts": {
-      "strict": "You are a decision bot. Reply with EXACTLY the format: action|target. No explanations. No spaces.",
-      "simple": "Choose action and target. Format: action|target"
-    },
-    
-    "npc_prompts": {
-      "Bob": {
-        "template": "You are Bob the bartender. Choose an action and target.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nReply ONLY with format: action|target",
-        "examples": "Examples: serve|player, clean|bar, chat|Alice"
-      },
-      "Alice": {
-        "template": "You are Alice, a thoughtful regular. Choose an action and target.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nReply ONLY with format: action|target",
-        "examples": "Examples: observe|window, chat|Bob, walk|table"
-      },
-      "Sam": {
-        "template": "You are Sam the musician. Choose an action and target.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nReply ONLY with format: action|target",
-        "examples": "Examples: play|stage, chat|Alice, walk|bar"
-      },
-      "default": {
-        "template": "You are {npc}. Choose an action and target.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nReply ONLY with format: action|target",
-        "examples": ""
-      }
-    },
-    
-    "generation_params": {
-      "max_tokens": 15,
-      "temperature": 0.4,
-      "top_k": 20,
-      "top_p": 0.6
-    },
-    
-    "action_mappings": {
-      "go": "walk",
-      "move": "walk",
-      "approach": "walk",
-      "talk": "chat",
-      "speak": "chat",
-      "greet": "chat",
-      "give": "serve",
-      "pour": "serve",
-      "offer": "serve",
-      "watch": "observe",
-      "look": "observe",
-      "see": "observe",
-      "perform": "play",
-      "sing": "play",
-      "wipe": "clean",
-      "wash": "clean"
-    },
-    
-    "target_mappings": {
-      "bartender": "Bob",
-      "musician": "Sam",
-      "customer": "player",
-      "patron": "player",
-      "counter": "bar",
-      "tables": "table",
-      "instrument": "guitar",
-      "mic": "microphone"
-    }
+  "generation_params": {
+    "max_tokens": 15,
+    "temperature": 0.4,
+    "top_k": 20,
+    "top_p": 0.6
   },
   
-  "level_3": {
-    "name": "Action Sequences",
-    "description": "Planning multiple actions in sequence",
-    "max_sequence_length": 3,
-    "template": "Plan your next actions. Format: action1|target1->action2|target2"
+  "action_mappings": {
+    "go": "walk",
+    "move": "walk",
+    "approach": "walk",
+    "talk": "chat",
+    "speak": "chat",
+    "greet": "chat",
+    "give": "serve",
+    "pour": "serve",
+    "offer": "serve",
+    "watch": "observe",
+    "look": "observe",
+    "see": "observe",
+    "perform": "play",
+    "sing": "play",
+    "wipe": "clean",
+    "wash": "clean"
+  },
+  
+  "target_mappings": {
+    "bartender": "Bob",
+    "musician": "Sam",
+    "customer": "player",
+    "patron": "player",
+    "counter": "bar",
+    "tables": "table",
+    "instrument": "guitar",
+    "mic": "microphone"
   }
 }

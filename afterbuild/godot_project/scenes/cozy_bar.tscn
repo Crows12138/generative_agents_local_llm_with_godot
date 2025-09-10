@@ -1,4 +1,4 @@
-[gd_scene load_steps=237 format=4 uid="uid://buhrkf3qrgfxx"]
+[gd_scene load_steps=239 format=4 uid="uid://buhrkf3qrgfxx"]
 
 [ext_resource type="Script" uid="uid://c3sjt5afgoic5" path="res://scripts/dialogue_client.gd" id="1_6ieo7"]
 [ext_resource type="Theme" uid="uid://d3wgmhhnuxm0m" path="res://ui_theme.tres" id="1_theme"]
@@ -20,7 +20,9 @@
 [ext_resource type="Script" uid="uid://xrxgbvuanh4o" path="res://scripts/dog_behavior.gd" id="15_ek8yi"]
 [ext_resource type="Texture2D" uid="uid://dyn1j7trdfnb0" path="res://assets/sprites/characters/drummer.png" id="15_rpnp4"]
 [ext_resource type="Texture2D" uid="uid://demm4idbf005e" path="res://assets/sprites/characters/lutist.png" id="16_a0od2"]
-[ext_resource type="Script" uid="uid://bk6n1v3nlob3y" path="res://scenes/alice.gd" id="18_s282g"]
+[ext_resource type="Script" uid="uid://d0uvvrg5c2vpc" path="res://scripts/sam.gd" id="18_me8ii"]
+[ext_resource type="Script" uid="uid://bk6n1v3nlob3y" path="res://scripts/alice.gd" id="18_s282g"]
+[ext_resource type="Script" uid="uid://dbrby5lgp2eoi" path="res://scripts/bob.gd" id="20_pxi4p"]
 
 [sub_resource type="NavigationPolygon" id="NavigationPolygon_ek8yi"]
 vertices = PackedVector2Array(8, 8, -8, 8, -8, -8, 8, -8)
@@ -31570,6 +31572,7 @@ sources/2 = SubResource("TileSetAtlasSource_yuvt1")
 
 [node name="CozyBar" type="Node2D"]
 y_sort_enabled = true
+position = Vector2(3, 0)
 script = ExtResource("1_6ieo7")
 
 [node name="Camera2D" type="Camera2D" parent="."]
@@ -31601,7 +31604,7 @@ tile_map_data = PackedByteArray("AADXADAAAwAAAAAAAADvADwAAwACAAAAAAD2AGUAAwADAAE
 tile_set = SubResource("TileSet_0b1vl")
 navigation_enabled = false
 
-[node name="dog" type="CharacterBody2D" parent="."]
+[node name="dog" type="CharacterBody2D" parent="." groups=["npcs"]]
 z_index = 1
 y_sort_enabled = true
 position = Vector2(430, 358)
@@ -31651,7 +31654,7 @@ position = Vector2(669, 208.8)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="InvisibleWalls/RightWall"]
 shape = SubResource("RectangleShape2D_wall_vertical")
 
-[node name="Alice" type="CharacterBody2D" parent="." node_paths=PackedStringArray("dog")]
+[node name="Alice" type="CharacterBody2D" parent="." groups=["npcs"]]
 z_index = 1
 y_sort_enabled = true
 position = Vector2(85, 285)
@@ -31659,7 +31662,6 @@ collision_layer = 2
 wall_min_slide_angle = 0.0
 script = ExtResource("18_s282g")
 speed = 30
-dog = NodePath("../dog")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Alice"]
 sprite_frames = SubResource("SpriteFrames_4j87i")
@@ -31686,13 +31688,18 @@ shape = SubResource("RectangleShape2D_5u45j")
 path_desired_distance = 4.0
 target_desired_distance = 4.0
 
-[node name="Timer" type="Timer" parent="Alice"]
+[node name="PathFindingTimer" type="Timer" parent="Alice/NavigationAgent2D"]
 wait_time = 2.0
 autostart = true
 
-[node name="sam" type="CharacterBody2D" parent="."]
+[node name="DicisionTimer" type="Timer" parent="Alice/NavigationAgent2D"]
+wait_time = 10.0
+autostart = true
+
+[node name="sam" type="CharacterBody2D" parent="." groups=["npcs"]]
 z_index = 1
 position = Vector2(448, 279)
+script = ExtResource("18_me8ii")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="sam"]
 sprite_frames = SubResource("SpriteFrames_8sadc")
@@ -31715,10 +31722,26 @@ shape = SubResource("RectangleShape2D_me8ii")
 position = Vector2(-1, 0.5)
 shape = SubResource("RectangleShape2D_ek8yi")
 
-[node name="bob" type="CharacterBody2D" parent="."]
+[node name="Guitar" type="Node2D" parent="sam" groups=["objects"]]
+position = Vector2(-3, 13)
+
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="sam"]
+path_desired_distance = 4.0
+target_desired_distance = 4.0
+
+[node name="PathFindingTimer" type="Timer" parent="sam/NavigationAgent2D"]
+wait_time = 2.0
+autostart = true
+
+[node name="DicisionTimer" type="Timer" parent="sam/NavigationAgent2D"]
+wait_time = 10.0
+autostart = true
+
+[node name="bob" type="CharacterBody2D" parent="." groups=["npcs"]]
 z_index = 1
 y_sort_enabled = true
 position = Vector2(317, 136)
+script = ExtResource("20_pxi4p")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="bob"]
 sprite_frames = SubResource("SpriteFrames_1jur2")
@@ -31741,9 +31764,21 @@ shape = SubResource("RectangleShape2D_bob")
 position = Vector2(0, 4.5)
 shape = SubResource("RectangleShape2D_5u45j")
 
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="bob"]
+path_desired_distance = 4.0
+target_desired_distance = 4.0
+
+[node name="PathFindingTimer" type="Timer" parent="bob/NavigationAgent2D"]
+wait_time = 2.0
+autostart = true
+
+[node name="DicisionTimer" type="Timer" parent="bob/NavigationAgent2D"]
+wait_time = 10.0
+autostart = true
+
 [node name="StateManager" type="Node" parent="."]
 
-[node name="BarCounter" type="StaticBody2D" parent="."]
+[node name="Bar" type="StaticBody2D" parent="." groups=["objects"]]
 position = Vector2(318, 185)
 
 [node name="LiquorShelf" type="StaticBody2D" parent="."]
@@ -31835,6 +31870,16 @@ theme = ExtResource("1_theme")
 theme_override_font_sizes/font_size = 8
 text = "Clear"
 
+[node name="DecisionToggleButton" type="Button" parent="UILayer"]
+offset_left = 502.0
+offset_top = 6.0
+offset_right = 652.0
+offset_bottom = 30.0
+theme = ExtResource("1_theme")
+theme_override_font_sizes/font_size = 10
+toggle_mode = true
+text = "Decisions: OFF"
+
 [node name="SpeechBubbleExample" type="Panel" parent="UILayer"]
 visible = false
 modulate = Color(1, 1, 1, 0.95)
@@ -31869,4 +31914,9 @@ tile_map_data = PackedByteArray("AAApAAcAAgBgADIAAAApAAgAAgBgAC8AAAApAAkAAgBgADA
 tile_set = SubResource("TileSet_7q6y5")
 navigation_enabled = false
 
-[connection signal="timeout" from="Alice/Timer" to="Alice" method="_on_timer_timeout"]
+[connection signal="timeout" from="Alice/NavigationAgent2D/PathFindingTimer" to="Alice" method="_on_path_finding_timer_timeout"]
+[connection signal="timeout" from="Alice/NavigationAgent2D/DicisionTimer" to="Alice" method="_on_dicision_timer_timeout"]
+[connection signal="timeout" from="sam/NavigationAgent2D/PathFindingTimer" to="Alice" method="_on_path_finding_timer_timeout"]
+[connection signal="timeout" from="sam/NavigationAgent2D/DicisionTimer" to="sam" method="_on_dicision_timer_timeout"]
+[connection signal="timeout" from="bob/NavigationAgent2D/PathFindingTimer" to="Alice" method="_on_path_finding_timer_timeout"]
+[connection signal="timeout" from="bob/NavigationAgent2D/DicisionTimer" to="bob" method="_on_dicision_timer_timeout"]

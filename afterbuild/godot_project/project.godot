@@ -14,6 +14,10 @@ config/name="Live with AI"
 run/main_scene="res://scenes/cozy_bar.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 
+[autoload]
+
+Server="*res://scripts/server.gd"
+
 [display]
 
 window/size/viewport_width=672
