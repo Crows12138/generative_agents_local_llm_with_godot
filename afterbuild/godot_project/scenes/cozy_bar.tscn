@@ -17,12 +17,12 @@
 [ext_resource type="Texture2D" uid="uid://bbvrwe5ubhklh" path="res://assets/sprites/tiles/Cozy_bar/download 4.png" id="12_s282g"]
 [ext_resource type="Texture2D" uid="uid://c1t0aj7upxida" path="res://assets/sprites/tiles/Cozy_bar/download 5.png" id="13_me8ii"]
 [ext_resource type="Texture2D" uid="uid://b6iaa04djmxnb" path="res://assets/sprites/characters/Dog_medium r.png" id="13_nv83j"]
-[ext_resource type="Script" uid="uid://xrxgbvuanh4o" path="res://scripts/dog_behavior.gd" id="15_ek8yi"]
+[ext_resource type="Script" uid="uid://vbv5wpi47ahu" path="res://scripts/socrates.gd" id="13_pxi4p"]
 [ext_resource type="Texture2D" uid="uid://dyn1j7trdfnb0" path="res://assets/sprites/characters/drummer.png" id="15_rpnp4"]
 [ext_resource type="Texture2D" uid="uid://demm4idbf005e" path="res://assets/sprites/characters/lutist.png" id="16_a0od2"]
-[ext_resource type="Script" uid="uid://d0uvvrg5c2vpc" path="res://scripts/sam.gd" id="18_me8ii"]
-[ext_resource type="Script" uid="uid://bk6n1v3nlob3y" path="res://scripts/alice.gd" id="18_s282g"]
-[ext_resource type="Script" uid="uid://dbrby5lgp2eoi" path="res://scripts/bob.gd" id="20_pxi4p"]
+[ext_resource type="Script" uid="uid://bhqyjqmgpuc6d" path="res://scripts/shakespeare.gd" id="18_me8ii"]
+[ext_resource type="Script" uid="uid://cmtwiwfgqnjsm" path="res://scripts/einstein.gd" id="18_s282g"]
+[ext_resource type="Script" uid="uid://dtes04w5ogrtb" path="res://scripts/leonardo.gd" id="20_pxi4p"]
 
 [sub_resource type="NavigationPolygon" id="NavigationPolygon_ek8yi"]
 vertices = PackedVector2Array(8, 8, -8, 8, -8, -8, 8, -8)
@@ -31604,28 +31604,40 @@ tile_map_data = PackedByteArray("AADXADAAAwAAAAAAAADvADwAAwACAAAAAAD2AGUAAwADAAE
 tile_set = SubResource("TileSet_0b1vl")
 navigation_enabled = false
 
-[node name="dog" type="CharacterBody2D" parent="." groups=["npcs"]]
+[node name="Socrates" type="CharacterBody2D" parent="." groups=["npcs"]]
 z_index = 1
 y_sort_enabled = true
 position = Vector2(430, 358)
 collision_layer = 2
 motion_mode = 1
 wall_min_slide_angle = 0.0
-script = ExtResource("15_ek8yi")
+script = ExtResource("13_pxi4p")
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="dog"]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Socrates"]
 sprite_frames = SubResource("SpriteFrames_4uflq")
 animation = &"look up"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="dog"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Socrates"]
 position = Vector2(-0.5, 10.5)
 shape = SubResource("RectangleShape2D_dog")
 
-[node name="Interaction Area" type="Area2D" parent="dog"]
+[node name="Interaction Area" type="Area2D" parent="Socrates"]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="dog/Interaction Area"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Socrates/Interaction Area"]
 position = Vector2(-2, 4.5)
 shape = SubResource("RectangleShape2D_5u45j")
+
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="Socrates"]
+path_desired_distance = 4.0
+target_desired_distance = 4.0
+
+[node name="PathFindingTimer" type="Timer" parent="Socrates/NavigationAgent2D"]
+wait_time = 2.0
+autostart = true
+
+[node name="DicisionTimer" type="Timer" parent="Socrates/NavigationAgent2D"]
+wait_time = 10.0
+autostart = true
 
 [node name="InvisibleWalls" type="Node2D" parent="."]
 
@@ -31654,7 +31666,7 @@ position = Vector2(669, 208.8)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="InvisibleWalls/RightWall"]
 shape = SubResource("RectangleShape2D_wall_vertical")
 
-[node name="Alice" type="CharacterBody2D" parent="." groups=["npcs"]]
+[node name="Einstein" type="CharacterBody2D" parent="." groups=["npcs"]]
 z_index = 1
 y_sort_enabled = true
 position = Vector2(85, 285)
@@ -31663,116 +31675,116 @@ wall_min_slide_angle = 0.0
 script = ExtResource("18_s282g")
 speed = 30
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Alice"]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Einstein"]
 sprite_frames = SubResource("SpriteFrames_4j87i")
 animation = &"walk right"
 frame_progress = 0.0317515
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Alice"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Einstein"]
 position = Vector2(0, 19)
 shape = SubResource("RectangleShape2D_s282g")
 
-[node name="StateManager" type="Node" parent="Alice"]
+[node name="StateManager" type="Node" parent="Einstein"]
 
-[node name="DecisionController" type="Node" parent="Alice"]
+[node name="DecisionController" type="Node" parent="Einstein"]
 
-[node name="ActionExecutor" type="Node" parent="Alice"]
+[node name="ActionExecutor" type="Node" parent="Einstein"]
 
-[node name="Interaction Area" type="Area2D" parent="Alice"]
+[node name="Interaction Area" type="Area2D" parent="Einstein"]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Alice/Interaction Area"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Einstein/Interaction Area"]
 position = Vector2(-1, 5.5)
 shape = SubResource("RectangleShape2D_5u45j")
 
-[node name="NavigationAgent2D" type="NavigationAgent2D" parent="Alice"]
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="Einstein"]
 path_desired_distance = 4.0
 target_desired_distance = 4.0
 
-[node name="PathFindingTimer" type="Timer" parent="Alice/NavigationAgent2D"]
+[node name="PathFindingTimer" type="Timer" parent="Einstein/NavigationAgent2D"]
 wait_time = 2.0
 autostart = true
 
-[node name="DicisionTimer" type="Timer" parent="Alice/NavigationAgent2D"]
+[node name="DicisionTimer" type="Timer" parent="Einstein/NavigationAgent2D"]
 wait_time = 10.0
 autostart = true
 
-[node name="sam" type="CharacterBody2D" parent="." groups=["npcs"]]
+[node name="Shakespeare" type="CharacterBody2D" parent="." groups=["npcs"]]
 z_index = 1
 position = Vector2(448, 279)
 script = ExtResource("18_me8ii")
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="sam"]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Shakespeare"]
 sprite_frames = SubResource("SpriteFrames_8sadc")
 animation = &"idle"
 frame_progress = 0.939157
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="sam"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Shakespeare"]
 position = Vector2(0, 16)
 shape = SubResource("RectangleShape2D_me8ii")
 
-[node name="StateManager" type="Node" parent="sam"]
+[node name="StateManager" type="Node" parent="Shakespeare"]
 
-[node name="DecisionController" type="Node" parent="sam"]
+[node name="DecisionController" type="Node" parent="Shakespeare"]
 
-[node name="ActionExecutor" type="Node" parent="sam"]
+[node name="ActionExecutor" type="Node" parent="Shakespeare"]
 
-[node name="Interaction Area" type="Area2D" parent="sam"]
+[node name="Interaction Area" type="Area2D" parent="Shakespeare"]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="sam/Interaction Area"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Shakespeare/Interaction Area"]
 position = Vector2(-1, 0.5)
 shape = SubResource("RectangleShape2D_ek8yi")
 
-[node name="Guitar" type="Node2D" parent="sam" groups=["objects"]]
+[node name="Guitar" type="Node2D" parent="Shakespeare" groups=["objects"]]
 position = Vector2(-3, 13)
 
-[node name="NavigationAgent2D" type="NavigationAgent2D" parent="sam"]
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="Shakespeare"]
 path_desired_distance = 4.0
 target_desired_distance = 4.0
 
-[node name="PathFindingTimer" type="Timer" parent="sam/NavigationAgent2D"]
+[node name="PathFindingTimer" type="Timer" parent="Shakespeare/NavigationAgent2D"]
 wait_time = 2.0
 autostart = true
 
-[node name="DicisionTimer" type="Timer" parent="sam/NavigationAgent2D"]
+[node name="DicisionTimer" type="Timer" parent="Shakespeare/NavigationAgent2D"]
 wait_time = 10.0
 autostart = true
 
-[node name="bob" type="CharacterBody2D" parent="." groups=["npcs"]]
+[node name="Leonardo" type="CharacterBody2D" parent="." groups=["npcs"]]
 z_index = 1
 y_sort_enabled = true
 position = Vector2(317, 136)
 script = ExtResource("20_pxi4p")
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="bob"]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Leonardo"]
 sprite_frames = SubResource("SpriteFrames_1jur2")
 animation = &"idle"
 frame_progress = 0.363664
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="bob"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Leonardo"]
 position = Vector2(0, 14)
 shape = SubResource("RectangleShape2D_bob")
 
-[node name="StateManager" type="Node" parent="bob"]
+[node name="StateManager" type="Node" parent="Leonardo"]
 
-[node name="DecisionController" type="Node" parent="bob"]
+[node name="DecisionController" type="Node" parent="Leonardo"]
 
-[node name="ActionExecutor" type="Node" parent="bob"]
+[node name="ActionExecutor" type="Node" parent="Leonardo"]
 
-[node name="Interaction Area" type="Area2D" parent="bob"]
+[node name="Interaction Area" type="Area2D" parent="Leonardo"]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="bob/Interaction Area"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Leonardo/Interaction Area"]
 position = Vector2(0, 4.5)
 shape = SubResource("RectangleShape2D_5u45j")
 
-[node name="NavigationAgent2D" type="NavigationAgent2D" parent="bob"]
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="Leonardo"]
 path_desired_distance = 4.0
 target_desired_distance = 4.0
 
-[node name="PathFindingTimer" type="Timer" parent="bob/NavigationAgent2D"]
+[node name="PathFindingTimer" type="Timer" parent="Leonardo/NavigationAgent2D"]
 wait_time = 2.0
 autostart = true
 
-[node name="DicisionTimer" type="Timer" parent="bob/NavigationAgent2D"]
+[node name="DicisionTimer" type="Timer" parent="Leonardo/NavigationAgent2D"]
 wait_time = 10.0
 autostart = true
 
@@ -31914,9 +31926,11 @@ tile_map_data = PackedByteArray("AAApAAcAAgBgADIAAAApAAgAAgBgAC8AAAApAAkAAgBgADA
 tile_set = SubResource("TileSet_7q6y5")
 navigation_enabled = false
 
-[connection signal="timeout" from="Alice/NavigationAgent2D/PathFindingTimer" to="Alice" method="_on_path_finding_timer_timeout"]
-[connection signal="timeout" from="Alice/NavigationAgent2D/DicisionTimer" to="Alice" method="_on_dicision_timer_timeout"]
-[connection signal="timeout" from="sam/NavigationAgent2D/PathFindingTimer" to="Alice" method="_on_path_finding_timer_timeout"]
-[connection signal="timeout" from="sam/NavigationAgent2D/DicisionTimer" to="sam" method="_on_dicision_timer_timeout"]
-[connection signal="timeout" from="bob/NavigationAgent2D/PathFindingTimer" to="Alice" method="_on_path_finding_timer_timeout"]
-[connection signal="timeout" from="bob/NavigationAgent2D/DicisionTimer" to="bob" method="_on_dicision_timer_timeout"]
+[connection signal="timeout" from="Socrates/NavigationAgent2D/PathFindingTimer" to="Einstein" method="_on_path_finding_timer_timeout"]
+[connection signal="timeout" from="Socrates/NavigationAgent2D/DicisionTimer" to="Shakespeare" method="_on_dicision_timer_timeout"]
+[connection signal="timeout" from="Einstein/NavigationAgent2D/PathFindingTimer" to="Einstein" method="_on_path_finding_timer_timeout"]
+[connection signal="timeout" from="Einstein/NavigationAgent2D/DicisionTimer" to="Einstein" method="_on_dicision_timer_timeout"]
+[connection signal="timeout" from="Shakespeare/NavigationAgent2D/PathFindingTimer" to="Einstein" method="_on_path_finding_timer_timeout"]
+[connection signal="timeout" from="Shakespeare/NavigationAgent2D/DicisionTimer" to="Shakespeare" method="_on_dicision_timer_timeout"]
+[connection signal="timeout" from="Leonardo/NavigationAgent2D/PathFindingTimer" to="Einstein" method="_on_path_finding_timer_timeout"]
+[connection signal="timeout" from="Leonardo/NavigationAgent2D/DicisionTimer" to="Leonardo" method="_on_dicision_timer_timeout"]

@@ -22,17 +22,19 @@ func request_decision(npc_name: String, context: String):
 	send_message(request)
 
 func _ready():
-	print("initial decision system")
+	print("[Decision System] Initializing...")
 	connect_to_websocket_server()
 
 func connect_to_websocket_server():
-	print("[Server] Attempting to connect to: " + url)
+	print("[Decision System] Attempting to connect to WebSocket server at: " + url)
 	var err = socket.connect_to_url(url)
-	if err !=OK:
+	if err != OK:
 		set_process(false)
-		print("[Server] Unable to connect, error: " + str(err))
+		print("[Decision System] Unable to connect to server.")
+		print("   Please start the server with: python afterbuild/server/dialogue_server.py")
+		print("   Then restart the Godot scene to reconnect.")
 	else:
-		print("[Server] Connection initiated...")
+		print("[Decision System] Connection attempt initiated...")
 	
 func _process(delta):
 	socket.poll()
@@ -42,7 +44,7 @@ func _process(delta):
 		WebSocketPeer.STATE_OPEN:
 			if not connected:
 				connected = true
-				print("[Server] WebSocket connected successfully!")
+				print("✅ [Decision System] Successfully connected to WebSocket server!")
 			while socket.get_available_packet_count() > 0:
 				receive_message()
 				
@@ -51,10 +53,8 @@ func _process(delta):
 		WebSocketPeer.STATE_CLOSED:
 			if connected:
 				connected = false
-				print("Disconnected")
-				
-				await get_tree().create_timer(3.0).timeout
-				connect_to_websocket_server()
+				print("❌ [Decision System] Lost connection to server.")
+				print("   Please restart the scene to reconnect.")
 
 func update_decision_timer(delta):
 	timer += delta

@@ -241,32 +241,32 @@ func setup_ui_from_scene():
 		if scroll:
 			memory_text = scroll.get_node_or_null("MemoryText")
 	
-	# Connect Bob's buttons
-	var bob_view = ui_layer.get_node_or_null("ViewBobMemoryButton")
-	if bob_view:
-		bob_view.pressed.connect(_on_memory_button_pressed.bind("Bob"))
-	
-	var bob_clear = ui_layer.get_node_or_null("ClearBobMemoryButton")
-	if bob_clear:
-		bob_clear.pressed.connect(_on_clear_memory_button_pressed.bind("Bob"))
-	
-	# Connect Alice's buttons
-	var alice_view = ui_layer.get_node_or_null("ViewAliceMemoryButton")
-	if alice_view:
-		alice_view.pressed.connect(_on_memory_button_pressed.bind("Alice"))
-	
-	var alice_clear = ui_layer.get_node_or_null("ClearAliceMemoryButton")
-	if alice_clear:
-		alice_clear.pressed.connect(_on_clear_memory_button_pressed.bind("Alice"))
-	
-	# Connect Sam's buttons
-	var sam_view = ui_layer.get_node_or_null("ViewSamMemoryButton")
-	if sam_view:
-		sam_view.pressed.connect(_on_memory_button_pressed.bind("Sam"))
-	
-	var sam_clear = ui_layer.get_node_or_null("ClearSamMemoryButton")
-	if sam_clear:
-		sam_clear.pressed.connect(_on_clear_memory_button_pressed.bind("Sam"))
+	# Connect Leonardo's buttons
+	var leonardo_view = ui_layer.get_node_or_null("ViewLeonardoMemoryButton")
+	if leonardo_view:
+		leonardo_view.pressed.connect(_on_memory_button_pressed.bind("Leonardo"))
+
+	var leonardo_clear = ui_layer.get_node_or_null("ClearLeonardoMemoryButton")
+	if leonardo_clear:
+		leonardo_clear.pressed.connect(_on_clear_memory_button_pressed.bind("Leonardo"))
+
+	# Connect Einstein's buttons
+	var einstein_view = ui_layer.get_node_or_null("ViewEinsteinMemoryButton")
+	if einstein_view:
+		einstein_view.pressed.connect(_on_memory_button_pressed.bind("Einstein"))
+
+	var einstein_clear = ui_layer.get_node_or_null("ClearEinsteinMemoryButton")
+	if einstein_clear:
+		einstein_clear.pressed.connect(_on_clear_memory_button_pressed.bind("Einstein"))
+
+	# Connect Shakespeare's buttons
+	var shakespeare_view = ui_layer.get_node_or_null("ViewShakespeareMemoryButton")
+	if shakespeare_view:
+		shakespeare_view.pressed.connect(_on_memory_button_pressed.bind("Shakespeare"))
+
+	var shakespeare_clear = ui_layer.get_node_or_null("ClearShakespeareMemoryButton")
+	if shakespeare_clear:
+		shakespeare_clear.pressed.connect(_on_clear_memory_button_pressed.bind("Shakespeare"))
 	
 	# Connect decision system toggle button (already exists in scene)
 	var toggle_button = ui_layer.get_node_or_null("DecisionToggleButton")
@@ -280,38 +280,48 @@ func setup_ui_from_scene():
 func setup_npcs():
 	"""Setup NPC nodes and click detection"""
 	# Find CharacterBody2D NPCs (with case correction)
-	var bob = $bob if has_node("bob") else null
-	var alice = $Alice if has_node("Alice") else null
-	var sam = $sam if has_node("sam") else null
+	var leonardo = $Leonardo if has_node("Leonardo") else null
+	var einstein = $Einstein if has_node("Einstein") else null
+	var shakespeare = $Shakespeare if has_node("Shakespeare") else null
+	var socrates = $Socrates if has_node("Socrates") else ($Dog if has_node("Dog") else ($dog if has_node("dog") else null))
 	
-	# print("Found nodes - Bob: ", bob != null, ", Alice: ", alice != null, ", Sam: ", sam != null)
+	# print("Found nodes - Leonardo: ", leonardo != null, ", Einstein: ", einstein != null, ", Shakespeare: ", shakespeare != null)
 	
 	# Setup click detection for CharacterBody2D
-	if bob and bob is CharacterBody2D:
-		npcs["Bob"] = bob
-		setup_character_click(bob, "Bob")
+	if leonardo and leonardo is CharacterBody2D:
+		npcs["Leonardo"] = leonardo
+		setup_character_click(leonardo, "Leonardo")
 		# Also check for Area2D child for expanded click area
-		for child in bob.get_children():
+		for child in leonardo.get_children():
 			if child is Area2D:
-				setup_area_click(child, "Bob")
+				setup_area_click(child, "Leonardo")
 				break
-		
-	if alice and alice is CharacterBody2D:
-		npcs["Alice"] = alice
-		setup_character_click(alice, "Alice")
+
+	if einstein and einstein is CharacterBody2D:
+		npcs["Einstein"] = einstein
+		setup_character_click(einstein, "Einstein")
 		# Also check for Area2D child for expanded click area
-		for child in alice.get_children():
+		for child in einstein.get_children():
 			if child is Area2D:
-				setup_area_click(child, "Alice")
+				setup_area_click(child, "Einstein")
 				break
-		
-	if sam and sam is CharacterBody2D:
-		npcs["Sam"] = sam
-		setup_character_click(sam, "Sam")
+
+	if shakespeare and shakespeare is CharacterBody2D:
+		npcs["Shakespeare"] = shakespeare
+		setup_character_click(shakespeare, "Shakespeare")
 		# Also check for Area2D child for expanded click area
-		for child in sam.get_children():
+		for child in shakespeare.get_children():
 			if child is Area2D:
-				setup_area_click(child, "Sam")
+				setup_area_click(child, "Shakespeare")
+				break
+
+	if socrates and socrates is CharacterBody2D:
+		npcs["Socrates"] = socrates
+		setup_character_click(socrates, "Socrates")
+		# Also check for Area2D child for expanded click area
+		for child in socrates.get_children():
+			if child is Area2D:
+				setup_area_click(child, "Socrates")
 				break
 	
 	# print("NPCs setup complete: ", npcs.keys())
@@ -370,9 +380,11 @@ func connect_websocket():
 	var err = websocket.connect_to_url(url)
 	if err == OK:
 		set_process(true)  # Enable _process for WebSocket updates
-		print("✅ Connecting to WebSocket server...")
+		print("[Dialogue Client] Attempting to connect to WebSocket server at ", url, "...")
 	else:
-		print("❌ Failed to initiate WebSocket connection")
+		print("❌ [Dialogue Client] Failed to connect to server at ", url)
+		print("   Please start the server with: python afterbuild/server/dialogue_server.py")
+		print("   Then restart the Godot scene to reconnect.")
 		use_websocket = false
 
 func _process(_delta):
@@ -389,7 +401,7 @@ func _process(_delta):
 	if state == WebSocketPeer.STATE_OPEN:
 		if not is_websocket_connected:
 			is_websocket_connected = true
-			print("✅ WebSocket connected!")
+			print("✅ [Dialogue Client] Successfully connected to WebSocket server!")
 		
 		# Process incoming packets
 		while websocket.get_available_packet_count() > 0:
@@ -402,7 +414,7 @@ func _process(_delta):
 	elif state == WebSocketPeer.STATE_CLOSED:
 		if is_websocket_connected:
 			is_websocket_connected = false
-			print("❌ WebSocket disconnected")
+			print("❌ [Dialogue Client] Disconnected from server. Please restart the scene to reconnect.")
 			var code = websocket.get_close_code()
 			var reason = websocket.get_close_reason()
 			print("Close code: ", code, " Reason: ", reason)
@@ -774,7 +786,9 @@ func interact_with_npc(npc_name: String, custom_message: String = ""):
 		)
 	else:
 		# WebSocket not connected
-		print("WebSocket not connected. Please start afterbuild/server/dialogue_server.py")
+		print("⚠️ WebSocket not connected to dialogue server!")
+		print("   Please start the server with: python afterbuild/server/dialogue_server.py")
+		print("   Then restart the Godot scene to reconnect.")
 		is_dialogue_processing = false
 		# Don't show any bubble when not connected
 
@@ -783,7 +797,7 @@ func interact_with_npc(npc_name: String, custom_message: String = ""):
 
 
 
-func _on_memory_button_pressed(npc_name: String = "Bob"):
+func _on_memory_button_pressed(npc_name: String = "Leonardo"):
 	"""Handle memory button press for specific NPC"""
 	print("Memory button pressed for ", npc_name)
 	if memory_panel:
@@ -794,7 +808,7 @@ func _on_memory_button_pressed(npc_name: String = "Bob"):
 	else:
 		print("Error: Memory panel not found in scene!")
 
-func _on_clear_memory_button_pressed(npc_name: String = "Bob"):
+func _on_clear_memory_button_pressed(npc_name: String = "Leonardo"):
 	"""Handle clear memory button press for specific NPC"""
 	print("Clear memory button pressed for ", npc_name)
 	
@@ -828,7 +842,7 @@ func _on_clear_memory_button_pressed(npc_name: String = "Bob"):
 	add_child(confirm_dialog)
 	confirm_dialog.popup_centered()
 
-func _on_clear_memory_confirmed(npc_name: String = "Bob"):
+func _on_clear_memory_confirmed(npc_name: String = "Leonardo"):
 	"""Actually clear the memories after confirmation"""
 	print("Clearing ", npc_name, "'s memories...")
 	
@@ -855,7 +869,7 @@ func create_memory_panel():
 	print("Warning: create_memory_panel() called but UI should be in scene")
 	# Memory panel is now in the scene file, no need to create dynamically
 
-func load_npc_memories(npc_name: String = "Bob"):
+func load_npc_memories(npc_name: String = "Leonardo"):
 	"""Load NPC's memories using Python tool"""
 	memory_text.clear()
 	memory_text.append_text("=== " + npc_name + "'s Conversation History ===\n\n")

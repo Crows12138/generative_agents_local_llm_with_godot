@@ -2,18 +2,20 @@
   "name": "Action with Target",
   "description": "Action selection with target specification",
   
-  "valid_actions": ["walk", "chat", "serve", "observe", "play", "clean"],
+  "valid_actions": ["walk", "chat", "serve", "observe", "play", "clean", "sketch", "calculate", "theorize", "recite", "bark", "sniff", "question", "ponder"],
   
   "npc_specific_actions": {
-    "Bob": ["walk", "chat", "serve", "clean", "observe"],
-    "Alice": ["walk", "chat", "observe"],
-    "Sam": ["walk", "chat", "play", "observe"]
+    "Leonardo": ["walk", "chat", "serve", "clean", "observe", "sketch"],
+    "Einstein": ["walk", "chat", "observe", "calculate", "theorize"],
+    "Shakespeare": ["walk", "chat", "play", "observe", "recite"],
+    "Socrates": ["walk", "bark", "sniff", "question", "ponder"]
   },
   
   "npc_specific_targets": {
-    "Bob": ["bar", "dog", "Alice", "Sam", "customer"],
-    "Alice": ["bar", "dog", "Bob", "Sam", "customer"],
-    "Sam": ["bar", "dog", "Alice", "Bob", "guitar", "customer"]
+    "Leonardo": ["bar", "dog", "Einstein", "Shakespeare", "customer"],
+    "Einstein": ["bar", "dog", "Leonardo", "Shakespeare", "customer"],
+    "Shakespeare": ["bar", "dog", "Einstein", "Leonardo", "guitar", "customer"],
+    "Socrates": ["bar", "Einstein", "Leonardo", "Shakespeare", "customer", "bowl"]
   },
   
   "separator": "|",
@@ -24,17 +26,24 @@
   },
   
   "npc_prompts": {
-    "Bob": {
-      "template": "You are Bob the bartender. Choose an action and target.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nReply ONLY with format: action|target",
-      "examples": "Examples: serve|customer, clean|bar, chat|Alice"
+    "Leonardo": {
+      "template": "You are Leonardo da Vinci as a bartender. Renaissance genius serving drinks.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nBe curious and inventive.\nReply ONLY with format: action|target",
+      "examples": "Examples: serve|customer, sketch|Einstein, observe|bar"
     },
-    "Alice": {
-      "template": "You are Alice, a thoughtful regular. Choose an action and target.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nReply ONLY with format: action|target",
-      "examples": "Examples: observe|Sam, chat|Bob, walk|dog"
+    "Einstein": {
+      "template": "You are Albert Einstein, physicist contemplating in a bar.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nThink in relativity and quantum mechanics.\nReply ONLY with format: action|target",
+      "examples": "Examples: theorize|space, calculate|time, observe|Leonardo"
     },
-    "Sam": {
-      "template": "You are Sam the musician. Choose an action and target.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nReply ONLY with format: action|target",
-      "examples": "Examples: play|guitar, chat|Alice, walk|bar"
+    "Shakespeare": {
+      "template": "You are William Shakespeare, playwright performing in a tavern.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nBe dramatic and poetic.\nReply ONLY with format: action|target",
+      "examples": "Examples: play|guitar, recite|sonnet, chat|Einstein"
+    },
+    "Socrates": {
+      "template": "You are Socrates as a philosophical dog. Question everything with wisdom.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nBark wisdom.\nReply ONLY with format: action|target",
+      "examples": "Examples: sniff|truth, bark|question, ponder|existence"
+    },
+    "default": {
+      "template": "You are {npc}. Choose an action and target.\nActions: {actions}\nTargets: {targets}\nContext: {context}\nReply ONLY with format: action|target"
     }
   },
   
@@ -52,26 +61,29 @@
     "talk": "chat",
     "speak": "chat",
     "greet": "chat",
-    "give": "serve",
-    "pour": "serve",
-    "offer": "serve",
     "watch": "observe",
     "look": "observe",
     "see": "observe",
-    "perform": "play",
-    "sing": "play",
-    "wipe": "clean",
-    "wash": "clean"
+    "think": "ponder",
+    "calculate": "experiment",
+    "test": "experiment",
+    "write": "compose",
+    "poem": "compose",
+    "plan": "strategize",
+    "counsel": "advise",
+    "ask": "question",
+    "smell": "sniff"
   },
   
   "target_mappings": {
-    "bartender": "Bob",
-    "musician": "Sam",
+    "bartender": "Leonardo",
+    "physicist": "Einstein",
+    "playwright": "Shakespeare",
+    "philosopher": "Socrates",
     "customer": "player",
     "patron": "player",
     "counter": "bar",
     "tables": "table",
-    "instrument": "guitar",
-    "mic": "microphone"
+    "instrument": "guitar"
   }
 }

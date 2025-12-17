@@ -1,6 +1,6 @@
 ea4bc82a6ad023ab7ee23ee620429895
-::res://::1757485780
-ui_theme.tres::Theme::9170352094112370406::1757484354::0::1::::<><><>0<>0<><>::
+::res://::1758545877
+ui_theme.tres::Theme::9170352094112370406::1758545065::0::1::::<><><>0<>0<><>::
 ::res://assets/::1757169803
 ::res://assets/sprites/::1757169803
 ::res://assets/sprites/characters/::1757170431
@@ -37,17 +37,18 @@ tigela3.png::CompressedTexture2D/CompressedTexture2D::4040242084787045792::17571
 tilesetformattedupdate1.png::CompressedTexture2D/CompressedTexture2D::1867359902749666704::1757169803::1757170430::1::::<><><>0<>0<>41207354368bcd4e6aebc9d2687e0d3a<>res://.godot/imported/tilesetformattedupdate1.png-e6c4666a332899164033dc2d6f59408a.ctex::
 walls.png::CompressedTexture2D/CompressedTexture2D::2087302085110904581::1757169803::1757170431::1::::<><><>0<>0<>e86cdae0a58c4c2d0c1454527d2cf4b7<>res://.godot/imported/walls.png-63b77a0c33534d0e41b967f4f7e147ca.ctex::
 WoodenTable.png::CompressedTexture2D/CompressedTexture2D::4858279434353089196::1757169803::1757170430::1::::<><><>0<>0<>4303c29b63f0c2c6e6638bec288bb018<>res://.godot/imported/WoodenTable.png-f378c723b19cd74c1e4a0fda8e76e7fe.ctex::
-::res://scenes/::1757485116
-cozy_bar.tscn::PackedScene::3805698554169447289::1757485116::0::1::::<><><>0<>0<><>::uid://c3sjt5afgoic5::::res://scripts/dialogue_client.gd<>uid://d3wgmhhnuxm0m::::res://ui_theme.tres<>uid://1ute6mgfqoce::::res://assets/sprites/tiles/Cozy_bar/tilesetformattedupdate1.png<>uid://40dtb2ke51or::::res://assets/sprites/tiles/Cozy_bar/walls.png<>uid://cv73yvrjx4x47::::res://assets/sprites/tiles/Cozy_bar/sinucamesa.png<>uid://dmmot5posh7rr::::res://assets/sprites/tiles/Cozy_bar/tavern-deco.png<>uid://bxtegxs8k8f3m::::res://assets/sprites/tiles/Cozy_bar/tigela3.png<>uid://bw2m5yjcvt0hp::::res://assets/sprites/tiles/Cozy_bar/container.png<>uid://ch4nxel06yi6g::::res://assets/sprites/tiles/Cozy_bar/barrr2.png<>uid://b6sokam6rys0o::::res://assets/sprites/tiles/Cozy_bar/download (3).jpg<>uid://bx7vsn8l0dbt::::res://assets/sprites/tiles/Cozy_bar/Dog_medium.png<>uid://c7wkk0awdm2da::::res://assets/sprites/tiles/Cozy_bar/download (3).png<>uid://cnawwem0ck7rb::::res://assets/sprites/characters/flautist.png<>uid://bttw8tkn4vigc::::res://assets/sprites/characters/Dog_medium.png<>uid://bbvrwe5ubhklh::::res://assets/sprites/tiles/Cozy_bar/download 4.png<>uid://c1t0aj7upxida::::res://assets/sprites/tiles/Cozy_bar/download 5.png<>uid://b6iaa04djmxnb::::res://assets/sprites/characters/Dog_medium r.png<>uid://xrxgbvuanh4o::::res://scripts/dog_behavior.gd<>uid://dyn1j7trdfnb0::::res://assets/sprites/characters/drummer.png<>uid://demm4idbf005e::::res://assets/sprites/characters/lutist.png<>uid://d0uvvrg5c2vpc::::res://scripts/sam.gd<>uid://bk6n1v3nlob3y::::res://scripts/alice.gd<>uid://dbrby5lgp2eoi::::res://scripts/bob.gd
-server.tscn::PackedScene::8652735706184986971::1757480914::0::1::::<><><>0<>0<><>::uid://2r1s77e0we8k::::res://scripts/server.gd
-::res://scripts/::1757485364
-alice.gd::GDScript::3153141728847558548::1757485311::0::1::::<>CharacterBody2D<><>0<>0<><>::
-bob.gd::GDScript::7264650485569912508::1757485349::0::1::::<>CharacterBody2D<><>0<>0<><>::
-bubble_manager.gd::GDScript::7978600000435205349::1757469012::0::1::::<>Node<><>0<>0<><>::
-dialogue_client.gd::GDScript::6775869747779535090::1757484788::0::1::::<>Node2D<><>0<>0<><>::
+::res://scenes/::1758545168
+cozy_bar.tscn::PackedScene::3805698554169447289::1758545168::0::1::::<><><>0<>0<><>::uid://c3sjt5afgoic5::::res://scripts/dialogue_client.gd<>uid://d3wgmhhnuxm0m::::res://ui_theme.tres<>uid://1ute6mgfqoce::::res://assets/sprites/tiles/Cozy_bar/tilesetformattedupdate1.png<>uid://40dtb2ke51or::::res://assets/sprites/tiles/Cozy_bar/walls.png<>uid://cv73yvrjx4x47::::res://assets/sprites/tiles/Cozy_bar/sinucamesa.png<>uid://dmmot5posh7rr::::res://assets/sprites/tiles/Cozy_bar/tavern-deco.png<>uid://bxtegxs8k8f3m::::res://assets/sprites/tiles/Cozy_bar/tigela3.png<>uid://bw2m5yjcvt0hp::::res://assets/sprites/tiles/Cozy_bar/container.png<>uid://ch4nxel06yi6g::::res://assets/sprites/tiles/Cozy_bar/barrr2.png<>uid://b6sokam6rys0o::::res://assets/sprites/tiles/Cozy_bar/download (3).jpg<>uid://bx7vsn8l0dbt::::res://assets/sprites/tiles/Cozy_bar/Dog_medium.png<>uid://c7wkk0awdm2da::::res://assets/sprites/tiles/Cozy_bar/download (3).png<>uid://cnawwem0ck7rb::::res://assets/sprites/characters/flautist.png<>uid://bttw8tkn4vigc::::res://assets/sprites/characters/Dog_medium.png<>uid://bbvrwe5ubhklh::::res://assets/sprites/tiles/Cozy_bar/download 4.png<>uid://c1t0aj7upxida::::res://assets/sprites/tiles/Cozy_bar/download 5.png<>uid://b6iaa04djmxnb::::res://assets/sprites/characters/Dog_medium r.png<>uid://vbv5wpi47ahu::::res://scripts/socrates.gd<>uid://dyn1j7trdfnb0::::res://assets/sprites/characters/drummer.png<>uid://demm4idbf005e::::res://assets/sprites/characters/lutist.png<>uid://bhqyjqmgpuc6d::::res://scripts/shakespeare.gd<>uid://cmtwiwfgqnjsm::::res://scripts/einstein.gd<>uid://dtes04w5ogrtb::::res://scripts/leonardo.gd
+server.tscn::PackedScene/PackedScene::8652735706184986971::1757480914::0::1::::<><><>0<>0<><>::uid://2r1s77e0we8k::::res://scripts/server.gd
+::res://scripts/::1758545815
+bubble_manager.gd::GDScript/GDScript::7978600000435205349::1758112912::0::1::::<>Node<><>0<>0<><>::
+dialogue_client.gd::GDScript::6775869747779535090::1758545815::0::1::::<>Node2D<><>0<>0<><>::
 dog_behavior.gd::GDScript/GDScript::1650845116964290476::1757289760::0::1::::<>CharacterBody2D<><>0<>0<><>::
-sam.gd::GDScript::8956584159164007180::1757485364::0::1::::<>CharacterBody2D<><>0<>0<><>::
-server.gd::GDScript::1931805716545073212::1757484843::0::1::::<>Node<><>0<>0<><>::
+einstein.gd::GDScript::5655681892094068988::1758545127::0::1::::<>CharacterBody2D<><>0<>0<><>::
+leonardo.gd::GDScript/GDScript::8502246700480455195::1758544921::0::1::::<>CharacterBody2D<><>0<>0<><>::
+server.gd::GDScript::1931805716545073212::1758545792::0::1::::<>Node<><>0<>0<><>::
+shakespeare.gd::GDScript/GDScript::2912246772400525689::1758544938::0::1::::<>CharacterBody2D<><>0<>0<><>::
+socrates.gd::GDScript/GDScript::1477359903907246994::1758211691::0::1::::<>CharacterBody2D<><>0<>0<><>::
 streaming_bubble.gd::GDScript/GDScript::7650304348105873966::1757447790::0::1::::<>Panel<><>0<>0<><>::
 ::res://tilesets/::1757169803
 cozy_bar_tileset.tres::TileSet/TileSet::3921015427047433454::1757169803::0::1::::<><><>0<>0<><>::

@@ -1,7 +1,3 @@
 res://scenes/cozy_bar.tscn
 res://ui_theme.tres
-res://scripts/alice.gd
-res://scripts/bob.gd
-res://scripts/sam.gd
-res://scripts/server.gd
 res://scripts/dialogue_client.gd

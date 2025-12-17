@@ -11,10 +11,20 @@ import asyncio
 import websockets
 import time
 import string
+import math
+import re
 from pathlib import Path
 from typing import Dict, Optional, List
 from datetime import datetime
 from gpt4all import GPT4All
+import nltk
+
+nltk.download('stopwords')
+from nltk.corpus import stopwords
+
+stop_words = set(stopwords.words('english'))
+
+CLEAN_TEXT_PATTERN = re.compile(r'[^\w\s]')
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -46,7 +56,52 @@ class DialogueServer:
         self.memory_cache = {}
         self.cache_dirty = {}
         self.load_all_memories()
-        
+
+        # Stop word configuration
+        self.stop_words = stop_words.copy()
+        self.stop_words.update({
+            'oh', 'ah', 'uh', 'um', 'hmm', 'well', 'yeah', 'ok', 'okay',
+            'really', 'just', 'very', 'quite', 'actually', 'basically',
+            'hey', 'hello', 'hi', 'bye', 'thanks', 'please', 'sorry',
+            'user', 'system'
+        })
+
+        # Character-specific known entities for better personalization
+        self.character_entities = {
+            "Leonardo": {
+                'art', 'painting', 'invention', 'anatomy', 'engineering',
+                'canvas', 'brush', 'sketch', 'design', 'renaissance',
+                'einstein', 'shakespeare', 'socrates', 'customer', 'bar'
+            },
+            "Einstein": {
+                'physics', 'relativity', 'quantum', 'universe', 'time',
+                'space', 'equation', 'theory', 'light', 'energy',
+                'leonardo', 'shakespeare', 'socrates', 'customer', 'bar'
+            },
+            "Shakespeare": {
+                'play', 'sonnet', 'drama', 'poetry', 'stage',
+                'guitar', 'music', 'tragedy', 'comedy', 'verse',
+                'leonardo', 'einstein', 'socrates', 'customer', 'bar'
+            },
+            "Socrates": {
+                'philosophy', 'truth', 'wisdom', 'question', 'knowledge',
+                'virtue', 'soul', 'justice', 'ethics', 'dialectic',
+                'leonardo', 'einstein', 'shakespeare', 'customer', 'bowl'
+            }
+        }
+
+        # Shared entities everyone knows about
+        self.shared_entities = {
+            'bar', 'table', 'customer', 'player', 'dog'
+        }
+
+        # For backward compatibility
+        self.known_entities = self.shared_entities
+
+        # Keyword frequency tracking
+        self.word_frequency = {}
+        self.total_word_count = 0
+
         # No more levels, just direct config
         
     def canonicalize_npc_name(self, name: str) -> str:
@@ -55,12 +110,14 @@ class DialogueServer:
             return ""
         n = name.strip()
         low = n.lower()
-        if low == "bob":
-            return "Bob"
-        if low == "alice":
-            return "Alice"
-        if low == "sam":
-            return "Sam"
+        if low in ["bob", "leonardo", "davinci", "leonardo da vinci", "da vinci"]:
+            return "Leonardo"
+        if low in ["alice", "einstein", "albert", "albert einstein"]:
+            return "Einstein"
+        if low in ["sam", "shakespeare", "william", "william shakespeare"]:
+            return "Shakespeare"
+        if low in ["dog", "socrates"]:
+            return "Socrates"
         return n.title()
     
     def load_config(self, config_path: str) -> dict:
@@ -117,11 +174,152 @@ class DialogueServer:
                     "top_p": 0.5
                 }
             }
-    
+
+    def extract_keywords(self, text: str, speaker: str = None) -> List[str]:
+        """Dynamically extract keywords with entity prioritization."""
+        if not text:
+            return []
+
+        keywords: List[str] = []
+        seen = set()
+        text_lower = text.lower()
+
+        text_clean = CLEAN_TEXT_PATTERN.sub(' ', text_lower)
+        words = text_clean.split()
+
+        for word in words:
+            if word in self.known_entities and word not in seen:
+                keywords.append(word)
+                seen.add(word)
+
+        if speaker:
+            speaker_lower = speaker.lower()
+            if speaker_lower not in seen and speaker_lower not in ('user', 'system'):
+                keywords.append(speaker_lower)
+                seen.add(speaker_lower)
+                if speaker_lower not in self.known_entities:
+                    self.known_entities.add(speaker_lower)
+                    logger.debug(f"Learned new entity: {speaker_lower}")
+
+        word_occurrences: Dict[str, int] = {}
+        for word in words:
+            if word not in self.stop_words and not word.isdigit():
+                word_occurrences[word] = word_occurrences.get(word, 0) + 1
+
+        meaningful_words = []
+        for word, local_count in word_occurrences.items():
+            if word in seen or not 2 < len(word) < 15:
+                continue
+
+            global_freq = self.word_frequency.get(word, 0)
+            if global_freq == 0:
+                rarity = 1.0
+            else:
+                rarity = 1.0 / (1.0 + math.log(global_freq + 1))
+
+            local_importance = min(local_count * 0.1, 0.3)
+            score = rarity + local_importance
+            meaningful_words.append((word, score))
+
+        meaningful_words.sort(key=lambda item: item[1], reverse=True)
+        remaining_slots = max(0, 10 - len(keywords))
+        for word, _ in meaningful_words[:remaining_slots]:
+            keywords.append(word)
+            seen.add(word)
+
+        self._update_word_frequency(word_occurrences)
+
+        return keywords[:10]
+
+    def _update_word_frequency(self, word_occurrences: Dict[str, int]) -> None:
+        """Update global word frequency statistics."""
+        for word, count in word_occurrences.items():
+            if word not in self.known_entities:
+                self.word_frequency[word] = self.word_frequency.get(word, 0) + count
+                self.total_word_count += count
+
+        if self.total_word_count > 5000:
+            filtered = {word: cnt for word, cnt in self.word_frequency.items() if cnt > 2}
+            self.total_word_count = sum(filtered.values())
+            self.word_frequency = filtered
+            logger.debug(f"Cleaned word frequency: {len(filtered)} words kept")
+
+    def calculate_keyword_relevance(self, query_keywords: List[str], memory_keywords: List[str]) -> float:
+        """Compute keyword relevance with entity and rarity bonuses."""
+        if not query_keywords or not memory_keywords:
+            return 0.0
+
+        query_set = set(query_keywords)
+        memory_set = set(memory_keywords)
+        intersection = query_set & memory_set
+
+        if not intersection:
+            return 0.0
+
+        base_score = len(intersection) / len(query_set)
+
+        bonus = 0.0
+        for word in intersection:
+            if word in self.known_entities:
+                bonus += 0.15
+
+            global_freq = self.word_frequency.get(word, 0)
+            if global_freq < 10:
+                bonus += 0.1 / (1.0 + global_freq * 0.1)
+
+            try:
+                if query_keywords.index(word) < 3 and memory_keywords.index(word) < 3:
+                    bonus += 0.05
+            except ValueError:
+                continue
+
+        return min(base_score + bonus, 1.0)
+
+    def retrieve_relevant_memories(self, npc_name: str, query: str, speaker: str = None, k: int = 5) -> List[dict]:
+        """Retrieve memories using keyword, importance, and recency scoring."""
+        npc_name = self.canonicalize_npc_name(npc_name)
+
+        if npc_name not in self.memory_cache or not self.memory_cache[npc_name]:
+            return []
+
+        memories = self.memory_cache[npc_name]
+        query_keywords = self.extract_keywords(query, speaker)
+
+        candidate_memories = []
+        for idx, memory in enumerate(memories):
+            memory_keywords = memory.get('keywords', [])
+            if not memory_keywords:
+                composed = f"{memory.get('user_input', '')} {memory.get('npc_response', '')}"
+                memory_keywords = self.extract_keywords(composed, memory.get('speaker'))
+                memory['keywords'] = memory_keywords
+
+            relevance = self.calculate_keyword_relevance(query_keywords, memory_keywords)
+            if relevance > 0:
+                candidate_memories.append((idx, memory, relevance))
+
+        if not candidate_memories:
+            return memories[-k:] if len(memories) > k else list(memories)
+
+        scored_memories = []
+        recency_decay = 0.99
+        total_memories = len(memories)
+
+        for idx, memory, keyword_relevance in candidate_memories:
+            position = idx + 1
+            recency = recency_decay ** (total_memories - position)
+            importance = float(memory.get('importance', 3.0)) / 10.0
+            relevance = keyword_relevance
+            score = relevance * 3 + importance * 2 + recency * 0.5
+            scored_memories.append((score, memory))
+
+        scored_memories.sort(key=lambda item: item[0], reverse=True)
+        return [memory for score, memory in scored_memories[:k]]
+
     def load_all_memories(self):
         """Load all NPC memories into cache at startup"""
         logger.info("Loading NPC memories...")
-        for npc_name in ["Bob", "Alice", "Sam"]:
+        # Load memories for all historical characters
+        for npc_name in ["Leonardo", "Einstein", "Shakespeare", "Socrates", "Bob", "Alice", "Sam"]:
             memory_file = self.memory_dir / f"{npc_name}.json"
             if memory_file.exists():
                 try:
@@ -135,36 +333,59 @@ class DialogueServer:
                 self.memory_cache[npc_name] = []
             self.cache_dirty[npc_name] = False
     
-    def save_memory(self, npc_name: str, user_input: str, response: str, elapsed_time: float):
-        """Save conversation to memory"""
+    def save_memory(
+        self,
+        npc_name: str,
+        user_input: str,
+        response: str,
+        elapsed_time: float,
+        from_speaker: str = "user",
+    ) -> None:
+        """Save conversation memory with keywords and importance"""
         from datetime import datetime
-        
+
         npc_name = self.canonicalize_npc_name(npc_name)
-        
+
         if npc_name not in self.memory_cache:
             self.memory_cache[npc_name] = []
-        
-        # Create memory entry
+
+        combined_text = f"{user_input or ''} {response or ''}"
+        keywords = self.extract_keywords(combined_text, from_speaker)
+
+        importance = 3.0
+        if user_input and '?' in user_input:
+            importance += 2.0
+        lowered_text = combined_text.lower()
+        if any(trigger in lowered_text for trigger in ['important', 'urgent', 'help', 'love', 'hate']):
+            importance += 2.0
+        importance = min(10.0, importance)
+
+        speaker_name = from_speaker or 'user'
+        if speaker_name.lower() not in ('user', ''):
+            speaker_name = self.canonicalize_npc_name(speaker_name)
+
         memory_entry = {
-            "timestamp": time.time(),
-            "datetime": datetime.now().isoformat(),
-            "user_input": user_input,
-            "npc_response": response,
-            "importance": 3.0,  # Simple fixed importance for now
-            "metadata": {
-                "response_time": elapsed_time,
-                "model": self.config['model_file']
+            'timestamp': time.time(),
+            'datetime': datetime.now().isoformat(),
+            'speaker': speaker_name,
+            'listener': npc_name,
+            'user_input': user_input,
+            'npc_response': response,
+            'keywords': keywords,
+            'importance': importance,
+            'interaction_type': 'user_to_npc' if (from_speaker or '').lower() == 'user' else 'npc_to_npc',
+            'metadata': {
+                'response_time': elapsed_time,
+                'model': self.config['model_file']
             }
         }
-        
+
         self.memory_cache[npc_name].append(memory_entry)
-        
-        # Keep only recent memories
-        max_entries = self.config.get("max_memory_entries", 20)
+
+        max_entries = self.config.get('max_memory_entries', 20)
         if len(self.memory_cache[npc_name]) > max_entries:
             self.memory_cache[npc_name] = self.memory_cache[npc_name][-max_entries:]
-        
-        # Save to disk
+
         memory_file = self.memory_dir / f"{npc_name}.json"
         try:
             with open(memory_file, 'w', encoding='utf-8') as f:
@@ -172,29 +393,30 @@ class DialogueServer:
             logger.debug(f"Saved memories for {npc_name}")
         except Exception as e:
             logger.error(f"Failed to save memories for {npc_name}: {e}")
-    
+
     def load_model(self):
         """Load GPT4All model"""
         try:
-            model_path = Path(self.config["model_path"]).resolve()
+            current_dir = Path(__file__).parent
+            model_path = (current_dir / self.config["model_path"]).resolve()
             model_file = self.config["model_file"]
-            
+
             logger.info(f"Loading model: {model_file} from {model_path}")
-            
+
             self.model = GPT4All(
                 model_name=model_file,
                 model_path=str(model_path),
                 device=self.config["device"],
                 verbose=False
             )
-            
+
             logger.info(f"Model loaded successfully on {self.config['device']}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
             return False
-    
+
     def get_or_create_session(self, npc_name: str, from_speaker: str = "user"):
         """Get or create a chat session for an NPC dialogue
         Sessions are unique per speaker-NPC pair to maintain separate contexts
@@ -225,40 +447,63 @@ class DialogueServer:
             elif from_speaker == "user":
                 # User talking to NPC - standard prompts
                 prompts = {
-                    "Bob": "You are Bob, a professional bartender talking to a customer.\nBe friendly.\nReply with ONE short sentence only.",
-                    "Alice": "You are Alice, a thoughtful bar regular talking to someone.\nBe creative.\nReply with ONE short sentence only.",
-                    "Sam": "You are Sam, a cool musician at the bar.\nBe cool.\nReply with ONE short sentence only."
+                    "Leonardo": "You are Leonardo da Vinci, Renaissance genius bartender.\nSpeak with curiosity about art, science, and inventions.\nReply with ONE short sentence only.",
+                    "Einstein": "You are Albert Einstein, brilliant physicist contemplating in a bar.\nSpeak with gentle humor about relativity and the universe.\nReply with ONE short sentence only.",
+                    "Shakespeare": "You are William Shakespeare, the great playwright.\nSpeak dramatically and poetically, with theatrical flair.\nReply with ONE short sentence only.",
+                    "Socrates": "You are Socrates, the ancient philosopher as a wise dog.\nAsk thought-provoking questions with barks of wisdom.\nReply with ONE short sentence only."
                 }
             else:
                 # NPC talking to another NPC - relationship-aware prompts
                 # Define relationships
                 relationships = {
-                    ("Alice", "Bob"): "Alice, a regular customer",
-                    ("Bob", "Alice"): "Bob, the bartender",
-                    ("Sam", "Bob"): "Sam, the bar musician",
-                    ("Bob", "Sam"): "Bob, the bartender",
-                    ("Alice", "Sam"): "Alice, a fellow bar regular",
-                    ("Sam", "Alice"): "Sam, the bar musician"
+                    ("Einstein", "Leonardo"): "Leonardo, the Renaissance master",
+                    ("Leonardo", "Einstein"): "Einstein, the modern genius",
+                    ("Shakespeare", "Leonardo"): "Leonardo, the artistic soul",
+                    ("Leonardo", "Shakespeare"): "Shakespeare, the wordsmith",
+                    ("Einstein", "Shakespeare"): "Shakespeare, the dramatic poet",
+                    ("Shakespeare", "Einstein"): "Einstein, the cosmic thinker",
+                    ("Socrates", "Leonardo"): "Leonardo, the polymath",
+                    ("Leonardo", "Socrates"): "Socrates, the wise hound",
+                    ("Socrates", "Einstein"): "Einstein, the truth seeker",
+                    ("Einstein", "Socrates"): "Socrates, the philosopher dog",
+                    ("Socrates", "Shakespeare"): "Shakespeare, the bard",
+                    ("Shakespeare", "Socrates"): "Socrates, the questioning canine"
                 }
                 
                 # Get appropriate description
                 speaker_desc = relationships.get((from_speaker, npc_name), from_speaker)
                 
                 prompts = {
-                    "Bob": f"You are Bob, a professional bartender. {speaker_desc} is talking to you.\nBe friendly.\nReply with ONE short sentence only.",
-                    "Alice": f"You are Alice, a bar regular. {speaker_desc} is talking to you.\nBe creative.\nReply with ONE short sentence only.",
-                    "Sam": f"You are Sam, the bar musician. {speaker_desc} is talking to you.\nBe cool.\nReply with ONE short sentence only."
+                    "Leonardo": f"You are Leonardo da Vinci. {speaker_desc} is talking to you.\nRespond with Renaissance curiosity and artistic insight.\nReply with ONE short sentence only.",
+                    "Einstein": f"You are Albert Einstein. {speaker_desc} is talking to you.\nRespond with scientific wonder and gentle humor.\nReply with ONE short sentence only.",
+                    "Shakespeare": f"You are William Shakespeare. {speaker_desc} is talking to you.\nRespond dramatically with poetic flair.\nReply with ONE short sentence only.",
+                    "Socrates": f"You are Socrates, a philosopher in dog form. {speaker_desc} is talking to you.\nRespond with wisdom or a thought-provoking question.\nReply with ONE short sentence only."
                 }
             
             system_prompt = prompts.get(npc_name, f"You are {npc_name}. {from_speaker} is talking to you. Reply with ONE short sentences only.")
             
             # Add memory context to system prompt
             if npc_name in self.memory_cache and len(self.memory_cache[npc_name]) > 0:
-                memory_text = "\n\nRecent conversations you remember:\n"
-                for memory in self.memory_cache[npc_name][-7:]:  # Use last 5 memories
-                    memory_text += f"- User said: {memory['user_input']}\n"
-                    memory_text += f"  You replied: {memory['npc_response'][:100]}...\n"
-                system_prompt += memory_text
+                relevant_memories = self.retrieve_relevant_memories(
+                    npc_name,
+                    from_speaker,
+                    speaker=from_speaker,
+                    k=5
+                )
+
+                if relevant_memories:
+                    memory_text = "\n\nMost relevant memories:\n"
+                    for memory in relevant_memories:
+                        speaker_name = memory.get('speaker', 'User')
+                        keywords = memory.get('keywords', [])
+                        memory_text += (
+                            f"- [{', '.join(keywords[:3])}] {speaker_name}: "
+                            f"{memory.get('user_input', '')[:50]}...\n"
+                        )
+                        memory_text += (
+                            f"  You: {memory.get('npc_response', '')[:50]}...\n"
+                        )
+                    system_prompt += memory_text
             
             
             # Create chat session
@@ -618,19 +863,26 @@ class DialogueServer:
                                 if from_speaker != "user":
                                     # Create temporary session for NPC-to-NPC dialogue
                                     relationships = {
-                                        ("Alice", "Bob"): "Alice, a regular customer",
-                                        ("Bob", "Alice"): "Bob, the bartender",
-                                        ("Sam", "Bob"): "Sam, the bar musician",
-                                        ("Bob", "Sam"): "Bob, the bartender",
-                                        ("Alice", "Sam"): "Alice, a fellow bar regular",
-                                        ("Sam", "Alice"): "Sam, the bar musician"
+                                        ("Einstein", "Leonardo"): "Einstein, the modern genius",
+                                        ("Leonardo", "Einstein"): "Leonardo, the Renaissance master",
+                                        ("Shakespeare", "Leonardo"): "Shakespeare, the wordsmith",
+                                        ("Leonardo", "Shakespeare"): "Leonardo, the artistic soul",
+                                        ("Einstein", "Shakespeare"): "Einstein, the cosmic thinker",
+                                        ("Shakespeare", "Einstein"): "Shakespeare, the dramatic poet",
+                                        ("Socrates", "Leonardo"): "Socrates, the philosopher dog",
+                                        ("Leonardo", "Socrates"): "Leonardo, the polymath",
+                                        ("Socrates", "Einstein"): "Socrates, the wise hound",
+                                        ("Einstein", "Socrates"): "Einstein, the truth seeker",
+                                        ("Socrates", "Shakespeare"): "Socrates, the questioning canine",
+                                        ("Shakespeare", "Socrates"): "Shakespeare, the bard"
                                     }
                                     speaker_desc = relationships.get((from_speaker, npc_name), from_speaker)
                                     
                                     prompts = {
-                                        "Bob": f"You are Bob, a professional bartender. {speaker_desc} is talking to you.\nBe friendly.\nReply with ONE short sentence only.",
-                                        "Alice": f"You are Alice, a bar regular. {speaker_desc} is talking to you.\nBe creative.\nReply with ONE short sentence only.",
-                                        "Sam": f"You are Sam, the bar musician. {speaker_desc} is talking to you.\nBe cool.\nReply with ONE short sentence only."
+                                        "Leonardo": f"You are Leonardo da Vinci. {speaker_desc} is talking to you.\nRespond with Renaissance curiosity and artistic insight.\nReply with ONE short sentence only.",
+                                        "Einstein": f"You are Albert Einstein. {speaker_desc} is talking to you.\nRespond with scientific wonder and gentle humor.\nReply with ONE short sentence only.",
+                                        "Shakespeare": f"You are William Shakespeare. {speaker_desc} is talking to you.\nRespond dramatically with poetic flair.\nReply with ONE short sentence only.",
+                                        "Socrates": f"You are Socrates, a philosopher in dog form. {speaker_desc} is talking to you.\nRespond with wisdom or a thought-provoking question.\nReply with ONE short sentence only."
                                     }
                                     system_prompt = prompts.get(npc_name, f"You are {npc_name}. Reply with ONE short sentence only.")
                                     
@@ -697,7 +949,7 @@ class DialogueServer:
                     # Save to memory (but not for system-generated greetings)
                     elapsed_time = time.time() - start_time
                     if from_speaker != "system":
-                        self.save_memory(npc_name, user_message, full_response.strip(), elapsed_time)
+                        self.save_memory(npc_name, user_message, full_response.strip(), elapsed_time, from_speaker=from_speaker)
                     
                     logger.info(f"[{npc_name}] Response in {elapsed_time:.2f}s")
                     

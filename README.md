@@ -1,5 +1,10 @@
 # Generative Agents with Local LLM and Godot
 
+<div align="center">
+  <img src="images/demo_screenshot.png" alt="Game Demo - Bar Scene with NPCs" width="800">
+  <p><em>A pixel-art bar scene with autonomous AI NPCs: Bob (bartender), Alice (regular), and Sam (musician)</em></p>
+</div>
+
 A real-time interactive simulation of autonomous NPCs (Non-Player Characters) powered by local Large Language Models, integrated with the Godot game engine.
 
 ## Overview
@@ -26,6 +31,11 @@ This project implements a generative agent system where NPCs exhibit autonomous 
 - **GPU acceleration**: Optimized for consumer GPUs (tested on RTX 4080)
 
 ## Architecture
+
+<div align="center">
+  <img src="images/architecture.png" alt="System Architecture" width="500">
+  <p><em>System architecture: Godot ↔ WebSocket ↔ Dual-Model NPC Servers (Phi-3 + Llama 3.2)</em></p>
+</div>
 
 ```
 finalbuild/

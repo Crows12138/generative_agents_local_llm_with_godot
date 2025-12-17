@@ -14,10 +14,10 @@ const BubbleManager = preload("res://scripts/bubble_manager.gd")
 var is_observing := false  # Flag to pause movement during observation
 var observation_duration := 3.0  # How long to observe
 var observation_timer := 0.0
-var is_acting := false  # Flag to indicate if Alice is performing an action
-var is_walking := false  # Flag to indicate if Alice is walking to a target
+var is_acting := false  # Flag to indicate if Leonardo is performing an action
+var is_walking := false  # Flag to indicate if Leonardo is walking to a target
 var current_observation_bubble = null  # Reference to current observation bubble
-var current_action_bubble = null      # Reference to current action bubble (walking, etc.)
+var current_action_bubble = null  # Reference to current action bubble
 var decision_enabled := false          # Flag to enable/disable decision system (default: OFF)
 
 
@@ -29,11 +29,11 @@ func set_decision_enabled(enabled: bool):
 			# Resume decision timer if it was stopped
 			if decision_timer.is_stopped():
 				decision_timer.start()
-			# print("Alice: Decision system enabled")
+			# print("Leonardo: Decision system enabled")
 		else:
 			# Stop decision timer
 			decision_timer.stop()
-			# print("Alice: Decision system disabled")
+			# print("Leonardo: Decision system disabled")
 
 
 func _ready():
@@ -44,8 +44,8 @@ func _ready():
 	# Stagger initial decision timing
 	if decision_timer:
 		decision_timer.wait_time = 20.0  # Set to 20 seconds
-		# Alice starts after 3 seconds
-		await get_tree().create_timer(3.0).timeout
+		# Leonardo starts after 7 seconds
+		await get_tree().create_timer(7.0).timeout
 		decision_timer.start()
 
 func _physics_process(_delta: float) -> void:
@@ -54,7 +54,7 @@ func _physics_process(_delta: float) -> void:
 		observation_timer -= _delta
 		if observation_timer <= 0:
 			is_observing = false
-			# print("Alice finished observing")
+			# print("Leonardo finished observing")
 			# Clear bubble reference when observation ends
 			current_observation_bubble = null
 			# Resume decision timer after observation
@@ -62,7 +62,7 @@ func _physics_process(_delta: float) -> void:
 	
 	# Check if walk action is completed
 	if is_walking and NA.is_navigation_finished():
-		# print("Alice reached destination")
+		# print("Leonardo reached destination")
 		is_walking = false
 		finish_action()
 	
@@ -81,8 +81,9 @@ func _physics_process(_delta: float) -> void:
 		
 	update_animation()
 	
-	# Update bubble positions to follow Alice
+	# Update observation bubble position to follow Leonardo
 	update_observation_bubble_position()
+	# Update action bubble position to follow Leonardo
 	update_action_bubble_position()
 
 func finish_action():
@@ -117,7 +118,6 @@ func _on_dicision_timer_timeout() -> void:
 	if not decision_enabled:
 		return
 		
-	# Don't make new decisions while acting
 	if is_acting:
 		return
 		
@@ -132,8 +132,8 @@ func _on_dicision_timer_timeout() -> void:
 		return
 		
 	var context = generate_context()
-	# print("Alice sending decision request: " + context)  # Debug output disabled
-	server.request_decision_with_callback("Alice", context, on_decision_received)
+	# print("Leonardo sending decision request: " + context)  # Debug output disabled
+	server.request_decision_with_callback("Leonardo", context, on_decision_received)
 	
 
 func generate_context() -> String:
@@ -148,8 +148,17 @@ func generate_context() -> String:
 		elif distance < 300:
 			context_parts.append(npc.name + " is in sight")
 	
+	# Leonardo-specific context: check bar status
+	var bar = find_target_by_name("bar")
+	if bar:
+		var distance = global_position.distance_to(bar.global_position)
+		if distance < 100:
+			context_parts.append("Standing at the bar")
+		elif distance > 200:
+			context_parts.append("Away from the bar")
+	
 	if context_parts.is_empty():
-		return "Nothing special happening"
+		return "Quiet moment at the bar"
 	else:
 		return ". ".join(context_parts)
 	
@@ -157,26 +166,24 @@ func generate_context() -> String:
 func _on_path_finding_timer_timeout() -> void:
 	makepath()
 
+# Leonardo's observations - bartender perspective
 var observations = {
-	"bob": "Bob the bartender, always with a friendly smile, polishing glasses behind the bar.",
-	"sam": "Sam the musician, looking thoughtful with his guitar nearby.",
-	"dog": "A friendly little dog, tail wagging, looking for someone to play with.",
-	"bar": "A well-kept bar counter with various bottles neatly arranged.",
-	"customer": "A mysterious patron, quietly observing the surroundings.",
-	"alice": "Alice, a regular customer, lost in thought.",
-	"guitar": "Sam's guitar, well-worn but carefully maintained."
+	"einstein": "Einstein, the great physicist, pondering the universe.",
+	"shakespeare": "Shakespeare the musician, probably thinking about his next song.",
+	"dog": "That little dog again, hope it doesn't knock over any glasses.",
+	"customer": "A customer, wonder what they'll order today.",
+	"bar": "My bar counter, needs another wipe down.",
+	"guitar": "Shakespeare's guitar, he should play something to liven up the place.",
+	# Leonardo-specific observations
+	"bottle": "Premium whiskey, saved for special occasions.",
+	"glass": "Crystal glasses, need to keep them spotless."
 }
 
 func on_decision_received(action: String, target_name: String):
-	# Double-check we're not already acting before executing
-	if is_acting:
-		print("Alice received decision but is already acting, ignoring: " + action + " " + target_name)
-		return
-		
 	if target_name != "" and target_name != "self":
-		print("Alice decided to: " + action + " " + target_name)
+		print("Leonardo decided to: " + action + " " + target_name)
 	else:
-		print("Alice decided to: " + action)
+		print("Leonardo decided to: " + action)
 	
 	# Stop decision timer during action execution
 	if decision_timer:
@@ -189,12 +196,16 @@ func on_decision_received(action: String, target_name: String):
 		execute_chat(target_name)
 	elif action == "observe":
 		execute_observe(target_name)
+	elif action == "serve":
+		execute_serve(target_name)
+	elif action == "clean":
+		execute_clean(target_name)
 		
 func execute_walk(target_name: String):
 	var target_node = find_target_by_name(target_name)
 	if target_node:
 		# Show action bubble for walking
-		show_action_bubble("walking to " + target_name)
+		show_action_bubble("*walking to " + target_name + "*")
 		target = target_node
 		makepath()
 		is_walking = true  # Set walking flag
@@ -203,12 +214,12 @@ func execute_walk(target_name: String):
 		finish_action()  # Finish if target not found
 
 func execute_chat(target_name: String):
-	# print("Alice initiating chat with " + target_name)
+	# print("Leonardo initiating chat with " + target_name)
 	
 	# Check if target is player or NPC
 	if target_name == "customer":
 		# Chat with player - show a greeting
-		show_chat_bubble_to_player("Hello there! How can I help you?")
+		show_chat_bubble_to_player("Welcome! What can I get you today?")
 		await get_tree().create_timer(3.0).timeout
 		finish_action()
 	else:
@@ -216,17 +227,17 @@ func execute_chat(target_name: String):
 		var target_node = find_target_by_name(target_name)
 		if target_node:
 			# Walk to the NPC first
-			# print("Alice walking to " + target_name + " for chat")
+			# print("Leonardo walking to " + target_name + " for chat")
 			target = target_node
 			makepath()
 			is_walking = true
 			
-			# Wait until Alice reaches the NPC
+			# Wait until Leonardo reaches the NPC
 			while not NA.is_navigation_finished():
 				await get_tree().process_frame
 			
 			is_walking = false
-			# print("Alice reached " + target_name)
+			# print("Leonardo reached " + target_name)
 			
 			# Now start dialogue
 			start_npc_dialogue(target_name)
@@ -234,8 +245,67 @@ func execute_chat(target_name: String):
 			print("Target not found for chat: " + target_name)
 			finish_action()
 
+func execute_serve(target_name: String):
+	print("Leonardo serving " + target_name)
+	
+	# Walk to the bar first
+	var bar = find_target_by_name("bar")
+	if bar:
+		target = bar
+		makepath()
+		is_walking = true
+		
+		# Wait until Leonardo reaches the bar
+		while not NA.is_navigation_finished():
+			await get_tree().process_frame
+		
+		is_walking = false
+	
+	# Show serving animation/bubble
+	show_action_bubble("*pours a drink for " + target_name + "*")
+	await get_tree().create_timer(3.0).timeout
+	
+	finish_action()
+
+func execute_clean(target_name: String):
+	print("Leonardo cleaning " + target_name)
+	
+	# Walk to the target first
+	var target_node = find_target_by_name(target_name)
+	if target_node:
+		target = target_node
+		makepath()
+		is_walking = true
+		
+		# Wait until Leonardo reaches the target
+		while not NA.is_navigation_finished():
+			await get_tree().process_frame
+		
+		is_walking = false
+		
+		# Show cleaning animation/bubble
+		show_action_bubble("*wipes down the " + target_name + "*")
+		await get_tree().create_timer(3.0).timeout
+	else:
+		print("Target not found for cleaning: " + target_name)
+	
+	finish_action()
+
+func show_action_bubble(text: String):
+	"""Show an action bubble using BubbleManager"""
+	var bubble = BubbleManager.show_action_bubble("Leonardo", text, global_position)
+	
+	if bubble:
+		current_action_bubble = bubble
+		
+		# Auto-remove after 3 seconds
+		await get_tree().create_timer(3.0).timeout
+		if bubble and is_instance_valid(bubble):
+			bubble.queue_free()
+			current_action_bubble = null
+
 func start_npc_dialogue(target_npc: String):
-	"""Start a dialogue session between Alice and another NPC"""
+	"""Start a dialogue session between Leonardo and another NPC"""
 	# Ensure is_acting is true to prevent new decisions during dialogue
 	is_acting = true
 	
@@ -245,40 +315,41 @@ func start_npc_dialogue(target_npc: String):
 		finish_action()
 		return
 	
-	# Generate Alice's greeting dynamically based on context
+	# Generate Leonardo's greeting dynamically based on context
 	var context_prompts = {
-		"Bob": "You are Alice, a thoughtful bar regular. Start a conversation with Bob the bartender.\nBe creative.\nReply with ONE short sentence only.",
-		"Sam": "You are Alice, a thoughtful bar regular. Start a conversation with Sam the musician.\nBe creative.\nReply with ONE short sentence only.", 
-		"dog": "You are Alice, a thoughtful bar regular. Talk to the dog.\nBe creative.\nReply with ONE short sentence only."
+		"Einstein": "You are Leonardo da Vinci, Renaissance genius bartender. Start a conversation with Einstein, the physicist.\nBe curious and inventive.\nReply with ONE short sentence only.",
+		"Shakespeare": "You are Leonardo da Vinci. Start a conversation with Shakespeare, the playwright.\nBe artistic and insightful.\nReply with ONE short sentence only.",
+		"Socrates": "You are Leonardo da Vinci. Start a conversation with Socrates, the philosopher dog.\nBe philosophical and curious.\nReply with ONE short sentence only.", 
+		"dog": "You are Leonardo da Vinci, bartender and Renaissance genius. Talk to the dog.\nBe curious and inventive.\nReply with ONE short sentence only."
 	}
 	
-	var prompt = context_prompts.get(target_npc, "You are Alice. Start a conversation with " + target_npc + ". Reply with ONE short sentence only.")
+	var prompt = context_prompts.get(target_npc, "You are Leonardo the bartender. Start a conversation with " + target_npc + ". Reply with ONE short sentence only.")
 	
-	# print("Alice is thinking of what to say to " + target_npc + "...")
+	# print("Leonardo is thinking of what to say to " + target_npc + "...")
 	
-	# Request generation for Alice's initial greeting
+	# Request generation for Leonardo's initial greeting
 	# Store the target so we know who to send it to after generation
 	set_meta("pending_chat_target", target_npc)
 	
-	# Send to server to generate Alice's greeting
-	server.send_npc_dialogue("system", "Alice", prompt)
+	# Send to server to generate Leonardo's greeting
+	server.send_npc_dialogue("system", "Leonardo", prompt)
 	
 	# The chat action will be completed in show_dialogue_bubble() after the conversation
 	# Don't call finish_action() here as it causes the decision timer to restart too early
 
 func show_chat_bubble_to_player(text: String):
-	"""Show Alice's chat bubble when talking to player"""
-	show_alice_speech_bubble(text)
+	"""Show Leonardo's chat bubble when talking to player"""
+	show_leonardo_speech_bubble(text)
 
-func show_alice_speech_bubble(text: String):
-	"""Display a speech bubble for Alice"""
+func show_leonardo_speech_bubble(text: String):
+	"""Display a speech bubble for Leonardo"""
 	var ui_layer = get_parent().get_node_or_null("UILayer")
 	if not ui_layer:
 		print("UILayer not found for speech bubble")
 		return
 	
 	# Remove any existing speech bubble
-	var bubble_name = "SpeechBubble_Alice"
+	var bubble_name = "SpeechBubble_Leonardo"
 	var existing = ui_layer.get_node_or_null(bubble_name)
 	if existing:
 		existing.queue_free()
@@ -353,7 +424,7 @@ func show_alice_speech_bubble(text: String):
 	# Add to UI layer
 	ui_layer.add_child(bubble)
 	
-	# Position above Alice
+	# Position above Leonardo
 	bubble.position = Vector2(global_position.x - 100, global_position.y - 100)
 	
 	# Auto-remove after 8 seconds for better readability
@@ -365,26 +436,18 @@ func show_alice_speech_bubble(text: String):
 			bubble.queue_free()
 	)
 
+func find_rich_text_label(node: Node) -> RichTextLabel:
+	"""Recursively find RichTextLabel in node tree"""
+	if node is RichTextLabel:
+		return node
 	
-# Removed create_bubble function - now using BubbleManager
-
-func show_action_bubble(text: String):
-	"""Show an action bubble using BubbleManager"""
-	var bubble = BubbleManager.show_action_bubble("Alice", text, global_position)
+	for child in node.get_children():
+		var result = find_rich_text_label(child)
+		if result:
+			return result
 	
-	if bubble:
-		current_action_bubble = bubble
-		
-		# Auto-fade after 3 seconds
-		var tween = get_tree().create_tween()
-		await get_tree().create_timer(2.5).timeout
-		tween.tween_property(bubble, "modulate:a", 0.0, 0.5)
-		tween.tween_callback(func():
-			if is_instance_valid(current_action_bubble):
-				current_action_bubble.queue_free()
-				current_action_bubble = null
-		)
-
+	return null
+	
 func execute_observe(target_name: String):
 	var target_node = find_target_by_name(target_name)
 	
@@ -408,7 +471,7 @@ func execute_observe(target_name: String):
 				AP.play("idle")  # or "idle_up"
 		
 	# Get observation description
-	var description = observations.get(target_name.to_lower(), "Alice observes " + target_name + " carefully.")
+	var description = observations.get(target_name.to_lower(), "Leonardo observes " + target_name + " carefully.")
 	# print("Observation: " + description)
 	
 	# Show observation in thought bubble with "Observation:" prefix and target
@@ -431,7 +494,7 @@ func find_target_by_name(target_name: String) -> Node2D:
 
 func show_observation_bubble(text: String):
 	"""Show an observation bubble using BubbleManager"""
-	var bubble = BubbleManager.show_observation_bubble("Alice", text, global_position)
+	var bubble = BubbleManager.show_observation_bubble("Leonardo", text, global_position)
 	
 	if bubble:
 		current_observation_bubble = bubble
@@ -449,21 +512,20 @@ func show_observation_bubble(text: String):
 					current_observation_bubble = null
 			)
 
-
 func update_observation_bubble_position():
 	# Update bubble position if it exists
 	if current_observation_bubble and is_instance_valid(current_observation_bubble):
-		var alice_pos = global_position
+		var leonardo_pos = global_position
 		
-		# Position above Alice (offset for visibility)
-		current_observation_bubble.position = Vector2(alice_pos.x - 100, alice_pos.y - 100)
+		# Position above Leonardo (offset for visibility)
+		current_observation_bubble.position = Vector2(leonardo_pos.x - 100, leonardo_pos.y - 100)
 
 func update_action_bubble_position():
 	# Update action bubble position if it exists
 	if current_action_bubble and is_instance_valid(current_action_bubble):
-		var alice_pos = global_position
-		# Position above character (closer)
-		current_action_bubble.position = Vector2(alice_pos.x - 60, alice_pos.y - 60)
+		var leonardo_pos = global_position
+		# Position above character
+		current_action_bubble.position = Vector2(leonardo_pos.x - 70, leonardo_pos.y - 100)
 
 # Variables for streaming dialogue
 var current_streaming_response: String = ""
@@ -484,68 +546,57 @@ func handle_dialogue_token(token: String, from_speaker: String):
 	# Update or create speech bubble with streaming text
 	update_streaming_bubble(current_streaming_response)
 
-func find_rich_text_label(node: Node) -> RichTextLabel:
-	"""Recursively find RichTextLabel in node tree"""
-	if node is RichTextLabel:
-		return node
-	
-	for child in node.get_children():
-		var result = find_rich_text_label(child)
-		if result:
-			return result
-	
-	return null
-
 func update_streaming_bubble(text: String):
 	"""Update speech bubble with streaming text"""
 	var ui_layer = get_parent().get_node_or_null("UILayer")
 	if not ui_layer:
 		return
 	
-	var bubble_name = "SpeechBubble_Alice"
+	var bubble_name = "SpeechBubble_Leonardo"
 	var bubble = ui_layer.get_node_or_null(bubble_name)
 	
 	if not bubble:
 		# Create new bubble
-		show_alice_speech_bubble(text)
+		show_leonardo_speech_bubble(text)
 	else:
 		# Update existing bubble text
 		var text_label = find_rich_text_label(bubble)
 		if text_label:
 			text_label.text = text
 
-
-# Handle dialogue response from another NPC
 func show_dialogue_bubble(response: String, from_speaker: String = ""):
+	"""Called by server when Leonardo receives a dialogue response"""
 	# Reset streaming state
 	current_streaming_response = ""
 	is_streaming = false
 	
-	# Check if this is Alice generating her own greeting for an NPC
+	# Check if this is Leonardo generating his own greeting for an NPC
 	if has_meta("pending_chat_target"):
 		var target_npc = get_meta("pending_chat_target")
 		remove_meta("pending_chat_target")
 		
-		# This is Alice's generated greeting - send it to the target NPC
-		# print("Alice says to " + target_npc + ": " + response)
-		show_alice_speech_bubble(response)
+		# This is Leonardo's generated greeting - send it to the target NPC
+		# print("Leonardo says to " + target_npc + ": " + response)
+		show_leonardo_speech_bubble(response)
 		
 		# Now send this to the target NPC to get their response
 		var server = get_node_or_null("/root/Server")
 		if server and server.connected:
-			server.send_npc_dialogue("Alice", target_npc, response)
+			server.send_npc_dialogue("Leonardo", target_npc, response)
 		
 		# Don't call finish_action here - let the conversation complete naturally
 		# The action will finish when conversation ends after MAX_CONVERSATION_TURNS
 		return
 	
-	# Normal case: Alice responding to someone else
-	# If Alice is doing something, interrupt it to respond
+	# Normal case: Leonardo responding to someone else
+	# If Leonardo is doing something, interrupt it to respond
 	if is_acting:
-		print("Alice interrupted to respond to dialogue")
+		print("Leonardo interrupted to respond to dialogue")
 		is_observing = false
 		is_walking = false
+		# Stop movement
 		velocity = Vector2.ZERO
+	
 	# Store remaining time and add 20 seconds
 	var remaining_time = 0.0
 	if decision_timer and decision_timer.time_left > 0:
@@ -555,24 +606,26 @@ func show_dialogue_bubble(response: String, from_speaker: String = ""):
 	else:
 		remaining_time = 20.0
 		is_acting = true
-	show_alice_speech_bubble(response)
 	
-	# If this is from another NPC (not user or system), send Alice's response back to continue the conversation
+	# Show response bubble
+	show_leonardo_speech_bubble(response)
+	
+	# If this is from another NPC (not user or system), send Leonardo's response back to continue the conversation
 	if from_speaker != "" and from_speaker != "user" and from_speaker != "system":
 		conversation_turn_count += 1
 		if conversation_turn_count < MAX_CONVERSATION_TURNS:
 			await get_tree().create_timer(2.0).timeout  # Short pause before responding
 			var server = get_node_or_null("/root/Server")
 			if server and server.connected:
-				# Send Alice's response back to the NPC who spoke to her
-				server.send_npc_dialogue("Alice", from_speaker, response)
-				print("Alice continuing conversation with " + from_speaker + " (turn " + str(conversation_turn_count) + "/" + str(MAX_CONVERSATION_TURNS) + ")")
+				# Send Leonardo's response back to the NPC who spoke to him
+				server.send_npc_dialogue("Leonardo", from_speaker, response)
+				print("Leonardo continuing conversation with " + from_speaker + " (turn " + str(conversation_turn_count) + "/" + str(MAX_CONVERSATION_TURNS) + ")")
 		else:
-			print("Alice ending conversation with " + from_speaker + " after " + str(MAX_CONVERSATION_TURNS) + " turns")
+			print("Leonardo ending conversation with " + from_speaker + " after " + str(MAX_CONVERSATION_TURNS) + " turns")
 			conversation_turn_count = 0  # Reset for next conversation
 			# End the chat action after max turns reached
 			await get_tree().create_timer(2.0).timeout
-			# Always ensure Alice can resume decisions after conversation ends
+			# Always ensure Leonardo can resume decisions after conversation ends
 			if decision_timer:
 				is_acting = false
 				decision_timer.wait_time = 20.0
@@ -590,11 +643,11 @@ func show_dialogue_bubble(response: String, from_speaker: String = ""):
 			decision_timer.start()
 			print("Decision timer resumed with " + str(remaining_time) + " seconds")
 
-# Handle user clicking on Alice for dialogue
+# Handle user clicking on Leonardo for dialogue
 func handle_user_dialogue():
 	# Interrupt current action
 	if is_acting:
-		print("Alice interrupted by user dialogue")
+		print("Leonardo interrupted by user dialogue")
 		is_observing = false
 		is_walking = false
 		velocity = Vector2.ZERO
@@ -602,4 +655,4 @@ func handle_user_dialogue():
 	if decision_timer and decision_timer.time_left > 0:
 		decision_timer.stop()
 		is_acting = true
-	# print("Alice is listening to user...")
+	# print("Leonardo is listening to user...")

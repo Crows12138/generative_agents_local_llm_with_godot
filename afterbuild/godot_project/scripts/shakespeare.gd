@@ -14,8 +14,8 @@ const BubbleManager = preload("res://scripts/bubble_manager.gd")
 var is_observing := false  # Flag to pause movement during observation
 var observation_duration := 3.0  # How long to observe
 var observation_timer := 0.0
-var is_acting := false  # Flag to indicate if Sam is performing an action
-var is_walking := false  # Flag to indicate if Sam is walking to a target
+var is_acting := false  # Flag to indicate if Shakespeare is performing an action
+var is_walking := false  # Flag to indicate if Shakespeare is walking to a target
 var current_observation_bubble = null  # Reference to current observation bubble
 var current_action_bubble = null  # Reference to current action bubble
 var decision_enabled := false          # Flag to enable/disable decision system (default: OFF)
@@ -29,11 +29,11 @@ func set_decision_enabled(enabled: bool):
 			# Resume decision timer if it was stopped
 			if decision_timer.is_stopped():
 				decision_timer.start()
-			# print("Sam: Decision system enabled")
+			# print("Shakespeare: Decision system enabled")
 		else:
 			# Stop decision timer
 			decision_timer.stop()
-			# print("Sam: Decision system disabled")
+			# print("Shakespeare: Decision system disabled")
 
 
 func _ready():
@@ -44,7 +44,7 @@ func _ready():
 	# Stagger initial decision timing
 	if decision_timer:
 		decision_timer.wait_time = 20.0  # Set to 20 seconds
-		# Sam starts after 12 seconds
+		# Shakespeare starts after 12 seconds
 		await get_tree().create_timer(12.0).timeout
 		decision_timer.start()
 
@@ -54,7 +54,7 @@ func _physics_process(_delta: float) -> void:
 		observation_timer -= _delta
 		if observation_timer <= 0:
 			is_observing = false
-			# print("Sam finished observing")
+			# print("Shakespeare finished observing")
 			# Clear bubble reference when observation ends
 			current_observation_bubble = null
 			# Resume decision timer after observation
@@ -62,7 +62,7 @@ func _physics_process(_delta: float) -> void:
 	
 	# Check if walk action is completed
 	if is_walking and NA.is_navigation_finished():
-		# print("Sam reached destination")
+		# print("Shakespeare reached destination")
 		is_walking = false
 		finish_action()
 	
@@ -81,9 +81,9 @@ func _physics_process(_delta: float) -> void:
 		
 	update_animation()
 	
-	# Update observation bubble position to follow Sam
+	# Update observation bubble position to follow Shakespeare
 	update_observation_bubble_position()
-	# Update action bubble position to follow Sam
+	# Update action bubble position to follow Shakespeare
 	update_action_bubble_position()
 
 func finish_action():
@@ -132,8 +132,8 @@ func _on_dicision_timer_timeout() -> void:
 		return
 		
 	var context = generate_context()
-	# print("Sam sending decision request: " + context)  # Debug output disabled
-	server.request_decision_with_callback("Sam", context, on_decision_received)
+	# print("Shakespeare sending decision request: " + context)  # Debug output disabled
+	server.request_decision_with_callback("Shakespeare", context, on_decision_received)
 	
 
 func generate_context() -> String:
@@ -148,7 +148,7 @@ func generate_context() -> String:
 		elif distance < 300:
 			context_parts.append(npc.name + " is in sight")
 	
-	# Sam-specific context: check if near guitar
+	# Shakespeare-specific context: check if near guitar
 	var guitar = find_target_by_name("guitar")
 	if guitar:
 		var distance = global_position.distance_to(guitar.global_position)
@@ -166,15 +166,15 @@ func generate_context() -> String:
 func _on_path_finding_timer_timeout() -> void:
 	makepath()
 
-# Sam's observations - musician perspective
+# Shakespeare's observations - musician perspective
 var observations = {
-	"alice": "Alice seems lost in thought, maybe she'd enjoy some music.",
-	"bob": "Bob's keeping busy behind the bar, always working hard.",
+	"einstein": "Einstein seems lost in thought, pondering the universe.",
+	"leonardo": "Leonardo's keeping busy behind the bar, always creating.",
 	"dog": "That little dog looks like it wants to dance!",
 	"customer": "A new face in the crowd, wonder what songs they like.",
 	"bar": "The bar, where I've played so many nights.",
 	"guitar": "My trusty guitar, ready for another performance.",
-	# Sam-specific observations
+	# Shakespeare-specific observations
 	"stage": "The stage, my second home.",
 	"piano": "That old piano, maybe I should try playing it sometime."
 }
@@ -182,13 +182,13 @@ var observations = {
 func on_decision_received(action: String, target_name: String):
 	# Double-check we're not already acting before executing
 	if is_acting:
-		print("Sam received decision but is already acting, ignoring: " + action + " " + target_name)
+		print("Shakespeare received decision but is already acting, ignoring: " + action + " " + target_name)
 		return
 		
 	if target_name != "" and target_name != "self":
-		print("Sam decided to: " + action + " " + target_name)
+		print("Shakespeare decided to: " + action + " " + target_name)
 	else:
-		print("Sam decided to: " + action)
+		print("Shakespeare decided to: " + action)
 	
 	# Stop decision timer during action execution
 	if decision_timer:
@@ -217,7 +217,7 @@ func execute_walk(target_name: String):
 		finish_action()  # Finish if target not found
 
 func execute_chat(target_name: String):
-	# print("Sam initiating chat with " + target_name)
+	# print("Shakespeare initiating chat with " + target_name)
 	
 	# Check if target is player or NPC
 	if target_name == "customer":
@@ -230,17 +230,17 @@ func execute_chat(target_name: String):
 		var target_node = find_target_by_name(target_name)
 		if target_node:
 			# Walk to the NPC first
-			# print("Sam walking to " + target_name + " for chat")
+			# print("Shakespeare walking to " + target_name + " for chat")
 			target = target_node
 			makepath()
 			is_walking = true
 			
-			# Wait until Sam reaches the NPC
+			# Wait until Shakespeare reaches the NPC
 			while not NA.is_navigation_finished():
 				await get_tree().process_frame
 			
 			is_walking = false
-			# print("Sam reached " + target_name)
+			# print("Shakespeare reached " + target_name)
 			
 			# Now start dialogue
 			start_npc_dialogue(target_name)
@@ -249,7 +249,7 @@ func execute_chat(target_name: String):
 			finish_action()
 
 func execute_play(target_name: String):
-	print("Sam playing " + target_name)
+	print("Shakespeare playing " + target_name)
 	
 	# Walk to the guitar/instrument first
 	var instrument = find_target_by_name(target_name)
@@ -258,7 +258,7 @@ func execute_play(target_name: String):
 		makepath()
 		is_walking = true
 		
-		# Wait until Sam reaches the instrument
+		# Wait until Shakespeare reaches the instrument
 		while not NA.is_navigation_finished():
 			await get_tree().process_frame
 		
@@ -276,7 +276,7 @@ func execute_play(target_name: String):
 
 func show_action_bubble(text: String):
 	"""Show an action bubble using BubbleManager"""
-	var bubble = BubbleManager.show_action_bubble("Sam", text, global_position)
+	var bubble = BubbleManager.show_action_bubble("Shakespeare", text, global_position)
 	
 	if bubble:
 		current_action_bubble = bubble
@@ -288,7 +288,7 @@ func show_action_bubble(text: String):
 			current_action_bubble = null
 
 func start_npc_dialogue(target_npc: String):
-	"""Start a dialogue session between Sam and another NPC"""
+	"""Start a dialogue session between Shakespeare and another NPC"""
 	# Ensure is_acting is true to prevent new decisions during dialogue
 	is_acting = true
 	
@@ -298,45 +298,46 @@ func start_npc_dialogue(target_npc: String):
 		finish_action()
 		return
 	
-	# Generate Sam's greeting dynamically based on context
+	# Generate Shakespeare's greeting dynamically based on context
 	var context_prompts = {
-		"Alice": "You are Sam, a cool musician. Start a conversation with Alice, a regular customer.\nBe cool.\nReply with ONE short sentence only.",
-		"Bob": "You are Sam, a cool musician. Start a conversation with Bob the bartender.\nBe cool.\nReply with ONE short sentence only.", 
-		"dog": "You are Sam, a cool musician. Talk to the dog in a playful way.\nBe cool.\nReply with ONE short sentence only."
+		"Einstein": "You are William Shakespeare, the playwright. Start a conversation with Einstein, the physicist.\nBe dramatic and poetic.\nReply with ONE short sentence only.",
+		"Leonardo": "You are William Shakespeare. Start a conversation with Leonardo da Vinci.\nBe theatrical about art.\nReply with ONE short sentence only.",
+		"Socrates": "You are William Shakespeare. Start a conversation with Socrates, the philosopher dog.\nBe philosophical and dramatic.\nReply with ONE short sentence only.", 
+		"dog": "You are Shakespeare, a cool musician. Talk to the dog in a playful way.\nBe cool.\nReply with ONE short sentence only."
 	}
 	
-	var prompt = context_prompts.get(target_npc, "You are Sam the musician. Start a conversation with " + target_npc + ". Reply with ONE short sentence only.")
+	var prompt = context_prompts.get(target_npc, "You are Shakespeare the musician. Start a conversation with " + target_npc + ". Reply with ONE short sentence only.")
 	
-	# print("Sam is thinking of what to say to " + target_npc + "...")
+	# print("Shakespeare is thinking of what to say to " + target_npc + "...")
 	
-	# Request generation for Sam's initial greeting
+	# Request generation for Shakespeare's initial greeting
 	# Store the target so we know who to send it to after generation
 	set_meta("pending_chat_target", target_npc)
 	
-	# Send to server to generate Sam's greeting
-	server.send_npc_dialogue("system", "Sam", prompt)
+	# Send to server to generate Shakespeare's greeting
+	server.send_npc_dialogue("system", "Shakespeare", prompt)
 	
 	# The chat action will be completed in show_dialogue_bubble() after the conversation
 	# Don't call finish_action() here as it causes the decision timer to restart too early
 
 func show_chat_bubble_to_player(text: String):
-	"""Show Sam's chat bubble when talking to player"""
-	show_sam_speech_bubble(text)
+	"""Show Shakespeare's chat bubble when talking to player"""
+	show_shakespeare_speech_bubble(text)
 
-func show_sam_speech_bubble(text: String):
-	"""Display a speech bubble for Sam"""
+func show_shakespeare_speech_bubble(text: String):
+	"""Display a speech bubble for Shakespeare"""
 	var ui_layer = get_parent().get_node_or_null("UILayer")
 	if not ui_layer:
 		print("UILayer not found for speech bubble")
 		return
 	
 	# Remove any existing speech bubble
-	var bubble_name = "SpeechBubble_Sam"
+	var bubble_name = "SpeechBubble_Shakespeare"
 	var existing = ui_layer.get_node_or_null(bubble_name)
 	if existing:
 		existing.queue_free()
 	
-	# Use SpeechBubbleExample as template (same as dialogue_client.gd)
+	# Use SpeechBubbleExample as template (shakespearee as dialogue_client.gd)
 	var example = ui_layer.get_node_or_null("SpeechBubbleExample")
 	var bubble
 	
@@ -406,7 +407,7 @@ func show_sam_speech_bubble(text: String):
 	# Add to UI layer
 	ui_layer.add_child(bubble)
 	
-	# Position above Sam
+	# Position above Shakespeare
 	bubble.position = Vector2(global_position.x - 100, global_position.y - 100)
 	
 	# Auto-remove after 8 seconds for better readability
@@ -453,7 +454,7 @@ func execute_observe(target_name: String):
 				AP.play("idle")  # or "idle_up"
 		
 	# Get observation description
-	var description = observations.get(target_name.to_lower(), "Sam observes " + target_name + " carefully.")
+	var description = observations.get(target_name.to_lower(), "Shakespeare observes " + target_name + " carefully.")
 	# print("Observation: " + description)
 	
 	# Show observation in thought bubble with "Observation:" prefix and target
@@ -476,7 +477,7 @@ func find_target_by_name(target_name: String) -> Node2D:
 
 func show_observation_bubble(text: String):
 	"""Show an observation bubble using BubbleManager"""
-	var bubble = BubbleManager.show_observation_bubble("Sam", text, global_position)
+	var bubble = BubbleManager.show_observation_bubble("Shakespeare", text, global_position)
 	
 	if bubble:
 		current_observation_bubble = bubble
@@ -497,17 +498,17 @@ func show_observation_bubble(text: String):
 func update_observation_bubble_position():
 	# Update bubble position if it exists
 	if current_observation_bubble and is_instance_valid(current_observation_bubble):
-		var sam_pos = global_position
+		var shakespeare_pos = global_position
 		
-		# Position above Sam (offset for visibility)
-		current_observation_bubble.position = Vector2(sam_pos.x - 100, sam_pos.y - 100)
+		# Position above Shakespeare (offset for visibility)
+		current_observation_bubble.position = Vector2(shakespeare_pos.x - 100, shakespeare_pos.y - 100)
 
 func update_action_bubble_position():
 	# Update action bubble position if it exists
 	if current_action_bubble and is_instance_valid(current_action_bubble):
-		var sam_pos = global_position
+		var shakespeare_pos = global_position
 		# Position above character
-		current_action_bubble.position = Vector2(sam_pos.x - 70, sam_pos.y - 80)
+		current_action_bubble.position = Vector2(shakespeare_pos.x - 70, shakespeare_pos.y - 80)
 
 # Variables for streaming dialogue
 var current_streaming_response: String = ""
@@ -534,12 +535,12 @@ func update_streaming_bubble(text: String):
 	if not ui_layer:
 		return
 	
-	var bubble_name = "SpeechBubble_Sam"
+	var bubble_name = "SpeechBubble_Shakespeare"
 	var bubble = ui_layer.get_node_or_null(bubble_name)
 	
 	if not bubble:
 		# Create new bubble
-		show_sam_speech_bubble(text)
+		show_shakespeare_speech_bubble(text)
 	else:
 		# Update existing bubble text
 		var text_label = find_rich_text_label(bubble)
@@ -547,33 +548,33 @@ func update_streaming_bubble(text: String):
 			text_label.text = text
 
 func show_dialogue_bubble(response: String, from_speaker: String = ""):
-	"""Called by server when Sam receives a dialogue response"""
+	"""Called by server when Shakespeare receives a dialogue response"""
 	# Reset streaming state  
 	current_streaming_response = ""
 	is_streaming = false
 	
-	# Check if this is Sam generating his own greeting for an NPC
+	# Check if this is Shakespeare generating his own greeting for an NPC
 	if has_meta("pending_chat_target"):
 		var target_npc = get_meta("pending_chat_target")
 		remove_meta("pending_chat_target")
 		
-		# This is Sam's generated greeting - send it to the target NPC
-		# print("Sam says to " + target_npc + ": " + response)
-		show_sam_speech_bubble(response)
+		# This is Shakespeare's generated greeting - send it to the target NPC
+		# print("Shakespeare says to " + target_npc + ": " + response)
+		show_shakespeare_speech_bubble(response)
 		
 		# Now send this to the target NPC to get their response
 		var server = get_node_or_null("/root/Server")
 		if server and server.connected:
-			server.send_npc_dialogue("Sam", target_npc, response)
+			server.send_npc_dialogue("Shakespeare", target_npc, response)
 		
 		# Don't call finish_action here - let the conversation complete naturally
 		# The action will finish when conversation ends after MAX_CONVERSATION_TURNS
 		return
 	
-	# Normal case: Sam responding to someone else
-	# If Sam is doing something, interrupt it to respond
+	# Normal case: Shakespeare responding to someone else
+	# If Shakespeare is doing something, interrupt it to respond
 	if is_acting:
-		print("Sam interrupted to respond to dialogue")
+		print("Shakespeare interrupted to respond to dialogue")
 		is_observing = false
 		is_walking = false
 		velocity = Vector2.ZERO
@@ -586,24 +587,24 @@ func show_dialogue_bubble(response: String, from_speaker: String = ""):
 	else:
 		remaining_time = 20.0
 		is_acting = true
-	show_sam_speech_bubble(response)
+	show_shakespeare_speech_bubble(response)
 	
-	# If this is from another NPC (not user or system), send Sam's response back to continue the conversation
+	# If this is from another NPC (not user or system), send Shakespeare's response back to continue the conversation
 	if from_speaker != "" and from_speaker != "user" and from_speaker != "system":
 		conversation_turn_count += 1
 		if conversation_turn_count < MAX_CONVERSATION_TURNS:
 			await get_tree().create_timer(2.0).timeout  # Short pause before responding
 			var server = get_node_or_null("/root/Server")
 			if server and server.connected:
-				# Send Sam's response back to the NPC who spoke to him
-				server.send_npc_dialogue("Sam", from_speaker, response)
-				print("Sam continuing conversation with " + from_speaker + " (turn " + str(conversation_turn_count) + "/" + str(MAX_CONVERSATION_TURNS) + ")")
+				# Send Shakespeare's response back to the NPC who spoke to him
+				server.send_npc_dialogue("Shakespeare", from_speaker, response)
+				print("Shakespeare continuing conversation with " + from_speaker + " (turn " + str(conversation_turn_count) + "/" + str(MAX_CONVERSATION_TURNS) + ")")
 		else:
-			print("Sam ending conversation with " + from_speaker + " after " + str(MAX_CONVERSATION_TURNS) + " turns")
+			print("Shakespeare ending conversation with " + from_speaker + " after " + str(MAX_CONVERSATION_TURNS) + " turns")
 			conversation_turn_count = 0  # Reset for next conversation
 			# End the chat action after max turns reached
 			await get_tree().create_timer(2.0).timeout
-			# Always ensure Sam can resume decisions after conversation ends
+			# Always ensure Shakespeare can resume decisions after conversation ends
 			if decision_timer:
 				is_acting = false
 				decision_timer.wait_time = 20.0
@@ -621,11 +622,11 @@ func show_dialogue_bubble(response: String, from_speaker: String = ""):
 			decision_timer.start()
 			print("Decision timer resumed with " + str(remaining_time) + " seconds")
 
-# Handle user clicking on Sam for dialogue
+# Handle user clicking on Shakespeare for dialogue
 func handle_user_dialogue():
 	# Interrupt current action
 	if is_acting:
-		print("Sam interrupted by user dialogue")
+		print("Shakespeare interrupted by user dialogue")
 		is_observing = false
 		is_walking = false
 		velocity = Vector2.ZERO
@@ -633,4 +634,4 @@ func handle_user_dialogue():
 	if decision_timer and decision_timer.time_left > 0:
 		decision_timer.stop()
 		is_acting = true
-	# print("Sam is listening to user...")
+	# print("Shakespeare is listening to user...")
